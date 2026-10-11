@@ -77,7 +77,7 @@ public abstract class AbstractWagonScreen<T extends AbstractWagonMenu> extends A
         int bar = seatBarY();
         AbstractWagon wagon = menu.getWagon();
         if(bar >= 0 && wagon != null && wagon.hasFixedSeats())
-            seatButtons = SeatButtons.create(wagon, leftPos, topPos + bar + 18, imageWidth);
+            seatButtons = SeatButtons.create(wagon, leftPos, topPos + bar + 18, imageWidth, topPos + bar + 18);
         if(seatButtons != null) {
             for(SeatButton button : seatButtons)
                 addRenderableWidget(button);
@@ -108,6 +108,7 @@ public abstract class AbstractWagonScreen<T extends AbstractWagonMenu> extends A
         int rest = imageHeight - (bar + gap - 1);
         if(rest > 0)
             graphics.blit(texture, artX, restTop, 0, inventoryArtY(), art, rest, texWidth, texHeight);
+        WagonGui.drawWheelCaption(graphics, font, menu, menu.getWagon(), leftPos, topPos);
     }
 
     protected void drawSeatStrip(GuiGraphics graphics, int frameX, int frameWidth) {
@@ -122,6 +123,10 @@ public abstract class AbstractWagonScreen<T extends AbstractWagonMenu> extends A
         AbstractWagon wagon = menu.getWagon();
         if(wagon != null)
             SeatButtons.drawHealth(graphics, font, wagon, frameX + 16, stripTop + 2, frameWidth - 32);
+        for(var slot : menu.slots) {
+            if(slot instanceof net.favouriteless.trotting_wagons.common.menus.WheelSlot)
+                WagonGui.drawSlot(graphics, frameX, topPos, slot);
+        }
     }
 
 }

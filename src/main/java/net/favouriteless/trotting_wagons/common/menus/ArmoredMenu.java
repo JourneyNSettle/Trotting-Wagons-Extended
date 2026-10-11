@@ -1,6 +1,7 @@
 package net.favouriteless.trotting_wagons.common.menus;
 
 import net.favouriteless.trotting_wagons.common.entities.base.AbstractWagon;
+import net.favouriteless.trotting_wagons.common.init.TWItems;
 import net.favouriteless.trotting_wagons.common.init.TWMenuTypes;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Inventory;
@@ -19,6 +20,9 @@ public class ArmoredMenu extends AbstractContainerMenu {
     public ArmoredMenu(int id, Inventory inventory, AbstractWagon wagon) {
         super(TWMenuTypes.ARMORED.get(), id);
         this.wagon = wagon;
+
+        for(int i = 0; i < AbstractWagon.WHEEL_COUNT; i++)
+            addSlot(new WheelSlot(wagon.getWheels(), i, WagonLayout.wheelX(i), WagonLayout.wheelY(29, i)));
 
         for(int x = 0; x < 9; x++)
             addSlot(new Slot(inventory, x, INV_X + x * 18, INV_Y + 58));
@@ -39,7 +43,23 @@ public class ArmoredMenu extends AbstractContainerMenu {
 
     @Override
     public ItemStack quickMoveStack(Player player, int index) {
-        return ItemStack.EMPTY;
+        Slot slot = slots.get(index);
+        if(!slot.hasItem())
+            return ItemStack.EMPTY;
+        ItemStack item = slot.getItem();
+        ItemStack copy = item.copy();
+        int wheelEnd = AbstractWagon.WHEEL_COUNT;
+        if(index < wheelEnd) {
+            if(!moveItemStackTo(item, wheelEnd, slots.size(), false))
+                return ItemStack.EMPTY;
+        } else if(!item.is(TWItems.WHEEL.get()) || !moveItemStackTo(item, 0, wheelEnd, false)) {
+            return ItemStack.EMPTY;
+        }
+        if(item.isEmpty())
+            slot.setByPlayer(ItemStack.EMPTY);
+        else
+            slot.setChanged();
+        return copy;
     }
 
     @Override

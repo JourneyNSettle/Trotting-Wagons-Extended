@@ -1,6 +1,7 @@
 package net.favouriteless.trotting_wagons.client.screens;
 
 import net.favouriteless.trotting_wagons.common.entities.base.AbstractWagon;
+import net.favouriteless.trotting_wagons.common.menus.WagonLayout;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.util.Mth;
@@ -12,11 +13,11 @@ public final class SeatButtons {
 
     private SeatButtons() {}
 
-    public static List<SeatButton> create(AbstractWagon wagon, int left, int top, int panelWidth) {
+    public static List<SeatButton> create(AbstractWagon wagon, int left, int top, int panelWidth, int draftY) {
         int count = wagon.getSeatCount();
         int stride = SeatButton.SIZE + 2;
         int perRow = Math.max(1, (panelWidth - 8) / stride);
-        List<SeatButton> buttons = new ArrayList<>(count);
+        List<SeatButton> buttons = new ArrayList<>(count + 2);
         for(int i = 0; i < count; i++) {
             int row = i / perRow;
             int col = i % perRow;
@@ -27,8 +28,16 @@ public final class SeatButtons {
             button.refresh();
             buttons.add(button);
         }
+        buttons.add(draftButton(wagon, AbstractWagon.Side.LEFT, left, draftY));
+        buttons.add(draftButton(wagon, AbstractWagon.Side.RIGHT, left, draftY));
         SeatButton.bind(buttons);
         return buttons;
+    }
+
+    private static SeatButton draftButton(AbstractWagon wagon, AbstractWagon.Side side, int left, int y) {
+        SeatButton button = SeatButton.draft(wagon, side, WagonLayout.draftX(left, side.ordinal()), y);
+        button.refresh();
+        return button;
     }
 
     public static void refresh(List<SeatButton> buttons) {

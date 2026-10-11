@@ -8,7 +8,7 @@ import net.minecraft.world.entity.player.Inventory;
 public class ConestogaMenu extends AbstractWagonMenu {
 
     public ConestogaMenu(int id, Inventory inventory, AbstractInventoryWagon wagon) {
-        super(TWMenuTypes.CONESTOGA.get(), id, inventory, wagon, 17, 8, 80, 185);
+        super(TWMenuTypes.CONESTOGA.get(), id, inventory, wagon, 17, 8, 80, 185, 144);
     }
 
     public ConestogaMenu(int id, Inventory inventory, FriendlyByteBuf data) {

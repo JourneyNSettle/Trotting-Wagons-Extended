@@ -31,6 +31,11 @@ public class WagonRenderer<T extends AbstractWagon> extends GeoEntityRenderer<T>
 
         pose.mulPose(Axis.YP.rotationDegrees(yaw));
 
+        AbstractWagon.WheelSag sag = wagon.wheelSag();
+        pose.translate(0, -sag.drop(), 0);
+        pose.mulPose(Axis.XP.rotationDegrees(sag.pitch()));
+        pose.mulPose(Axis.ZP.rotationDegrees(sag.roll()));
+
         pose.translate(-mid.x, 0, -mid.z);
         pose.mulPose(Axis.XP.rotationDegrees(pitch));
         pose.translate(mid.x, 0, mid.z);

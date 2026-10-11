@@ -35,6 +35,7 @@ public class SeatButton extends AbstractWidget {
 
     private final AbstractWagon wagon;
     private final int seat;
+    private final AbstractWagon.Side draftSide;
     private long hoverStart = -1L;
     private Component tooltip = Component.empty();
 
@@ -51,7 +52,13 @@ public class SeatButton extends AbstractWidget {
         SeatButton hit = at(mouseX, mouseY);
         if(hit == null)
             return false;
-        WagonSeat.Kind seatKind = hit.wagon.getSeat(hit.seat).kind();
+        if(hit.draftSide != null) {
+            if(hit.occupant().kind() == Kind.ANIMAL) {
+                dragSource = hit;
+                dragLeftSource = false;
+            }
+            return true;
+        }
         boolean lockable = hit.wagon.getSeat(hit.seat).canLockAnimals();
         if(Screen.hasShiftDown() && lockable) {
             PacketDistributor.sendToServer(new ToggleSeatLockPayload(hit.wagon.getId(), hit.seat));
@@ -77,20 +84,25 @@ public class SeatButton extends AbstractWidget {
         SeatButton target = at(mouseX, mouseY);
         boolean move = target != null && target != source && target.accepts(source);
         boolean eject = !move && !dragLeftSource && source.contains(mouseX, mouseY);
-        int animalId = source.wagon.getSeatEntityId(source.seat);
+        int animalId = source.animalId();
         dragSource = null;
         dragLeftSource = false;
-        if(move && animalId >= 0)
-            PacketDistributor.sendToServer(new MoveAnimalPayload(source.wagon.getId(), animalId, target.seat));
-        else if(eject)
-            PacketDistributor.sendToServer(new EjectSeatPayload(source.wagon.getId(), source.seat));
+        if(move && animalId >= 0) {
+            boolean toDraft = target.draftSide != null;
+            int index = toDraft ? target.draftSide.ordinal() : target.seat;
+            PacketDistributor.sendToServer(new MoveAnimalPayload(source.wagon.getId(), animalId, index, toDraft));
+        } else if(eject) {
+            boolean fromDraft = source.draftSide != null;
+            int index = fromDraft ? source.draftSide.ordinal() : source.seat;
+            PacketDistributor.sendToServer(new EjectSeatPayload(source.wagon.getId(), index, fromDraft));
+        }
         return true;
     }
 
     public static void renderCarried(GuiGraphics graphics, int mouseX, int mouseY) {
         if(dragSource == null)
             return;
-        int id = dragSource.wagon.getSeatEntityId(dragSource.seat);
+        int id = dragSource.animalId();
         if(!(dragSource.wagon.level().getEntity(id) instanceof LivingEntity living) || living instanceof Player)
             return;
         int size = 32;
@@ -114,9 +126,23 @@ public class SeatButton extends AbstractWidget {
     }
 
     public SeatButton(AbstractWagon wagon, int seat, int x, int y) {
-        super(x, y, SIZE, SIZE, Component.literal(Integer.toString(seat + 1)));
+        this(wagon, seat, null, x, y, Component.literal(Integer.toString(seat + 1)));
+    }
+
+    public static SeatButton draft(AbstractWagon wagon, AbstractWagon.Side side, int x, int y) {
+        String key = side == AbstractWagon.Side.LEFT ? "gui.trotting_wagons.draft.left" : "gui.trotting_wagons.draft.right";
+        return new SeatButton(wagon, -1, side, x, y, Component.translatable(key));
+    }
+
+    private SeatButton(AbstractWagon wagon, int seat, AbstractWagon.Side draftSide, int x, int y, Component message) {
+        super(x, y, SIZE, SIZE, message);
         this.wagon = wagon;
         this.seat = seat;
+        this.draftSide = draftSide;
+    }
+
+    private int animalId() {
+        return draftSide != null ? wagon.getHitchEntityId(draftSide) : wagon.getSeatEntityId(seat);
     }
 
     public void refresh() {
@@ -143,7 +169,7 @@ public class SeatButton extends AbstractWidget {
             hoverStart = -1L;
         }
 
-        boolean locked = wagon.isSeatLocked(seat);
+        boolean locked = draftSide == null && wagon.isSeatLocked(seat);
         int color = locked ? 0xFF6E3A3A : active ? 0xFF8B8B8B : 0xFF5A5A5A;
         graphics.fill(getX(), getY(), getX() + width, getY() + height, 0xFF373737);
         graphics.fill(getX() + 1, getY() + 1, getX() + width - 1, getY() + height - 1, color);
@@ -159,7 +185,7 @@ public class SeatButton extends AbstractWidget {
         else if(occupant.entity() == null && occupant.kind() == Kind.UNKNOWN)
             drawFitted(graphics, Component.literal("?"), 18);
         else if(carried || occupant.kind() == Kind.EMPTY_PLAYER || occupant.kind() == Kind.LOCKABLE)
-            drawFitted(graphics, typeLabel(wagon.getSeat(seat)), 16);
+            drawFitted(graphics, draftSide != null ? Component.translatable("gui.trotting_wagons.seat.draft") : typeLabel(wagon.getSeat(seat)), 16);
 
         graphics.drawCenteredString(Minecraft.getInstance().font, getMessage(), getX() + width / 2, getY() + 4, 0xFFFFFF);
     }
@@ -174,7 +200,7 @@ public class SeatButton extends AbstractWidget {
         if(!active || !visible || !isMouseOver(mouseX, mouseY) || !isValidClickButton(button))
             return false;
 
-        boolean lockable = wagon.getSeat(seat).canLockAnimals();
+        boolean lockable = draftSide == null && wagon.getSeat(seat).canLockAnimals();
         if(Screen.hasShiftDown() && lockable) {
             PacketDistributor.sendToServer(new ToggleSeatLockPayload(wagon.getId(), seat));
             return true;
@@ -196,6 +222,8 @@ public class SeatButton extends AbstractWidget {
     }
 
     private Occupant occupant() {
+        if(draftSide != null)
+            return draftOccupant();
         int id = wagon.getSeatEntityId(seat);
         WagonSeat definition = wagon.getSeat(seat);
         if(id < 0) {
@@ -221,11 +249,23 @@ public class SeatButton extends AbstractWidget {
         return new Occupant(Kind.ANIMAL, living, tip);
     }
 
+    private Occupant draftOccupant() {
+        int id = wagon.getHitchEntityId(draftSide);
+        if(id < 0)
+            return new Occupant(Kind.LOCKABLE, null, Component.translatable("gui.trotting_wagons.seat.draft"));
+        if(!(wagon.level().getEntity(id) instanceof LivingEntity living) || living instanceof Player)
+            return new Occupant(Kind.UNKNOWN, null, Component.translatable("gui.trotting_wagons.tooltip.unknown"));
+        return new Occupant(Kind.ANIMAL, living, Component.translatable("gui.trotting_wagons.tooltip.unhitch"));
+    }
+
     private boolean accepts(SeatButton source) {
         if(source == null || source.wagon != wagon)
             return false;
-        int id = source.wagon.getSeatEntityId(source.seat);
-        return wagon.level().getEntity(id) instanceof LivingEntity animal && wagon.canPlaceAnimal(seat, animal);
+        if(!(wagon.level().getEntity(source.animalId()) instanceof LivingEntity animal) || animal instanceof Player)
+            return false;
+        if(draftSide != null)
+            return wagon.canPlaceDraft(animal, draftSide);
+        return wagon.canPlaceAnimal(seat, animal);
     }
 
     private Component lockTooltip() {
@@ -240,6 +280,7 @@ public class SeatButton extends AbstractWidget {
             case UNIVERSAL -> Component.translatable("gui.trotting_wagons.seat.universal");
             case ANIMAL -> Component.translatable("gui.trotting_wagons.seat.animal_small");
             case ANIMALBIG -> Component.translatable("gui.trotting_wagons.seat.animal_large");
+            case DRAFT -> Component.translatable("gui.trotting_wagons.seat.draft");
         };
     }
 

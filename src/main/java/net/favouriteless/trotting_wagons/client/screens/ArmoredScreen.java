@@ -28,7 +28,7 @@ public class ArmoredScreen extends AbstractContainerScreen<ArmoredMenu> {
         AbstractWagon wagon = menu.getWagon();
         if(wagon == null)
             return;
-        seatButtons = SeatButtons.create(wagon, leftPos, topPos + 28, imageWidth);
+        seatButtons = SeatButtons.create(wagon, leftPos, topPos + 28, imageWidth, topPos + 28);
         for(SeatButton button : seatButtons)
             addRenderableWidget(button);
     }
@@ -47,6 +47,7 @@ public class ArmoredScreen extends AbstractContainerScreen<ArmoredMenu> {
             SeatButtons.drawHealth(graphics, font, menu.getWagon(), leftPos + 16, topPos + 14, imageWidth - 32);
         for(var slot : menu.slots)
             WagonGui.drawSlot(graphics, leftPos, topPos, slot);
+        WagonGui.drawWheelCaption(graphics, font, menu, menu.getWagon(), leftPos, topPos);
     }
 
     @Override

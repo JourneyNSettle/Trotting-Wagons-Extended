@@ -34,6 +34,11 @@ public class ArmoredWagon extends AbstractWagon implements MenuProvider {
     }
 
     @Override
+    protected double tongueLength() {
+        return 61.12D / 16D;
+    }
+
+    @Override
     public AbstractContainerMenu createMenu(int id, Inventory inventory, Player player) {
         return new ArmoredMenu(id, inventory, this);
     }
