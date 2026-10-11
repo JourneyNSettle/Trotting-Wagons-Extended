@@ -15,13 +15,13 @@ public abstract class AbstractWagonMenu extends AbstractContainerMenu {
     private final AbstractInventoryWagon wagon;
 
     public AbstractWagonMenu(MenuType<? extends AbstractWagonMenu> type, int id, Inventory inventory, AbstractInventoryWagon wagon,
-                             int perRow, int xInv, int yInv) {
+                             int perRow, int xSlots, int xInv, int yInv) {
         super(type, id);
         this.wagon = wagon;
 
         for(int y = 0; y < wagon.getItems().getSlots() / perRow; y++) {
             for(int x = 0; x < perRow; x++) {
-                addSlot(new SlotItemHandler(wagon.getItems(), x + y*perRow, 8 + x*18, 18 + y*18));
+                addSlot(new SlotItemHandler(wagon.getItems(), x + y*perRow, xSlots + x*18, 18 + y*18));
             }
         }
 
@@ -63,9 +63,13 @@ public abstract class AbstractWagonMenu extends AbstractContainerMenu {
         return copy;
     }
 
+    public AbstractInventoryWagon getWagon() {
+        return wagon;
+    }
+
     @Override
     public boolean stillValid(Player player) {
-        return wagon.isAlive() && wagon.distanceTo(player) < 8.0F;
+        return wagon != null && wagon.isAlive() && player.getVehicle() == wagon;
     }
 
     public static AbstractInventoryWagon getWagon(Inventory inventory, FriendlyByteBuf data) {

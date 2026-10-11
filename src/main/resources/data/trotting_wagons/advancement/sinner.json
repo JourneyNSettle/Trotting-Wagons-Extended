@@ -1,0 +1,27 @@
+{
+  "parent": "minecraft:husbandry/root",
+  "display": {
+    "icon": {
+      "id": "minecraft:lead"
+    },
+    "title": {
+      "translate": "advancements.trotting_wagons.sinner.title"
+    },
+    "description": {
+      "translate": "advancements.trotting_wagons.sinner.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true
+  },
+  "criteria": {
+    "hitch_different": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "hitch_different"
+    ]
+  ]
+}

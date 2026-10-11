@@ -5,10 +5,14 @@ import net.favouriteless.trotting_wagons.TrottingWagons;
 import net.favouriteless.trotting_wagons.client.TWClient;
 import net.favouriteless.trotting_wagons.common.init.TWItems;
 import net.favouriteless.trotting_wagons.common.util.LevelUtils;
+import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.favouriteless.trotting_wagons.common.network.packets.SyncSeatsPayload;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -33,9 +37,15 @@ import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.gameevent.GameEvent;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.network.PacketDistributor;
 
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.OptionalInt;
 import java.util.Random;
 import java.util.UUID;
@@ -49,6 +59,10 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
     public static final double GRAVITY = 0.04D;
     public static final int SPEED_LEVELS = 3;
     public static final double HORIZONTAL_TETHER = 0.5D * 0.5D; // Use sqr for performance
+    public static final int BOARD_COOLDOWN_TICKS = 60;
+    public static final double ANIMAL_BOARD_RANGE = 1.0D;
+    public static final double HITCH_RANGE = 1.5D;
+    private static final String BOARD_COOLDOWN = "tw_board_cooldown";
 
     public final double speed;
     private final double acceleration;
@@ -66,9 +80,16 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
     private final Mob[] horses = new Mob[2];
     private final UUID[] horseUuids = new UUID[2];
 
-    public AbstractWagon(EntityType<? extends AbstractWagon> type, Level level, double wheelWidth, double wheelLength, Vec3[] riders,
+    private final WagonSeat[] seats;
+    private final Entity[] seatEntities;
+    private final int[] seatIds;
+    private final boolean[] seatLocked;
+    private final Map<UUID, Integer> savedSeatByUuid = new HashMap<>();
+    private int pendingSeat = -1;
+
+    public AbstractWagon(EntityType<? extends AbstractWagon> type, Level level, double wheelWidth, double wheelLength, WagonSeat[] seats,
                          double speed, double acceleration, double turnRate, int maxHealth, double horseX, double horseY, float shaftAngle) {
-        super(type, level, wheelWidth, wheelLength, riders);
+        super(type, level, wheelWidth, wheelLength, seatPositions(seats));
 
         this.speed = speed;
         this.acceleration = acceleration;
@@ -77,8 +98,21 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         this.horseX = horseX;
         this.horseY = horseY;
         this.shaftAngle = shaftAngle;
+        this.seats = seats;
+        this.seatEntities = new Entity[seats.length];
+        this.seatIds = new int[seats.length];
+        this.seatLocked = new boolean[seats.length];
+        for(int i = 0; i < seatIds.length; i++)
+            seatIds[i] = -1;
 
         setHealth(maxHealth);
+    }
+
+    private static Vec3[] seatPositions(WagonSeat[] seats) {
+        Vec3[] positions = new Vec3[seats.length];
+        for(int i = 0; i < seats.length; i++)
+            positions[i] = seats[i].position();
+        return positions;
     }
 
     @Override
@@ -86,8 +120,11 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         if(firstTick && level().isClientSide)
             TWClient.createWagonSound(this);
 
-        if(!level().isClientSide)
+        if(!level().isClientSide) {
             validateHorses();
+            if(hasFixedSeats())
+                boardNearbyAnimals();
+        }
         super.tick();
     }
 
@@ -105,9 +142,7 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         Mob horse = getHorse(side);
         if(horse == null)
             return;
-        if(horse.isLeashed())
-            setHorse(null, side);
-        else if(!isHorseInRange(side))
+        if(!isHorseInRange(side))
             horse.setPos(getHorsePos(side));
     }
 
@@ -272,66 +307,52 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
                 return InteractionResult.sidedSuccess(isClientSide);
             }
 
-            if(tryHitchHorse(player) || tryMountMob(player))
-                return InteractionResult.sidedSuccess(isClientSide);
-
-            if(stack.is(Items.LEAD)) {
-                if(isClientSide)
-                    return InteractionResult.SUCCESS;
-
-                for(Entity passenger : getPassengers()) {
-                    if(passenger instanceof Mob mob) {
-                        mob.stopRiding();
-                        player.getItemInHand(hand).shrink(1);
-                        if(mob.canBeLeashed())
-                            mob.setLeashedTo(player, true);
-                        break;
-                    }
-                }
-                return InteractionResult.CONSUME;
-            }
         }
         else if(player.getVehicle() != this) {
             if(!isClientSide) {
                 player.setYRot(getYRot());
                 player.setXRot(getXRot());
 
-                return player.startRiding(this) ? InteractionResult.CONSUME : InteractionResult.PASS;
+                return mountNearest(player) ? InteractionResult.CONSUME : InteractionResult.PASS;
             }
             return InteractionResult.SUCCESS;
         }
         return InteractionResult.PASS;
     }
 
-    private boolean tryHitchHorse(Player player) {
-        Mob horse = level().getEntitiesOfClass(Mob.class, new AABB(
-                player.getX()-7, player.getY()-7, player.getZ()-7,
-                player.getX()+7, player.getY()+7, player.getZ()+7
-        ), h -> h.getLeashHolder() == player && ServerConfig.INSTANCE.allowedEntities.get().contains(h.getType().builtInRegistryHolder().key().location().toString())).stream()
-                .findFirst().orElse(null);
-
-        if(!level().isClientSide && horse != null) {
-            if(getHorse(Side.LEFT) == null)
-                hitchHorse(horse, Side.LEFT);
-            else if(getHorse(Side.RIGHT) == null)
-                hitchHorse(horse, Side.RIGHT);
-
-            horse.dropLeash(true, true);
-        }
-        return horse != null;
+    public boolean hitchRiddenAnimal(Mob animal) {
+        if(!isAllowedPuller(animal) || !hasFreeHitch() || !isNearTongue(animal) || findHitch(animal) != null)
+            return false;
+        if(animal.getVehicle() != null)
+            animal.stopRiding();
+        if(getHorse(Side.LEFT) == null)
+            hitchHorse(animal, Side.LEFT);
+        else
+            hitchHorse(animal, Side.RIGHT);
+        return true;
     }
 
-    private boolean tryMountMob(Player player) {
-        Mob mob = level().getEntitiesOfClass(Mob.class, new AABB(
-                player.getX()-7, player.getY()-7, player.getZ()-7,
-                player.getX()+7, player.getY()+7, player.getZ()+7
-                ), h -> h.getLeashHolder() == player && !h.getType().is(TrottingWagons.CANNOT_MOUNT_WAGON)).stream()
-                .findFirst().orElse(null);
+    public void awardSinner(ServerPlayer player) {
+        Mob left = getHorse(Side.LEFT);
+        Mob right = getHorse(Side.RIGHT);
+        if(left == null || right == null || left.getType() == right.getType())
+            return;
+        if(player.level().getServer() == null)
+            return;
+        AdvancementHolder holder = player.level().getServer().getAdvancements().get(TrottingWagons.id("sinner"));
+        if(holder != null)
+            player.getAdvancements().award(holder, "hitch_different");
+    }
 
-        if(mob != null && !level().isClientSide && canAddPassenger(mob))
-            mob.startRiding(this);
+    public void unhitch(Mob animal) {
+        if(getHorse(Side.LEFT) == animal)
+            setHorse(null, Side.LEFT);
+        else if(getHorse(Side.RIGHT) == animal)
+            setHorse(null, Side.RIGHT);
+    }
 
-        return mob != null;
+    public boolean isHitched(Entity entity) {
+        return entity == getHorse(Side.LEFT) || entity == getHorse(Side.RIGHT);
     }
 
     private void hitchHorse(Mob horse, Side side) {
@@ -374,13 +395,8 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         if(level().isClientSide)
             return;
 
-        Mob horse = getHorse(Side.LEFT);
-        if(horse != null)
-            horse.setNoAi(false);
-
-        horse = getHorse(Side.RIGHT);
-        if(horse != null)
-            horse.setNoAi(false);
+        setHorse(null, Side.LEFT);
+        setHorse(null, Side.RIGHT);
 
         ejectPassengers();
         discard();
@@ -449,6 +465,20 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
             setHorseUUID(nbt.getUUID("leftHorse"), Side.LEFT);
         if(nbt.contains("rightHorse"))
             setHorseUUID(nbt.getUUID("rightHorse"), Side.RIGHT);
+        savedSeatByUuid.clear();
+        if(nbt.contains("seatLocks", Tag.TAG_BYTE_ARRAY)) {
+            byte[] locks = nbt.getByteArray("seatLocks");
+            for(int i = 0; i < locks.length && i < seatLocked.length; i++)
+                seatLocked[i] = locks[i] != 0;
+        }
+        if(nbt.contains("seats", Tag.TAG_LIST)) {
+            ListTag seatsTag = nbt.getList("seats", Tag.TAG_COMPOUND);
+            for(int i = 0; i < seatsTag.size(); i++) {
+                CompoundTag seatTag = seatsTag.getCompound(i);
+                if(seatTag.hasUUID("id"))
+                    savedSeatByUuid.put(seatTag.getUUID("id"), seatTag.getInt("seat"));
+            }
+        }
     }
 
     @Override
@@ -461,6 +491,20 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
             nbt.putUUID("leftHorse", getHorseUUID(Side.LEFT));
         if(getHorseUUID(Side.RIGHT) != null)
             nbt.putUUID("rightHorse", getHorseUUID(Side.RIGHT));
+        ListTag seatsTag = new ListTag();
+        for(int i = 0; i < seatEntities.length; i++) {
+            if(seatEntities[i] == null)
+                continue;
+            CompoundTag seatTag = new CompoundTag();
+            seatTag.putInt("seat", i);
+            seatTag.putUUID("id", seatEntities[i].getUUID());
+            seatsTag.add(seatTag);
+        }
+        nbt.put("seats", seatsTag);
+        byte[] locks = new byte[seatLocked.length];
+        for(int i = 0; i < seatLocked.length; i++)
+            locks[i] = (byte)(seatLocked[i] ? 1 : 0);
+        nbt.putByteArray("seatLocks", locks);
     }
 
     public void tryCycleSpeed(Player player) {
@@ -482,8 +526,10 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
 
     private void setHorse(Mob horse, Side side) {
         Mob old = getHorse(side);
-        if(old != null)
+        if(old != null && old != horse) {
             old.setNoAi(false);
+            setBoardCooldown(old);
+        }
         if(horse != null)
             horse.setNoAi(true);
 
@@ -524,6 +570,10 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         return entityData.get(DATA_ID_HEALTH);
     }
 
+    public int getMaxHealth() {
+        return maxHealth;
+    }
+
     protected void setHealth(float health) {
         entityData.set(DATA_ID_HEALTH, Mth.clamp(health, 0, maxHealth));
     }
@@ -536,6 +586,333 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
     @Override
     public boolean causeFallDamage(float fallDistance, float multiplier, DamageSource source) {
         return !getType().is(EntityTypeTags.FALL_DAMAGE_IMMUNE);
+    }
+
+    public boolean hasFixedSeats() {
+        return seats != null;
+    }
+
+    public int getSeatCount() {
+        return seats.length;
+    }
+
+    public WagonSeat getSeat(int index) {
+        return seats[index];
+    }
+
+    public int getSeatEntityId(int index) {
+        return seatIds[index];
+    }
+
+    public boolean isSeatLocked(int index) {
+        return seatLocked[index];
+    }
+
+    public boolean[] seatLocks() {
+        return seatLocked.clone();
+    }
+
+    public boolean toggleSeatLock(Player player, int seat) {
+        if(player.getVehicle() != this || seat < 0 || seat >= seats.length || !seats[seat].canLockAnimals())
+            return false;
+        seatLocked[seat] = !seatLocked[seat];
+        syncSeats();
+        return true;
+    }
+
+    public Vec3 getTongueAnchor() {
+        return position().add(rotateY(new Vec3(0, 0, horseY), getYRot()));
+    }
+
+    public static void setBoardCooldown(Entity entity) {
+        entity.getPersistentData().putLong(BOARD_COOLDOWN, entity.level().getGameTime() + BOARD_COOLDOWN_TICKS);
+    }
+
+    public static boolean isBoardCooldown(Entity entity) {
+        return entity.level().getGameTime() < entity.getPersistentData().getLong(BOARD_COOLDOWN);
+    }
+
+    public static boolean isAllowedPuller(Entity entity) {
+        return ServerConfig.INSTANCE.allowedEntities.get().contains(entity.getType().builtInRegistryHolder().key().location().toString());
+    }
+
+    public static AbstractWagon findHitch(Entity entity) {
+        AABB box = entity.getBoundingBox().inflate(8.0D);
+        for(AbstractWagon wagon : entity.level().getEntitiesOfClass(AbstractWagon.class, box)) {
+            if(wagon.isHitched(entity))
+                return wagon;
+        }
+        return null;
+    }
+
+    public static AbstractWagon findHitchTarget(Mob animal) {
+        if(!isAllowedPuller(animal))
+            return null;
+
+        AbstractWagon best = null;
+        double bestDist = HITCH_RANGE * HITCH_RANGE;
+        AABB search = animal.getBoundingBox().inflate(8.0D);
+        for(AbstractWagon wagon : animal.level().getEntitiesOfClass(AbstractWagon.class, search)) {
+            if(!wagon.hasFreeHitch() || !wagon.isNearTongue(animal))
+                continue;
+            double dist = horizontalDistanceSqr(animal.position(), wagon.getTongueAnchor());
+            if(dist <= bestDist) {
+                bestDist = dist;
+                best = wagon;
+            }
+        }
+        return best;
+    }
+
+    public boolean mountNearest(Entity entity) {
+        int seat = findNearestSeat(entity);
+        if(seat < 0)
+            return false;
+        pendingSeat = seat;
+        boolean mounted = entity.startRiding(this);
+        pendingSeat = -1;
+        return mounted;
+    }
+
+    public boolean ejectSeat(Player player, int seat) {
+        if(player.getVehicle() != this || seat < 0 || seat >= seats.length)
+            return false;
+        if(!(seatEntities[seat] instanceof Mob mob) || seatEntities[seat] instanceof Player)
+            return false;
+        mob.stopRiding();
+        return true;
+    }
+
+    public boolean canPlaceAnimal(int index, Entity animal) {
+        if(index < 0 || index >= seats.length || !(animal instanceof LivingEntity) || animal instanceof Player)
+            return false;
+        int occupied = seatIds[index];
+        if(occupied >= 0)
+            return false;
+        return seatAccepts(index, animal);
+    }
+
+    public boolean moveAnimal(Player player, int animalId, int to) {
+        if(player.getVehicle() != this || to < 0 || to >= seats.length)
+            return false;
+        int from = -1;
+        LivingEntity animal = null;
+        for(int i = 0; i < seatEntities.length; i++) {
+            if(seatEntities[i] != null && seatEntities[i].getId() == animalId) {
+                from = i;
+                animal = seatEntities[i] instanceof LivingEntity living ? living : null;
+            }
+        }
+        if(animal == null || from == to || seatEntities[to] != null || !seatAccepts(to, animal))
+            return false;
+        seatEntities[from] = null;
+        seatIds[from] = -1;
+        seatEntities[to] = animal;
+        seatIds[to] = animal.getId();
+        syncSeats();
+        return true;
+    }
+
+    public boolean movePlayerToSeat(Player player, int seat) {
+        if(player.getVehicle() != this)
+            return false;
+        if(seat < 0 || seat >= seats.length || !seats[seat].acceptsPlayers())
+            return false;
+        if(seatEntities[seat] != null && seatEntities[seat] != player)
+            return false;
+
+        int current = seatIndexOf(player);
+        if(current < 0 || current == seat)
+            return false;
+
+        seatEntities[current] = null;
+        seatIds[current] = -1;
+        seatEntities[seat] = player;
+        seatIds[seat] = player.getId();
+        syncSeats();
+        return true;
+    }
+
+    @Override
+    public LivingEntity getControllingPassenger() {
+        for(int i = 0; i < seats.length; i++) {
+            if(seats[i].kind() != WagonSeat.Kind.DRIVER)
+                continue;
+            Entity driver = seatEntities[i];
+            if(driver == null && seatIds[i] >= 0)
+                driver = level().getEntity(seatIds[i]);
+            return driver instanceof Player player ? player : null;
+        }
+        return null;
+    }
+
+    @Override
+    protected boolean canAddPassenger(Entity passenger) {
+        if(!(passenger instanceof LivingEntity))
+            return false;
+        if(pendingSeat >= 0)
+            return seatEntities[pendingSeat] == null && seatAccepts(pendingSeat, passenger);
+        return findNearestSeat(passenger) >= 0;
+    }
+
+    @Override
+    protected Vec3 getRiderOffset(Entity passenger) {
+        int index = seatIndexOf(passenger);
+        return index < 0 ? null : seats[index].position();
+    }
+
+    @Override
+    protected void addPassenger(Entity passenger) {
+        if(!level().isClientSide)
+            assignSeat(passenger);
+        super.addPassenger(passenger);
+    }
+
+    @Override
+    protected void removePassenger(Entity passenger) {
+        super.removePassenger(passenger);
+        clearSeat(passenger);
+        if(!level().isClientSide) {
+            if(passenger instanceof Mob)
+                setBoardCooldown(passenger);
+            syncSeats();
+        }
+    }
+
+    public void applySeatState(int[] ids, boolean[] locks) {
+        for(int i = 0; i < seatIds.length && i < ids.length; i++)
+            seatIds[i] = ids[i];
+        for(int i = 0; i < seatLocked.length && i < locks.length; i++)
+            seatLocked[i] = locks[i];
+    }
+
+    private void assignSeat(Entity passenger) {
+        int seat = -1;
+        Integer saved = savedSeatByUuid.remove(passenger.getUUID());
+        if(saved != null && saved >= 0 && saved < seats.length && seatEntities[saved] == null)
+            seat = saved;
+        else if(pendingSeat >= 0 && seatEntities[pendingSeat] == null)
+            seat = pendingSeat;
+        else
+            seat = findNearestSeat(passenger);
+
+        if(seat < 0)
+            return;
+        seatEntities[seat] = passenger;
+        seatIds[seat] = passenger.getId();
+        syncSeats();
+    }
+
+    private void clearSeat(Entity passenger) {
+        for(int i = 0; i < seatEntities.length; i++) {
+            if(seatEntities[i] == passenger) {
+                seatEntities[i] = null;
+                seatIds[i] = -1;
+            }
+        }
+    }
+
+    private int seatIndexOf(Entity passenger) {
+        for(int i = 0; i < seatEntities.length; i++) {
+            if(seatEntities[i] == passenger)
+                return i;
+        }
+        int id = passenger.getId();
+        for(int i = 0; i < seatIds.length; i++) {
+            if(seatIds[i] == id)
+                return i;
+        }
+        return -1;
+    }
+
+    private int findNearestSeat(Entity entity) {
+        int best = -1;
+        double bestDist = Double.MAX_VALUE;
+        for(int i = 0; i < seats.length; i++) {
+            if(seatEntities[i] != null)
+                continue;
+            if(!seatAccepts(i, entity))
+                continue;
+            double dist = entity.position().distanceToSqr(offsetToWorld(seats[i].position(), false));
+            if(dist < bestDist) {
+                bestDist = dist;
+                best = i;
+            }
+        }
+        return best;
+    }
+
+    private boolean seatAccepts(int index, Entity entity) {
+        if(entity.getType().is(TrottingWagons.CANNOT_MOUNT_WAGON))
+            return false;
+        if(!(entity instanceof Player) && findHitch(entity) != null)
+            return false;
+        WagonSeat seat = seats[index];
+        boolean player = entity instanceof Player;
+        if(seatLocked[index] && !player && seat.canLockAnimals())
+            return false;
+        boolean large = entity.getType().is(TrottingWagons.LARGE_WAGON_PASSENGER);
+        return switch(seat.kind()) {
+            case DRIVER, PLAYER -> player;
+            case ANIMAL, UNIVERSAL -> !player && !large || player && seat.kind() == WagonSeat.Kind.UNIVERSAL;
+            case ANIMALBIG -> !player;
+        };
+    }
+
+    private void boardNearbyAnimals() {
+        AABB box = getBoundingBox().inflate(ANIMAL_BOARD_RANGE);
+        List<Mob> mobs = level().getEntitiesOfClass(Mob.class, box, this::canAutoBoard);
+        mobs.sort(Comparator.comparingDouble(mob -> mob.distanceToSqr(this)));
+        for(Mob mob : mobs)
+            mountNearest(mob);
+    }
+
+    private boolean canAutoBoard(Mob mob) {
+        if(!mob.isAlive() || mob.isPassenger() || mob.isVehicle() || findHitch(mob) != null || isBoardCooldown(mob))
+            return false;
+        if(mob.getType().is(TrottingWagons.CANNOT_MOUNT_WAGON))
+            return false;
+        if(mob instanceof TamableAnimal tamable && tamable.getOwnerUUID() != null) {
+            Entity owner = tamable.getOwner();
+            if(owner == null || (owner.getVehicle() != this && owner.distanceToSqr(mob) > 9.0D))
+                return false;
+        }
+        return findNearestSeat(mob) >= 0;
+    }
+
+    private boolean hasFreeHitch() {
+        return getHorse(Side.LEFT) == null || getHorse(Side.RIGHT) == null;
+    }
+
+    private boolean isNearTongue(Entity entity) {
+        return horizontalDistanceSqr(entity.position(), getTongueAnchor()) <= HITCH_RANGE * HITCH_RANGE;
+    }
+
+    private static double horizontalDistanceSqr(Vec3 a, Vec3 b) {
+        double dx = a.x - b.x;
+        double dz = a.z - b.z;
+        return dx * dx + dz * dz;
+    }
+
+    private void refreshSeatIds() {
+        for(int i = 0; i < seatEntities.length; i++)
+            seatIds[i] = seatEntities[i] == null ? -1 : seatEntities[i].getId();
+    }
+
+    public void sendSeatSync(ServerPlayer player) {
+        refreshSeatIds();
+        PacketDistributor.sendToPlayer(player, seatPayload());
+    }
+
+    private SyncSeatsPayload seatPayload() {
+        return new SyncSeatsPayload(getId(), seatIds.clone(), seatLocked.clone());
+    }
+
+    private void syncSeats() {
+        if(level().isClientSide)
+            return;
+        refreshSeatIds();
+        PacketDistributor.sendToPlayersTrackingEntityAndSelf(this, seatPayload());
     }
 
     private enum Side {

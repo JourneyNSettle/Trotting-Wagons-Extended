@@ -7,7 +7,6 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.items.ItemStackHandler;
 
 public abstract class AbstractInventoryWagon extends AbstractWagon implements MenuProvider {
@@ -15,9 +14,9 @@ public abstract class AbstractInventoryWagon extends AbstractWagon implements Me
     private final NonNullList<ItemStack> inventory;
     private final ItemStackHandler itemHandler;
 
-    public AbstractInventoryWagon(EntityType<? extends AbstractWagon> type, Level level, double wheelWidth, double wheelLength, Vec3[] riders,
+    public AbstractInventoryWagon(EntityType<? extends AbstractWagon> type, Level level, double wheelWidth, double wheelLength, WagonSeat[] seats,
                                   double speed, double acceleration, double turnRate, int maxHealth, double horseX, double horseY, float shaftAngle, int capacity) {
-        super(type, level, wheelWidth, wheelLength, riders, speed, acceleration, turnRate, maxHealth, horseX, horseY, shaftAngle);
+        super(type, level, wheelWidth, wheelLength, seats, speed, acceleration, turnRate, maxHealth, horseX, horseY, shaftAngle);
         this.inventory = NonNullList.withSize(capacity, ItemStack.EMPTY);
         this.itemHandler = new ItemStackHandler(inventory);
     }
@@ -27,11 +26,6 @@ public abstract class AbstractInventoryWagon extends AbstractWagon implements Me
         InteractionResult superResult = super.interact(player, hand);
         if(superResult != InteractionResult.PASS)
             return superResult;
-
-        if(isAlive() && !level().isClientSide && player.isSecondaryUseActive()) {
-            player.openMenu(this, buf -> buf.writeInt(getId()));
-            return InteractionResult.CONSUME;
-        }
 
         return InteractionResult.PASS;
     }

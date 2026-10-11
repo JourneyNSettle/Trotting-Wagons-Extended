@@ -6,5 +6,22 @@
   "item.trotting_wagons.armored_wagon": "Armored Wagon",
   "entity.trotting_wagons.armored_wagon": "Armored Wagon",
   "item.trotting_wagons.horse_whip": "Horse Whip",
-  "item.trotting_wagons.wheel": "Wheel"
+  "item.trotting_wagons.wheel": "Wheel",
+  "key.trotting_wagons.hitch": "Hitch Animal",
+  "key.categories.trotting_wagons": "Trotting Wagons",
+  "gui.trotting_wagons.seat.driver": "Driver",
+  "gui.trotting_wagons.seat.player": "Human",
+  "gui.trotting_wagons.seat.universal": "Universal",
+  "gui.trotting_wagons.seat.animal_large": "Big Animal",
+  "gui.trotting_wagons.seat.animal_small": "Animal",
+  "gui.trotting_wagons.tooltip.move": "Move to this seat",
+  "gui.trotting_wagons.tooltip.eject": "Remove the animal",
+  "gui.trotting_wagons.tooltip.animals_only": "Animals only: %s",
+  "gui.trotting_wagons.tooltip.occupied": "Occupied by %s",
+  "gui.trotting_wagons.tooltip.here": "You are sitting here",
+  "gui.trotting_wagons.tooltip.unknown": "Seat is occupied",
+  "gui.trotting_wagons.tooltip.lock": "Shift + click: close this seat to animals",
+  "gui.trotting_wagons.tooltip.unlock": "Shift + click: open this seat to animals",
+  "advancements.trotting_wagons.sinner.title": "Sinner",
+  "advancements.trotting_wagons.sinner.description": "Hitch two different kinds of animals to one wagon"
 }
