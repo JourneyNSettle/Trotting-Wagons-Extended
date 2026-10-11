@@ -1,0 +1,17 @@
+{
+  "gui.trotting_wagons.seat.driver": "Возница",
+  "gui.trotting_wagons.seat.player": "Пассажир",
+  "gui.trotting_wagons.seat.universal": "Универсальный",
+  "gui.trotting_wagons.seat.animal_large": "Большое животное",
+  "gui.trotting_wagons.seat.animal_small": "Животное",
+  "gui.trotting_wagons.tooltip.move": "Пересесть на это место",
+  "gui.trotting_wagons.tooltip.eject": "Высадить животное",
+  "gui.trotting_wagons.tooltip.animals_only": "Только для животных: %s",
+  "gui.trotting_wagons.tooltip.occupied": "Место занято: %s",
+  "gui.trotting_wagons.tooltip.here": "Вы уже сидите здесь",
+  "gui.trotting_wagons.tooltip.unknown": "Место занято",
+  "gui.trotting_wagons.tooltip.lock": "Shift+клик: закрыть место для животных",
+  "gui.trotting_wagons.tooltip.unlock": "Shift+клик: открыть место для животных",
+  "advancements.trotting_wagons.sinner.title": "Грешник",
+  "advancements.trotting_wagons.sinner.description": "Запрягите двух животных разных видов в одну повозку"
+}

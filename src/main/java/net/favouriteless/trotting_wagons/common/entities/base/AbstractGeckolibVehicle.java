@@ -126,18 +126,32 @@ public abstract class AbstractGeckolibVehicle extends Entity implements GeoEntit
 
     @Override
     protected void positionRider(Entity passenger, MoveFunction callback) {
-        Vec3 local = riders[getPassengerIndex(passenger)];
+        Vec3 local = getRiderOffset(passenger);
+        if(local == null)
+            return;
 
+        Vec3 world = offsetToWorld(local, true);
+        callback.accept(passenger, world.x, world.y, world.z);
+    }
+
+    protected Vec3 getRiderOffset(Entity passenger) {
+        int index = getPassengerIndex(passenger);
+        if(index < 0 || index >= riders.length)
+            return null;
+        return riders[index];
+    }
+
+    protected Vec3 offsetToWorld(Vec3 local, boolean sitOffset) {
         Vec3 mid = new Vec3(0, 0, getXRot() < 0 ? wheelLength : -wheelLength); // Pivot point is different for positive vs negative rotation.
 
         local = local.subtract(mid);
         local = rotateX(local, getXRot());
         local = local.add(mid);
-
         local = rotateY(local, getYRot());
-        local = local.subtract(0, 0.7D, 0); // Offset player positions because the sit anim makes them float.
+        if(sitOffset)
+            local = local.subtract(0, 0.7D, 0); // Offset player positions because the sit anim makes them float.
 
-        callback.accept(passenger, getX() + local.x, getY() + local.y, getZ() + local.z);
+        return new Vec3(getX() + local.x, getY() + local.y, getZ() + local.z);
     }
 
     protected Vec3 rotateY(Vec3 pos, float angle) {

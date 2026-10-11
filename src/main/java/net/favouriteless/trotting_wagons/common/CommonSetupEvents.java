@@ -5,7 +5,14 @@ import net.favouriteless.trotting_wagons.common.entities.base.AbstractInventoryW
 import net.favouriteless.trotting_wagons.common.init.TWEntityTypes;
 import net.favouriteless.trotting_wagons.common.init.TWItems;
 import net.favouriteless.trotting_wagons.common.items.WagonItem;
+import net.favouriteless.trotting_wagons.common.network.packets.EjectSeatPayload;
+import net.favouriteless.trotting_wagons.common.network.packets.HitchAnimalPayload;
+import net.favouriteless.trotting_wagons.common.network.packets.MoveAnimalPayload;
+import net.favouriteless.trotting_wagons.common.network.packets.OpenWagonMenuPayload;
+import net.favouriteless.trotting_wagons.common.network.packets.SelectSeatPayload;
 import net.favouriteless.trotting_wagons.common.network.packets.SteeringPayload;
+import net.favouriteless.trotting_wagons.common.network.packets.SyncSeatsPayload;
+import net.favouriteless.trotting_wagons.common.network.packets.ToggleSeatLockPayload;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.DyeColor;
@@ -44,5 +51,12 @@ public class CommonSetupEvents {
     public static void onRegisterPayloadHandlers(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar("1");
         registrar.playToServer(SteeringPayload.TYPE, SteeringPayload.CODEC, SteeringPayload::handle);
+        registrar.playToServer(HitchAnimalPayload.TYPE, HitchAnimalPayload.CODEC, HitchAnimalPayload::handle);
+        registrar.playToServer(OpenWagonMenuPayload.TYPE, OpenWagonMenuPayload.CODEC, OpenWagonMenuPayload::handle);
+        registrar.playToServer(SelectSeatPayload.TYPE, SelectSeatPayload.CODEC, SelectSeatPayload::handle);
+        registrar.playToServer(EjectSeatPayload.TYPE, EjectSeatPayload.CODEC, EjectSeatPayload::handle);
+        registrar.playToServer(MoveAnimalPayload.TYPE, MoveAnimalPayload.CODEC, MoveAnimalPayload::handle);
+        registrar.playToServer(ToggleSeatLockPayload.TYPE, ToggleSeatLockPayload.CODEC, ToggleSeatLockPayload::handle);
+        registrar.playToClient(SyncSeatsPayload.TYPE, SyncSeatsPayload.CODEC, SyncSeatsPayload::handle);
     }
 }

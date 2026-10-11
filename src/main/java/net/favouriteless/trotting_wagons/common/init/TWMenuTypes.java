@@ -1,6 +1,7 @@
 package net.favouriteless.trotting_wagons.common.init;
 
 import net.favouriteless.trotting_wagons.TrottingWagons;
+import net.favouriteless.trotting_wagons.common.menus.ArmoredMenu;
 import net.favouriteless.trotting_wagons.common.menus.ConestogaMenu;
 import net.favouriteless.trotting_wagons.common.menus.RoyalMenu;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -16,5 +17,6 @@ public class TWMenuTypes {
 
     public static final DeferredHolder<MenuType<?>, MenuType<ConestogaMenu>> CONESTOGA = REGISTRY.register("conestoga_wagon", () -> IMenuTypeExtension.create(ConestogaMenu::new));
     public static final DeferredHolder<MenuType<?>, MenuType<RoyalMenu>> ROYAL = REGISTRY.register("royal_wagon", () -> IMenuTypeExtension.create(RoyalMenu::new));
+    public static final DeferredHolder<MenuType<?>, MenuType<ArmoredMenu>> ARMORED = REGISTRY.register("armored_wagon", () -> IMenuTypeExtension.create(ArmoredMenu::new));
 
 }

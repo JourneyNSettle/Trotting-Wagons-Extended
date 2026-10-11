@@ -3,6 +3,7 @@ package net.favouriteless.trotting_wagons.client;
 import net.favouriteless.trotting_wagons.TrottingWagons;
 import net.favouriteless.trotting_wagons.client.render.WagonItemRenderer;
 import net.favouriteless.trotting_wagons.client.render.entity.WagonRenderer;
+import net.favouriteless.trotting_wagons.client.screens.ArmoredScreen;
 import net.favouriteless.trotting_wagons.client.screens.ConestogaScreen;
 import net.favouriteless.trotting_wagons.client.screens.RoyalScreen;
 import net.favouriteless.trotting_wagons.common.entities.base.AbstractWagon;
@@ -15,6 +16,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
+import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.client.extensions.common.IClientItemExtensions;
 import net.neoforged.neoforge.client.extensions.common.RegisterClientExtensionsEvent;
@@ -35,6 +37,12 @@ public class ClientSetupEvents {
     public static void onRegisterMenuScreens(RegisterMenuScreensEvent event) {
         event.register(TWMenuTypes.CONESTOGA.get(), ConestogaScreen::new);
         event.register(TWMenuTypes.ROYAL.get(), RoyalScreen::new);
+        event.register(TWMenuTypes.ARMORED.get(), ArmoredScreen::new);
+    }
+
+    @SubscribeEvent
+    public static void onRegisterKeys(RegisterKeyMappingsEvent event) {
+        event.register(TWClientEvents.HITCH_KEY);
     }
 
     @SubscribeEvent

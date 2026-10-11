@@ -10,9 +10,19 @@ public class ConestogaScreen extends AbstractWagonScreen<ConestogaMenu> {
     public ConestogaScreen(ConestogaMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title, TrottingWagons.id("textures/gui/conestoga_wagon.png"), 512, 512);
         this.imageWidth = 320;
-        this.imageHeight = 222;
+        this.imageHeight = 267;
         this.inventoryLabelX = 80;
-        this.inventoryLabelY = 127;
+        this.inventoryLabelY = 172;
+    }
+
+    @Override
+    protected int seatBarY() {
+        return 125;
+    }
+
+    @Override
+    protected int inventoryArtY() {
+        return 139;
     }
 
 }
