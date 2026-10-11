@@ -1,6 +1,8 @@
 package net.favouriteless.trotting_wagons.common.menus;
 
 import net.favouriteless.trotting_wagons.common.entities.base.AbstractInventoryWagon;
+import net.favouriteless.trotting_wagons.common.entities.base.AbstractWagon;
+import net.favouriteless.trotting_wagons.common.init.TWItems;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -13,17 +15,24 @@ import net.neoforged.neoforge.items.SlotItemHandler;
 public abstract class AbstractWagonMenu extends AbstractContainerMenu {
 
     private final AbstractInventoryWagon wagon;
+    private final int cargoSlots;
+    private final int wheelStart;
 
     public AbstractWagonMenu(MenuType<? extends AbstractWagonMenu> type, int id, Inventory inventory, AbstractInventoryWagon wagon,
-                             int perRow, int xSlots, int xInv, int yInv) {
+                             int perRow, int xSlots, int xInv, int yInv, int wheelTop) {
         super(type, id);
         this.wagon = wagon;
+        this.cargoSlots = wagon.getItems().getSlots();
 
-        for(int y = 0; y < wagon.getItems().getSlots() / perRow; y++) {
+        for(int y = 0; y < cargoSlots / perRow; y++) {
             for(int x = 0; x < perRow; x++) {
                 addSlot(new SlotItemHandler(wagon.getItems(), x + y*perRow, xSlots + x*18, 18 + y*18));
             }
         }
+
+        this.wheelStart = slots.size();
+        for(int i = 0; i < AbstractWagon.WHEEL_COUNT; i++)
+            addSlot(new WheelSlot(wagon.getWheels(), i, WagonLayout.wheelX(i), WagonLayout.wheelY(wheelTop, i)));
 
         for(int x = 0; x < 9; x++) {
             addSlot(new Slot(inventory, x, xInv + x*18, yInv + 58));
@@ -45,13 +54,15 @@ public abstract class AbstractWagonMenu extends AbstractContainerMenu {
             ItemStack item = slot.getItem();
             copy = item.copy();
 
-            int size = wagon.getItems().getSlots();
-            if(index < size) { // If item is in wagon, move to player
-                if(!moveItemStackTo(item, size, slots.size(), false))
+            int wheelEnd = wheelStart + AbstractWagon.WHEEL_COUNT;
+            if(index < wheelEnd) {
+                if(!moveItemStackTo(item, wheelEnd, slots.size(), false))
                     return ItemStack.EMPTY;
-            } else { // If not, move to wagon
-                if(!moveItemStackTo(item, 0, size, false))
+            } else if(item.is(TWItems.WHEEL.get())) {
+                if(!moveItemStackTo(item, wheelStart, wheelEnd, false))
                     return ItemStack.EMPTY;
+            } else if(!moveItemStackTo(item, 0, cargoSlots, false)) {
+                return ItemStack.EMPTY;
             }
 
             if(item.isEmpty())

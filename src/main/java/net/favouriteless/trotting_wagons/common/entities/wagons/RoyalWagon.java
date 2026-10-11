@@ -30,6 +30,16 @@ public class RoyalWagon extends AbstractInventoryWagon {
     }
 
     @Override
+    protected double tongueLength() {
+        return 64.12D / 16D;
+    }
+
+    @Override
+    protected double tongueHeight() {
+        return 10.5D / 16D;
+    }
+
+    @Override
     public AbstractContainerMenu createMenu(int id, Inventory inventory, Player player) {
         return new RoyalMenu(id, inventory, this);
     }

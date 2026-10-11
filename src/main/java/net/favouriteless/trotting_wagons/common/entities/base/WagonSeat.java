@@ -9,7 +9,8 @@ public record WagonSeat(Vec3 position, Kind kind) {
         PLAYER,
         ANIMAL,
         ANIMALBIG,
-        UNIVERSAL
+        UNIVERSAL,
+        DRAFT
     }
 
     public boolean acceptsPlayers() {

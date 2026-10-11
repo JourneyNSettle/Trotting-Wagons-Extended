@@ -6,10 +6,12 @@ import net.favouriteless.trotting_wagons.client.TWClient;
 import net.favouriteless.trotting_wagons.common.init.TWItems;
 import net.favouriteless.trotting_wagons.common.util.LevelUtils;
 import net.minecraft.advancements.AdvancementHolder;
+import net.minecraft.core.NonNullList;
 import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.favouriteless.trotting_wagons.common.network.packets.SyncSeatsPayload;
+import net.minecraft.network.chat.Component;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -24,6 +26,8 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.EntityTypeTags;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.util.Mth;
+import net.minecraft.world.ContainerHelper;
+import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
@@ -40,6 +44,7 @@ import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.items.ItemStackHandler;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.Comparator;
@@ -53,8 +58,16 @@ import java.util.UUID;
 public abstract class AbstractWagon extends AbstractGeckolibVehicle {
 
     private static final Random RANDOM = new Random();
+    public static final int WHEEL_COUNT = 4;
+    private static final float WHEEL_SAG = 14F;
+    private static final float FRONT_SAG = 10F;
+    private static final double WHEEL_SINK = 0.45D;
+
     private static final EntityDataAccessor<Float> DATA_ID_HEALTH = SynchedEntityData.defineId(AbstractWagon.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<OptionalInt> DATA_ID_COLOR = SynchedEntityData.defineId(AbstractWagon.class, EntityDataSerializers.OPTIONAL_UNSIGNED_INT);
+    private static final EntityDataAccessor<Byte> DATA_WHEELS = SynchedEntityData.defineId(AbstractWagon.class, EntityDataSerializers.BYTE);
+    private static final EntityDataAccessor<Integer> DATA_HITCH_LEFT = SynchedEntityData.defineId(AbstractWagon.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Integer> DATA_HITCH_RIGHT = SynchedEntityData.defineId(AbstractWagon.class, EntityDataSerializers.INT);
 
     public static final double GRAVITY = 0.04D;
     public static final int SPEED_LEVELS = 3;
@@ -87,6 +100,24 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
     private final Map<UUID, Integer> savedSeatByUuid = new HashMap<>();
     private int pendingSeat = -1;
 
+    private final NonNullList<ItemStack> wheels = NonNullList.withSize(WHEEL_COUNT, ItemStack.EMPTY);
+    private final ItemStackHandler wheelHandler = new ItemStackHandler(wheels) {
+        @Override
+        public boolean isItemValid(int slot, ItemStack stack) {
+            return stack.is(TWItems.WHEEL.get());
+        }
+
+        @Override
+        public int getSlotLimit(int slot) {
+            return 1;
+        }
+
+        @Override
+        protected void onContentsChanged(int slot) {
+            updateWheelMask();
+        }
+    };
+
     public AbstractWagon(EntityType<? extends AbstractWagon> type, Level level, double wheelWidth, double wheelLength, WagonSeat[] seats,
                          double speed, double acceleration, double turnRate, int maxHealth, double horseX, double horseY, float shaftAngle) {
         super(type, level, wheelWidth, wheelLength, seatPositions(seats));
@@ -106,6 +137,11 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
             seatIds[i] = -1;
 
         setHealth(maxHealth);
+        if(!level.isClientSide) {
+            ItemStack wheel = new ItemStack(TWItems.WHEEL.get());
+            for(int i = 0; i < WHEEL_COUNT; i++)
+                wheelHandler.setStackInSlot(i, wheel.copy());
+        }
     }
 
     private static Vec3[] seatPositions(WagonSeat[] seats) {
@@ -160,10 +196,12 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         final Mob leftHorse = getHorse(Side.LEFT);
         final Mob rightHorse = getHorse(Side.RIGHT);
 
-        if(!isVehicle() || !(this.getControllingPassenger() instanceof Player) || leftHorse == null || rightHorse == null) {
+        if(!isVehicle() || !(this.getControllingPassenger() instanceof Player) || leftHorse == null || rightHorse == null || !hasAllWheels()) {
             speedLevel = 0;
             setSteeringImpulse(0);
         }
+        if(!hasAllWheels())
+            currentSpeed = 0;
 
         handleSteering();
         handleAcceleration();
@@ -399,6 +437,7 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         setHorse(null, Side.RIGHT);
 
         ejectPassengers();
+        Containers.dropContents(level(), blockPosition(), wheels);
         discard();
 
         if(!level().getGameRules().getBoolean(GameRules.RULE_DOENTITYDROPS))
@@ -453,6 +492,9 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         DyeColor color = getDefaultColor();
         builder.define(DATA_ID_COLOR, color != null ? OptionalInt.of(color.getId()) : OptionalInt.empty());
         builder.define(DATA_ID_HEALTH, (float)0);
+        builder.define(DATA_WHEELS, (byte)0x0F);
+        builder.define(DATA_HITCH_LEFT, -1);
+        builder.define(DATA_HITCH_RIGHT, -1);
     }
 
     @Override
@@ -479,6 +521,12 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
                     savedSeatByUuid.put(seatTag.getUUID("id"), seatTag.getInt("seat"));
             }
         }
+        if(nbt.contains("Wheels", Tag.TAG_COMPOUND)) {
+            for(int i = 0; i < wheels.size(); i++)
+                wheels.set(i, ItemStack.EMPTY);
+            ContainerHelper.loadAllItems(nbt.getCompound("Wheels"), wheels, registryAccess());
+        }
+        updateWheelMask();
     }
 
     @Override
@@ -505,6 +553,9 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         for(int i = 0; i < seatLocked.length; i++)
             locks[i] = (byte)(seatLocked[i] ? 1 : 0);
         nbt.putByteArray("seatLocks", locks);
+        CompoundTag wheelsTag = new CompoundTag();
+        ContainerHelper.saveAllItems(wheelsTag, wheels, registryAccess());
+        nbt.put("Wheels", wheelsTag);
     }
 
     public void tryCycleSpeed(Player player) {
@@ -535,6 +586,7 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
 
         horses[side.ordinal()] = horse;
         horseUuids[side.ordinal()] = horse != null ? horse.getUUID() : null;
+        entityData.set(side == Side.LEFT ? DATA_HITCH_LEFT : DATA_HITCH_RIGHT, horse == null ? -1 : horse.getId());
     }
 
     private UUID getHorseUUID(Side side) {
@@ -551,6 +603,31 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
 
     public float getShaftAngle() {
         return shaftAngle;
+    }
+
+    public float tongueAngle(float bodyPitch, float bodyRoll, double drop) {
+        if(getWheelMask() == 0)
+            return 0;
+        if(getHitchEntityId(Side.LEFT) >= 0 || getHitchEntityId(Side.RIGHT) >= 0)
+            return shaftAngle * Mth.DEG_TO_RAD;
+        double pitch = Math.toRadians(bodyPitch);
+        double roll = Math.toRadians(bodyRoll);
+        double reach = tongueLength();
+        if(pitch > 0)
+            reach += 2D * getWheelLength();
+        else if(pitch < 0)
+            reach += 0.5D * getWheelLength();
+        double rest = tongueHeight() * Math.cos(roll) * Math.cos(pitch) - reach * Math.sin(pitch) - drop;
+        double sine = Mth.clamp(rest / tongueLength(), -1D, 1D);
+        return (float)-Math.asin(sine);
+    }
+
+    protected double tongueLength() {
+        return 57.12D / 16D;
+    }
+
+    protected double tongueHeight() {
+        return 7.5D / 16D;
     }
 
     public DyeColor getColor() {
@@ -633,7 +710,11 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
     }
 
     public static boolean isAllowedPuller(Entity entity) {
-        return ServerConfig.INSTANCE.allowedEntities.get().contains(entity.getType().builtInRegistryHolder().key().location().toString());
+        try {
+            return ServerConfig.INSTANCE.allowedEntities.get().contains(entity.getType().builtInRegistryHolder().key().location().toString());
+        } catch(IllegalStateException ignored) {
+            return true;
+        }
     }
 
     public static AbstractWagon findHitch(Entity entity) {
@@ -692,25 +773,207 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         return seatAccepts(index, animal);
     }
 
-    public boolean moveAnimal(Player player, int animalId, int to) {
-        if(player.getVehicle() != this || to < 0 || to >= seats.length)
+    public boolean canPlaceDraft(Entity animal, Side side) {
+        if(!(animal instanceof Mob) || animal instanceof Player || !isAllowedPuller(animal))
             return false;
-        int from = -1;
+        int occupied = getHitchEntityId(side);
+        if(occupied >= 0 && occupied != animal.getId())
+            return false;
+        AbstractWagon other = findHitch(animal);
+        return other == null || other == this;
+    }
+
+    public boolean moveAnimal(Player player, int animalId, int to, boolean draft) {
+        if(player.getVehicle() != this)
+            return false;
+        int fromSeat = -1;
         LivingEntity animal = null;
         for(int i = 0; i < seatEntities.length; i++) {
             if(seatEntities[i] != null && seatEntities[i].getId() == animalId) {
-                from = i;
+                fromSeat = i;
                 animal = seatEntities[i] instanceof LivingEntity living ? living : null;
             }
         }
-        if(animal == null || from == to || seatEntities[to] != null || !seatAccepts(to, animal))
+        Side fromSide = null;
+        if(hitchMatches(Side.LEFT, animalId))
+            fromSide = Side.LEFT;
+        else if(hitchMatches(Side.RIGHT, animalId))
+            fromSide = Side.RIGHT;
+        if(animal == null && fromSide != null && getHorse(fromSide) instanceof LivingEntity living)
+            animal = living;
+        if(!(animal instanceof Mob))
             return false;
-        seatEntities[from] = null;
-        seatIds[from] = -1;
-        seatEntities[to] = animal;
-        seatIds[to] = animal.getId();
-        syncSeats();
+        Mob mob = (Mob)animal;
+        if(fromSeat < 0 && fromSide == null)
+            return false;
+
+        if(draft) {
+            if(to != 0 && to != 1)
+                return false;
+            Side target = to == 0 ? Side.LEFT : Side.RIGHT;
+            if(fromSide == target || !canPlaceDraft(mob, target))
+                return false;
+            if(mob.getVehicle() != null)
+                mob.stopRiding();
+            if(fromSide != null)
+                setHorse(null, fromSide);
+            hitchHorse(mob, target);
+            if(player instanceof ServerPlayer serverPlayer)
+                awardSinner(serverPlayer);
+            return true;
+        }
+
+        if(fromSeat == to || !canPlaceAnimal(to, mob))
+            return false;
+        if(fromSide != null)
+            setHorse(null, fromSide);
+        if(fromSeat >= 0) {
+            seatEntities[fromSeat] = null;
+            seatIds[fromSeat] = -1;
+            seatEntities[to] = mob;
+            seatIds[to] = mob.getId();
+            syncSeats();
+            return true;
+        }
+        pendingSeat = to;
+        boolean seated = mob.startRiding(this);
+        pendingSeat = -1;
+        return seated;
+    }
+
+    public boolean ejectDraft(Player player, Side side) {
+        if(player.getVehicle() != this || getHorse(side) == null)
+            return false;
+        setHorse(null, side);
         return true;
+    }
+
+    public ItemStackHandler getWheels() {
+        return wheelHandler;
+    }
+
+    public int getWheelMask() {
+        return entityData.get(DATA_WHEELS) & 0x0F;
+    }
+
+    public boolean hasAllWheels() {
+        return getWheelMask() == 0x0F;
+    }
+
+    public WheelSet wheelSet() {
+        Item same = null;
+        boolean mismatch = false;
+        for(int i = 0; i < wheels.size(); i++) {
+            ItemStack stack = wheels.get(i);
+            if(stack.isEmpty())
+                return WheelSet.MISSING;
+            if(same == null)
+                same = stack.getItem();
+            else if(stack.getItem() != same)
+                mismatch = true;
+        }
+        return mismatch ? WheelSet.INCOMPATIBLE : WheelSet.REGULAR;
+    }
+
+    public WheelSag wheelSag() {
+        boolean fl = wheelOn(0);
+        boolean fr = wheelOn(1);
+        boolean rl = wheelOn(2);
+        boolean rr = wheelOn(3);
+        int count = (fl ? 1 : 0) + (fr ? 1 : 0) + (rl ? 1 : 0) + (rr ? 1 : 0);
+        if(count == 0)
+            return new WheelSag(0, 0, WHEEL_SINK);
+        if(count >= 3)
+            return WheelSag.NONE;
+
+        float half = WHEEL_SAG * 0.5F;
+        float pitch = 0;
+        float roll = 0;
+        if(!fl && !fr && rl && rr)
+            pitch = FRONT_SAG;
+        else if(fl && fr && !rl && !rr)
+            pitch = -WHEEL_SAG;
+        else if(!fl && fr && !rl && rr)
+            roll = -WHEEL_SAG;
+        else if(fl && !fr && rl && !rr)
+            roll = WHEEL_SAG;
+        else if(!fl && fr && rl && !rr) {
+            pitch = -WHEEL_SAG;
+            roll = WHEEL_SAG;
+        } else if(fl && !fr && !rl && rr) {
+            pitch = -WHEEL_SAG;
+            roll = -WHEEL_SAG;
+        } else if(fl) {
+            pitch = -half;
+            roll = half;
+        } else if(fr) {
+            pitch = -half;
+            roll = -half;
+        } else if(rl) {
+            pitch = half;
+            roll = half;
+        } else {
+            pitch = half;
+            roll = -half;
+        }
+
+        double drop = sagAnchor(pitch, roll, fl, fr, rl, rr);
+        if(pitch == 0 && roll != 0)
+            drop += 3D / 16D;
+        else if(count == 2 && pitch != 0 && roll != 0)
+            drop -= 6D / 16D;
+        else if(count == 1)
+            drop += 4D / 16D;
+        return new WheelSag(pitch, roll, drop);
+    }
+
+    @Override
+    protected Vec3 adjustLocalOffset(Vec3 local) {
+        WheelSag sag = wheelSag();
+        local = rotateZ(local, sag.roll());
+        local = rotateX(local, sag.pitch());
+        return local.subtract(0, sag.drop(), 0);
+    }
+
+    private boolean wheelOn(int index) {
+        return (getWheelMask() & (1 << index)) != 0;
+    }
+
+    private double sagAnchor(float pitch, float roll, boolean fl, boolean fr, boolean rl, boolean rr) {
+        double max = Double.NEGATIVE_INFINITY;
+        double width = getWheelWidth();
+        double length = getWheelLength();
+        if(fl)
+            max = Math.max(max, sagCornerY(-width, length, pitch, roll));
+        if(fr)
+            max = Math.max(max, sagCornerY(width, length, pitch, roll));
+        if(rl)
+            max = Math.max(max, sagCornerY(-width, -length, pitch, roll));
+        if(rr)
+            max = Math.max(max, sagCornerY(width, -length, pitch, roll));
+        return max == Double.NEGATIVE_INFINITY ? 0 : Math.max(0, max);
+    }
+
+    private double sagCornerY(double x, double z, float pitch, float roll) {
+        Vec3 turned = rotateX(rotateZ(x, 0, z, roll), pitch);
+        return turned.y;
+    }
+
+    public int getHitchEntityId(Side side) {
+        return entityData.get(side == Side.LEFT ? DATA_HITCH_LEFT : DATA_HITCH_RIGHT);
+    }
+
+    private boolean hitchMatches(Side side, int animalId) {
+        return animalId >= 0 && getHitchEntityId(side) == animalId;
+    }
+
+    private void updateWheelMask() {
+        int mask = 0;
+        for(int i = 0; i < wheels.size(); i++) {
+            if(!wheels.get(i).isEmpty())
+                mask |= 1 << i;
+        }
+        entityData.set(DATA_WHEELS, (byte)mask);
     }
 
     public boolean movePlayerToSeat(Player player, int seat) {
@@ -845,7 +1108,8 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
     private boolean seatAccepts(int index, Entity entity) {
         if(entity.getType().is(TrottingWagons.CANNOT_MOUNT_WAGON))
             return false;
-        if(!(entity instanceof Player) && findHitch(entity) != null)
+        AbstractWagon hitched = !(entity instanceof Player) ? findHitch(entity) : null;
+        if(hitched != null && hitched != this)
             return false;
         WagonSeat seat = seats[index];
         boolean player = entity instanceof Player;
@@ -856,6 +1120,7 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
             case DRIVER, PLAYER -> player;
             case ANIMAL, UNIVERSAL -> !player && !large || player && seat.kind() == WagonSeat.Kind.UNIVERSAL;
             case ANIMALBIG -> !player;
+            case DRAFT -> false;
         };
     }
 
@@ -915,8 +1180,28 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         PacketDistributor.sendToPlayersTrackingEntityAndSelf(this, seatPayload());
     }
 
-    private enum Side {
+    public enum Side {
         LEFT, RIGHT
+    }
+
+    public enum WheelSet {
+        REGULAR("gui.trotting_wagons.wheels.regular"),
+        MISSING("gui.trotting_wagons.wheels.missing"),
+        INCOMPATIBLE("gui.trotting_wagons.wheels.incompatible");
+
+        private final String key;
+
+        WheelSet(String key) {
+            this.key = key;
+        }
+
+        public Component label() {
+            return Component.translatable(key);
+        }
+    }
+
+    public record WheelSag(float pitch, float roll, double drop) {
+        public static final WheelSag NONE = new WheelSag(0, 0, 0);
     }
 
 }

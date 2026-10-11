@@ -147,6 +147,7 @@ public abstract class AbstractGeckolibVehicle extends Entity implements GeoEntit
         local = local.subtract(mid);
         local = rotateX(local, getXRot());
         local = local.add(mid);
+        local = adjustLocalOffset(local);
         local = rotateY(local, getYRot());
         if(sitOffset)
             local = local.subtract(0, 0.7D, 0); // Offset player positions because the sit anim makes them float.
@@ -158,8 +159,23 @@ public abstract class AbstractGeckolibVehicle extends Entity implements GeoEntit
         return rotateY(pos.x, pos.y, pos.z, angle);
     }
 
+    protected Vec3 adjustLocalOffset(Vec3 local) {
+        return local;
+    }
+
     protected Vec3 rotateX(Vec3 pos, float angle) {
         return rotateX(pos.x, pos.y, pos.z, angle);
+    }
+
+    protected Vec3 rotateZ(Vec3 pos, float angle) {
+        return rotateZ(pos.x, pos.y, pos.z, angle);
+    }
+
+    protected Vec3 rotateZ(double x, double y, double z, float angle) {
+        float a = angle * Mth.DEG_TO_RAD;
+        float sin = Mth.sin(a);
+        float cos = Mth.cos(a);
+        return new Vec3(x * cos - y * sin, x * sin + y * cos, z);
     }
 
     protected Vec3 rotateY(double x, double y, double z, float angle) {
