@@ -196,7 +196,7 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         final Mob leftHorse = getHorse(Side.LEFT);
         final Mob rightHorse = getHorse(Side.RIGHT);
 
-        if(!isVehicle() || !(this.getControllingPassenger() instanceof Player) || !hasPullers() || !hasAllWheels()) {
+        if(!isVehicle() || !(this.getControllingPassenger() instanceof Player) || !hasPullers()) {
             speedLevel = 0;
             setSteeringImpulse(0);
         }
@@ -239,7 +239,7 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
     }
 
     private void handleSteering() {
-        float speedPercent = (float)(currentSpeed / (SPEED_LEVELS * speed));
+        float speedPercent = Math.abs(currentSpeed) < 1.0E-4 ? 0.5F : (float)(currentSpeed / (SPEED_LEVELS * speed));
         float steer = -getSteeringImpulse() * speedPercent * turnRate;
 
         if(steer != 0) {

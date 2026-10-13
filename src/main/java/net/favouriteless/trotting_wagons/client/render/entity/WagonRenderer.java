@@ -10,12 +10,14 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import software.bernie.geckolib.cache.object.BakedGeoModel;
+import software.bernie.geckolib.cache.object.GeoBone;
 import software.bernie.geckolib.renderer.GeoEntityRenderer;
 
 public class WagonRenderer<T extends AbstractWagon> extends GeoEntityRenderer<T> {
 
     public WagonRenderer(Context renderManager, ResourceLocation id) {
         super(renderManager, new WagonModel<>(id));
+        addRenderLayer(new WagonBannerLayer<>(this));
     }
 
     @Override
@@ -41,6 +43,13 @@ public class WagonRenderer<T extends AbstractWagon> extends GeoEntityRenderer<T>
         pose.translate(mid.x, 0, mid.z);
 
         super.preRender(pose, wagon, model, bufferSource, buffer, isReRender, partialTick, packedLight, packedOverlay, colour);
+    }
+
+    @Override
+    public void renderCubesOfBone(PoseStack poseStack, GeoBone bone, VertexConsumer buffer, int packedLight, int packedOverlay, int colour) {
+        if(bone.getName().equals("banner"))
+            return;
+        super.renderCubesOfBone(poseStack, bone, buffer, packedLight, packedOverlay, colour);
     }
 
 }

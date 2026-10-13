@@ -20,13 +20,18 @@ public abstract class AbstractWagonMenu extends AbstractContainerMenu {
 
     public AbstractWagonMenu(MenuType<? extends AbstractWagonMenu> type, int id, Inventory inventory, AbstractInventoryWagon wagon,
                              int perRow, int xSlots, int xInv, int yInv, int wheelTop) {
+        this(type, id, inventory, wagon, perRow, xSlots, xInv, yInv, wheelTop, 18);
+    }
+
+    public AbstractWagonMenu(MenuType<? extends AbstractWagonMenu> type, int id, Inventory inventory, AbstractInventoryWagon wagon,
+                             int perRow, int xSlots, int xInv, int yInv, int wheelTop, int cargoY) {
         super(type, id);
         this.wagon = wagon;
         this.cargoSlots = wagon.getItems().getSlots();
 
         for(int y = 0; y < cargoSlots / perRow; y++) {
             for(int x = 0; x < perRow; x++) {
-                addSlot(new SlotItemHandler(wagon.getItems(), x + y*perRow, xSlots + x*18, 18 + y*18));
+                addSlot(new SlotItemHandler(wagon.getItems(), x + y*perRow, xSlots + x*18, cargoY + y*18));
             }
         }
 

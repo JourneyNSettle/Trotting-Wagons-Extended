@@ -1,12 +1,20 @@
 package net.favouriteless.trotting_wagons.client.screens;
 
 import net.favouriteless.trotting_wagons.common.entities.base.AbstractWagon;
+import net.favouriteless.trotting_wagons.common.init.TWItems;
+import net.favouriteless.trotting_wagons.common.menus.BannerSlot;
+import net.favouriteless.trotting_wagons.common.menus.DebugMenu;
+import net.favouriteless.trotting_wagons.common.menus.LanternSlot;
 import net.favouriteless.trotting_wagons.common.menus.WheelSlot;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.Slot;
+import net.neoforged.neoforge.items.SlotItemHandler;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.Blocks;
 
 final class WagonGui {
 
@@ -35,6 +43,10 @@ final class WagonGui {
     }
 
     static void drawWheelCaption(GuiGraphics graphics, Font font, AbstractContainerMenu menu, AbstractWagon wagon, int left, int top) {
+        drawWheelCaption(graphics, font, menu, wagon, left, top, 0);
+    }
+
+    static void drawWheelCaption(GuiGraphics graphics, Font font, AbstractContainerMenu menu, AbstractWagon wagon, int left, int top, int extraY) {
         int minX = Integer.MAX_VALUE;
         int maxY = Integer.MIN_VALUE;
         for(Slot slot : menu.slots) {
@@ -46,11 +58,34 @@ final class WagonGui {
         if(minX == Integer.MAX_VALUE || wagon == null)
             return;
         int center = left + minX + 18;
-        int y = top + maxY + 19;
+        int y = top + maxY + 19 + extraY;
         Component title = Component.translatable("gui.trotting_wagons.wheels");
         Component state = wagon.wheelSet().label();
         graphics.drawString(font, title, center - font.width(title) / 2, y, 4210752, false);
         graphics.drawString(font, state, center - font.width(state) / 2, y + 10, 4210752, false);
+    }
+
+    static void drawEmptySlotIcons(GuiGraphics graphics, int left, int top, AbstractContainerMenu menu) {
+        for(Slot slot : menu.slots) {
+            if(slot.hasItem())
+                continue;
+            ItemStack icon = emptyIcon(menu, slot);
+            if(icon.isEmpty())
+                continue;
+            GraySlotIcons.draw(graphics, icon, left + slot.x, top + slot.y);
+        }
+    }
+
+    private static ItemStack emptyIcon(AbstractContainerMenu menu, Slot slot) {
+        if(slot instanceof WheelSlot)
+            return new ItemStack(TWItems.WHEEL.get());
+        if(slot instanceof BannerSlot)
+            return new ItemStack(Blocks.WHITE_BANNER);
+        if(slot instanceof LanternSlot)
+            return new ItemStack(Items.LANTERN);
+        if(menu instanceof DebugMenu && slot instanceof SlotItemHandler && slot.getSlotIndex() < 4)
+            return new ItemStack(Items.PUMPKIN);
+        return ItemStack.EMPTY;
     }
 
 }
