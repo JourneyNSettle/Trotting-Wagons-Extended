@@ -1,4 +1,6 @@
 {
+  "item.trotting_wagons.debug_wagon": "Дебаг-вагон",
+  "entity.trotting_wagons.debug_wagon": "Дебаг-вагон",
   "gui.trotting_wagons.seat.driver": "Возница",
   "gui.trotting_wagons.seat.player": "Пассажир",
   "gui.trotting_wagons.seat.universal": "Универсальный",
@@ -11,6 +13,7 @@
   "gui.trotting_wagons.wheels.incompatible": "Несовместимые",
   "gui.trotting_wagons.draft.left": "Л",
   "gui.trotting_wagons.draft.right": "П",
+  "gui.trotting_wagons.draft.middle": "M",
   "gui.trotting_wagons.tooltip.move": "Пересесть на это место",
   "gui.trotting_wagons.tooltip.eject": "Высадить животное",
   "gui.trotting_wagons.tooltip.unhitch": "Распрячь",

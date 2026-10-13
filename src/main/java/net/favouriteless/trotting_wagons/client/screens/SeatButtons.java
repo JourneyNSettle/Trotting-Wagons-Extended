@@ -29,7 +29,8 @@ public final class SeatButtons {
             buttons.add(button);
         }
         buttons.add(draftButton(wagon, AbstractWagon.Side.LEFT, left, draftY));
-        buttons.add(draftButton(wagon, AbstractWagon.Side.RIGHT, left, draftY));
+        if(wagon.hitchSlots() > 1)
+            buttons.add(draftButton(wagon, AbstractWagon.Side.RIGHT, left, draftY));
         SeatButton.bind(buttons);
         return buttons;
     }

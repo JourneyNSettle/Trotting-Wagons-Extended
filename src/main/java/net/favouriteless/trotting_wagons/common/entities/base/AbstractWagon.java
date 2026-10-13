@@ -196,7 +196,7 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         final Mob leftHorse = getHorse(Side.LEFT);
         final Mob rightHorse = getHorse(Side.RIGHT);
 
-        if(!isVehicle() || !(this.getControllingPassenger() instanceof Player) || leftHorse == null || rightHorse == null || !hasAllWheels()) {
+        if(!isVehicle() || !(this.getControllingPassenger() instanceof Player) || !hasPullers() || !hasAllWheels()) {
             speedLevel = 0;
             setSteeringImpulse(0);
         }
@@ -248,15 +248,17 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
 
             Vec3 leftDisplace = collideSteering(Side.LEFT, steer);
             Vec3 rightDisplace = collideSteering(Side.RIGHT, steer);
+            boolean leftBlocked = leftHorse != null && leftDisplace.equals(Vec3.ZERO);
+            boolean rightBlocked = rightHorse != null && rightDisplace.equals(Vec3.ZERO);
 
-            // If either horse is going to hit a block by steering, don't allow it.
-             if(!leftDisplace.equals(Vec3.ZERO) && !rightDisplace.equals(Vec3.ZERO)) {
+            if((leftHorse != null || rightHorse != null) && !leftBlocked && !rightBlocked) {
                 setYRot(Mth.wrapDegrees(getYRot() + steer));
 
                 float yRot = getYRot();
-
-                setHorsePos(leftHorse, leftHorse.position().add(leftDisplace), yRot);
-                setHorsePos(rightHorse, rightHorse.position().add(rightDisplace), yRot);
+                if(leftHorse != null)
+                    setHorsePos(leftHorse, leftHorse.position().add(leftDisplace), yRot);
+                if(rightHorse != null)
+                    setHorsePos(rightHorse, rightHorse.position().add(rightDisplace), yRot);
             }
         }
     }
@@ -286,7 +288,7 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         if(horse == null)
             return Vec3.ZERO;
 
-        Vec3 desired = rotateY(new Vec3(side == Side.LEFT ? -horseX : horseX, 0, horseY), getYRot() + angle); // Local post-rotation position
+        Vec3 desired = rotateY(hitchOffset(side), getYRot() + angle);
         Vec3 local = horse.position().subtract(position()).multiply(1, 0, 1); // Local starting position.
 
         Vec3 displacement = desired.subtract(local);
@@ -365,7 +367,7 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
             animal.stopRiding();
         if(getHorse(Side.LEFT) == null)
             hitchHorse(animal, Side.LEFT);
-        else
+        else if(hitchSlots() > 1)
             hitchHorse(animal, Side.RIGHT);
         return true;
     }
@@ -598,7 +600,7 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
     }
 
     private Vec3 getHorsePos(Side side) {
-        return position().add(rotateY(new Vec3(side == Side.LEFT ? -horseX : horseX, 0, horseY), getYRot()));
+        return position().add(rotateY(hitchOffset(side), getYRot()));
     }
 
     public float getShaftAngle() {
@@ -608,18 +610,18 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
     public float tongueAngle(float bodyPitch, float bodyRoll, double drop) {
         if(getWheelMask() == 0)
             return 0;
-        if(getHitchEntityId(Side.LEFT) >= 0 || getHitchEntityId(Side.RIGHT) >= 0)
-            return shaftAngle * Mth.DEG_TO_RAD;
         double pitch = Math.toRadians(bodyPitch);
         double roll = Math.toRadians(bodyRoll);
+        boolean hitched = getHitchEntityId(Side.LEFT) >= 0 || getHitchEntityId(Side.RIGHT) >= 0;
         double reach = tongueLength();
-        if(pitch > 0)
-            reach += 2D * getWheelLength();
-        else if(pitch < 0)
-            reach += 0.5D * getWheelLength();
+        if(!hitched && pitch > 0)
+            reach += 3D * getWheelLength();
+        else if(!hitched && pitch < 0)
+            reach += 1.25D * getWheelLength();
         double rest = tongueHeight() * Math.cos(roll) * Math.cos(pitch) - reach * Math.sin(pitch) - drop;
-        double sine = Mth.clamp(rest / tongueLength(), -1D, 1D);
-        return (float)-Math.asin(sine);
+        double target = hitched ? 0.85D : 0;
+        double sine = Mth.clamp((target - rest) / tongueLength(), -1D, 1D);
+        return (float)Math.asin(sine);
     }
 
     protected double tongueLength() {
@@ -773,7 +775,13 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         return seatAccepts(index, animal);
     }
 
+    public int hitchSlots() {
+        return 2;
+    }
+
     public boolean canPlaceDraft(Entity animal, Side side) {
+        if(side == Side.RIGHT && hitchSlots() < 2)
+            return false;
         if(!(animal instanceof Mob) || animal instanceof Player || !isAllowedPuller(animal))
             return false;
         int occupied = getHitchEntityId(side);
@@ -808,7 +816,7 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
             return false;
 
         if(draft) {
-            if(to != 0 && to != 1)
+            if(to < 0 || to >= hitchSlots())
                 return false;
             Side target = to == 0 ? Side.LEFT : Side.RIGHT;
             if(fromSide == target || !canPlaceDraft(mob, target))
@@ -886,7 +894,7 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         if(count >= 3)
             return WheelSag.NONE;
 
-        float half = WHEEL_SAG * 0.5F;
+        float half = WHEEL_SAG * 0.25F;
         float pitch = 0;
         float roll = 0;
         if(!fl && !fr && rl && rr)
@@ -921,9 +929,9 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         if(pitch == 0 && roll != 0)
             drop += 3D / 16D;
         else if(count == 2 && pitch != 0 && roll != 0)
-            drop -= 6D / 16D;
+            drop -= 12D / 16D;
         else if(count == 1)
-            drop += 4D / 16D;
+            drop += 2D / 16D;
         return new WheelSag(pitch, roll, drop);
     }
 
@@ -1145,8 +1153,20 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         return findNearestSeat(mob) >= 0;
     }
 
+    private boolean hasPullers() {
+        if(getHorse(Side.LEFT) == null)
+            return false;
+        return hitchSlots() < 2 || getHorse(Side.RIGHT) != null;
+    }
+
+    protected Vec3 hitchOffset(Side side) {
+        return new Vec3(side == Side.LEFT ? -horseX : horseX, 0, horseY);
+    }
+
     private boolean hasFreeHitch() {
-        return getHorse(Side.LEFT) == null || getHorse(Side.RIGHT) == null;
+        if(getHorse(Side.LEFT) == null)
+            return true;
+        return hitchSlots() > 1 && getHorse(Side.RIGHT) == null;
     }
 
     private boolean isNearTongue(Entity entity) {

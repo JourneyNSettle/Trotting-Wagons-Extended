@@ -5,6 +5,7 @@ import net.favouriteless.trotting_wagons.client.render.WagonItemRenderer;
 import net.favouriteless.trotting_wagons.client.render.entity.WagonRenderer;
 import net.favouriteless.trotting_wagons.client.screens.ArmoredScreen;
 import net.favouriteless.trotting_wagons.client.screens.ConestogaScreen;
+import net.favouriteless.trotting_wagons.client.screens.DebugScreen;
 import net.favouriteless.trotting_wagons.client.screens.RoyalScreen;
 import net.favouriteless.trotting_wagons.common.entities.base.AbstractWagon;
 import net.favouriteless.trotting_wagons.common.init.TWEntityTypes;
@@ -31,6 +32,7 @@ public class ClientSetupEvents {
         event.registerItem(wagonExtension(TWEntityTypes.ARMORED_WAGON.get()), TWItems.ARMORED_WAGON.get());
         event.registerItem(wagonExtension(TWEntityTypes.CONESTOGA_WAGON.get()), TWItems.CONESTOGA_WAGON.get());
         event.registerItem(wagonExtension(TWEntityTypes.ROYAL_WAGON.get()), TWItems.ROYAL_WAGON.get());
+        event.registerItem(wagonExtension(TWEntityTypes.DEBUG_WAGON.get()), TWItems.DEBUG_WAGON.get());
     }
 
     @SubscribeEvent
@@ -38,6 +40,7 @@ public class ClientSetupEvents {
         event.register(TWMenuTypes.CONESTOGA.get(), ConestogaScreen::new);
         event.register(TWMenuTypes.ROYAL.get(), RoyalScreen::new);
         event.register(TWMenuTypes.ARMORED.get(), ArmoredScreen::new);
+        event.register(TWMenuTypes.DEBUG.get(), DebugScreen::new);
     }
 
     @SubscribeEvent
@@ -50,6 +53,7 @@ public class ClientSetupEvents {
         event.registerEntityRenderer(TWEntityTypes.CONESTOGA_WAGON.get(), context -> new WagonRenderer<>(context, TrottingWagons.id("conestoga_wagon")));
         event.registerEntityRenderer(TWEntityTypes.ROYAL_WAGON.get(), context -> new WagonRenderer<>(context, TrottingWagons.id("royal_wagon")));
         event.registerEntityRenderer(TWEntityTypes.ARMORED_WAGON.get(), context -> new WagonRenderer<>(context, TrottingWagons.id("armored_wagon")));
+        event.registerEntityRenderer(TWEntityTypes.DEBUG_WAGON.get(), context -> new WagonRenderer<>(context, TrottingWagons.id("debug_wagon")));
     }
 
     public static IClientItemExtensions wagonExtension(EntityType<? extends AbstractWagon> entityType) {

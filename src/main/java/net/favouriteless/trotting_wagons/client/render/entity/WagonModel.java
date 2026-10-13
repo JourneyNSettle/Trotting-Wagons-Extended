@@ -3,6 +3,7 @@ package net.favouriteless.trotting_wagons.client.render.entity;
 import net.favouriteless.trotting_wagons.TrottingWagons;
 import net.favouriteless.trotting_wagons.common.entities.base.AbstractWagon;
 import net.favouriteless.trotting_wagons.common.entities.wagons.ConestogaWagon;
+import net.favouriteless.trotting_wagons.common.entities.wagons.DebugWagon;
 import net.favouriteless.trotting_wagons.common.entities.wagons.RoyalWagon;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.DyeColor;
@@ -22,6 +23,8 @@ public class WagonModel<T extends AbstractWagon> extends DefaultedEntityGeoModel
 
     @Override
     public ResourceLocation getTextureResource(T wagon) {
+        if(wagon instanceof DebugWagon)
+            return TrottingWagons.id(texturePathPrefix + "none.png");
         DyeColor color = wagon.getColor();
         return TrottingWagons.id(texturePathPrefix + (color != null ? color.getName() : "none") + ".png");
     }
@@ -41,11 +44,14 @@ public class WagonModel<T extends AbstractWagon> extends DefaultedEntityGeoModel
         AbstractWagon.WheelSag sag = wagon.wheelSag();
         float bodyPitch = wagon.getXRot(partialTick) + sag.pitch();
         processor.getBone("Tongue").setRotX(wagon.tongueAngle(bodyPitch, sag.roll(), sag.drop()));
+        if(wagon instanceof DebugWagon debugWagon)
+            hidePumpkins(processor, debugWagon.getPumpkinCount());
     }
 
     private static void hideMissingWheels(AnimationProcessor<?> processor, AbstractWagon wagon) {
         String[] bones = wagon instanceof ConestogaWagon ? CONESTOGA_WHEELS
                 : wagon instanceof RoyalWagon ? ROYAL_WHEELS
+                : wagon instanceof DebugWagon ? DEBUG_WHEELS
                 : ARMORED_WHEELS;
         int mask = wagon.getWheelMask();
         for(int i = 0; i < bones.length; i++) {
@@ -58,5 +64,14 @@ public class WagonModel<T extends AbstractWagon> extends DefaultedEntityGeoModel
     private static final String[] CONESTOGA_WHEELS = {"wheelleft", "wheelright", "bone", "bone2"};
     private static final String[] ROYAL_WHEELS = {"octagon2", "octagon", "octagon4", "octagon3"};
     private static final String[] ARMORED_WHEELS = {"bone3", "bone4", "bone", "bone2"};
+    private static final String[] DEBUG_WHEELS = {"LeftFrontWheel", "RightFrontWheel", "LeftRearWheel", "RightRearWheel"};
+
+    private static void hidePumpkins(AnimationProcessor<?> processor, int count) {
+        for(int i = 0; i < DebugWagon.PUMPKIN_SLOTS; i++) {
+            GeoBone bone = processor.getBone("pumpkin" + (i + 1));
+            if(bone != null)
+                bone.setHidden(i >= count);
+        }
+    }
 
 }

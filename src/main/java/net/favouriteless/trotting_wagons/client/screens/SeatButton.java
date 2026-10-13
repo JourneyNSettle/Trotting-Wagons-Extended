@@ -130,7 +130,8 @@ public class SeatButton extends AbstractWidget {
     }
 
     public static SeatButton draft(AbstractWagon wagon, AbstractWagon.Side side, int x, int y) {
-        String key = side == AbstractWagon.Side.LEFT ? "gui.trotting_wagons.draft.left" : "gui.trotting_wagons.draft.right";
+        String key = wagon.hitchSlots() == 1 ? "gui.trotting_wagons.draft.middle"
+                : side == AbstractWagon.Side.LEFT ? "gui.trotting_wagons.draft.left" : "gui.trotting_wagons.draft.right";
         return new SeatButton(wagon, -1, side, x, y, Component.translatable(key));
     }
 

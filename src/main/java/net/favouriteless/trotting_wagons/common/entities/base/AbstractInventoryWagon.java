@@ -18,7 +18,11 @@ public abstract class AbstractInventoryWagon extends AbstractWagon implements Me
                                   double speed, double acceleration, double turnRate, int maxHealth, double horseX, double horseY, float shaftAngle, int capacity) {
         super(type, level, wheelWidth, wheelLength, seats, speed, acceleration, turnRate, maxHealth, horseX, horseY, shaftAngle);
         this.inventory = NonNullList.withSize(capacity, ItemStack.EMPTY);
-        this.itemHandler = new ItemStackHandler(inventory);
+        this.itemHandler = createHandler(inventory);
+    }
+
+    protected ItemStackHandler createHandler(NonNullList<ItemStack> inventory) {
+        return new ItemStackHandler(inventory);
     }
 
     @Override

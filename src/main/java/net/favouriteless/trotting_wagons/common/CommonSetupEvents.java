@@ -35,6 +35,7 @@ public class CommonSetupEvents {
             return;
 
         event.accept(TWItems.ARMORED_WAGON.get());
+        event.accept(WagonItem.setupComponents(new ItemStack(TWItems.DEBUG_WAGON.get()), DyeColor.WHITE));
         event.accept(WagonItem.setupComponents(new ItemStack(TWItems.CONESTOGA_WAGON.get()), DyeColor.WHITE));
         event.accept(WagonItem.setupComponents(new ItemStack(TWItems.ROYAL_WAGON.get()), DyeColor.WHITE));
         event.accept(TWItems.HORSE_WHIP.get());
@@ -45,6 +46,7 @@ public class CommonSetupEvents {
     public static void onRegisterCapabilities(RegisterCapabilitiesEvent event) {
         event.registerEntity(ItemHandler.ENTITY, TWEntityTypes.CONESTOGA_WAGON.get(), AbstractInventoryWagon::getItemCapability);
         event.registerEntity(ItemHandler.ENTITY, TWEntityTypes.ROYAL_WAGON.get(), AbstractInventoryWagon::getItemCapability);
+        event.registerEntity(ItemHandler.ENTITY, TWEntityTypes.DEBUG_WAGON.get(), AbstractInventoryWagon::getItemCapability);
     }
 
     @SubscribeEvent
