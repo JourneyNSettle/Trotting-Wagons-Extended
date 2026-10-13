@@ -16,10 +16,10 @@ public class DebugScreen extends AbstractContainerScreen<DebugMenu> {
     public DebugScreen(DebugMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
         this.imageWidth = 320;
-        this.imageHeight = 204;
-        this.titleLabelY = 4;
+        this.imageHeight = 184;
+        this.titleLabelY = DebugMenu.CARGO_Y;
         this.inventoryLabelX = 80;
-        this.inventoryLabelY = 116;
+        this.inventoryLabelY = 88;
     }
 
     @Override
@@ -44,10 +44,11 @@ public class DebugScreen extends AbstractContainerScreen<DebugMenu> {
     protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
         WagonGui.drawFrame(graphics, leftPos, topPos, imageWidth, imageHeight);
         if(menu.getWagon() != null)
-            SeatButtons.drawHealth(graphics, font, menu.getWagon(), leftPos + 16, topPos + 40, imageWidth - 32);
+            SeatButtons.drawHealth(graphics, font, menu.getWagon(), leftPos + 16, topPos + DebugMenu.HEALTH_Y, imageWidth - 32);
         for(var slot : menu.slots)
             WagonGui.drawSlot(graphics, leftPos, topPos, slot);
         WagonGui.drawWheelCaption(graphics, font, menu, menu.getWagon(), leftPos, topPos);
+        WagonGui.drawEmptySlotIcons(graphics, leftPos, topPos, menu);
     }
 
     @Override

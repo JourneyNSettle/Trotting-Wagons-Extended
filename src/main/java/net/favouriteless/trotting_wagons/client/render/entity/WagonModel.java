@@ -44,8 +44,19 @@ public class WagonModel<T extends AbstractWagon> extends DefaultedEntityGeoModel
         AbstractWagon.WheelSag sag = wagon.wheelSag();
         float bodyPitch = wagon.getXRot(partialTick) + sag.pitch();
         processor.getBone("Tongue").setRotX(wagon.tongueAngle(bodyPitch, sag.roll(), sag.drop()));
-        if(wagon instanceof DebugWagon debugWagon)
+        if(wagon instanceof DebugWagon debugWagon) {
             hidePumpkins(processor, debugWagon.getPumpkinCount());
+            boolean bare = debugWagon.getBannerStack().isEmpty();
+            GeoBone banner = processor.getBone("banner");
+            GeoBone stand = processor.getBone("stand");
+            GeoBone lamp = processor.getBone("Lamp");
+            if(banner != null)
+                banner.setHidden(bare);
+            if(stand != null)
+                stand.setHidden(bare);
+            if(lamp != null)
+                lamp.setHidden(!debugWagon.hasLantern());
+        }
     }
 
     private static void hideMissingWheels(AnimationProcessor<?> processor, AbstractWagon wagon) {

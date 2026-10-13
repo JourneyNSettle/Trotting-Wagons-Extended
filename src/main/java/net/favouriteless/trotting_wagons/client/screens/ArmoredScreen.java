@@ -48,6 +48,7 @@ public class ArmoredScreen extends AbstractContainerScreen<ArmoredMenu> {
         for(var slot : menu.slots)
             WagonGui.drawSlot(graphics, leftPos, topPos, slot);
         WagonGui.drawWheelCaption(graphics, font, menu, menu.getWagon(), leftPos, topPos);
+        WagonGui.drawEmptySlotIcons(graphics, leftPos, topPos, menu);
     }
 
     @Override

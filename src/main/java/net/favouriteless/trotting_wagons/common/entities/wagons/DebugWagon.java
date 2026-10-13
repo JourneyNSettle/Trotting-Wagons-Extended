@@ -8,6 +8,12 @@ import net.favouriteless.trotting_wagons.common.items.WagonItem;
 import net.favouriteless.trotting_wagons.common.menus.DebugMenu;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.ContainerHelper;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.item.BannerItem;
+import net.minecraft.world.entity.Entity.RemovalReason;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.LightBlock;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -26,6 +32,47 @@ public class DebugWagon extends AbstractInventoryWagon {
     public static final int PUMPKIN_SLOTS = 4;
 
     private static final EntityDataAccessor<Integer> DATA_PUMPKINS = SynchedEntityData.defineId(DebugWagon.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<ItemStack> DATA_BANNER = SynchedEntityData.defineId(DebugWagon.class, EntityDataSerializers.ITEM_STACK);
+    private static final EntityDataAccessor<Boolean> DATA_LANTERN = SynchedEntityData.defineId(DebugWagon.class, EntityDataSerializers.BOOLEAN);
+    private static final Vec3 LAMP_POS = pivot(-28, 21, 6);
+
+    private final NonNullList<ItemStack> banner = NonNullList.withSize(1, ItemStack.EMPTY);
+    private final ItemStackHandler bannerItems = new ItemStackHandler(banner) {
+        @Override
+        public boolean isItemValid(int slot, ItemStack stack) {
+            return stack.getItem() instanceof BannerItem;
+        }
+
+        @Override
+        public int getSlotLimit(int slot) {
+            return 1;
+        }
+
+        @Override
+        protected void onContentsChanged(int slot) {
+            syncBanner();
+        }
+    };
+
+    private final NonNullList<ItemStack> lantern = NonNullList.withSize(1, ItemStack.EMPTY);
+    private final ItemStackHandler lanternItems = new ItemStackHandler(lantern) {
+        @Override
+        public boolean isItemValid(int slot, ItemStack stack) {
+            return stack.is(Items.LANTERN);
+        }
+
+        @Override
+        public int getSlotLimit(int slot) {
+            return 1;
+        }
+
+        @Override
+        protected void onContentsChanged(int slot) {
+            syncLantern();
+        }
+    };
+
+    private BlockPos lanternLight;
 
     public static final WagonSeat[] SEATS = new WagonSeat[] {
             new WagonSeat(pivot(0, 27.5D, -28.5D), WagonSeat.Kind.DRIVER),
@@ -87,12 +134,118 @@ public class DebugWagon extends AbstractInventoryWagon {
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         super.defineSynchedData(builder);
         builder.define(DATA_PUMPKINS, 0);
+        builder.define(DATA_BANNER, ItemStack.EMPTY);
+        builder.define(DATA_LANTERN, false);
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        if(!level().isClientSide && tickCount % 10 == 0)
+            updateLanternLight();
+    }
+
+    @Override
+    public void remove(RemovalReason reason) {
+        if(reason.shouldDestroy())
+            clearLanternLight(true);
+        super.remove(reason);
     }
 
     @Override
     public void readAdditionalSaveData(CompoundTag nbt) {
         super.readAdditionalSaveData(nbt);
         syncPumpkins();
+        if(nbt.contains("Banner", net.minecraft.nbt.Tag.TAG_COMPOUND)) {
+            banner.set(0, ItemStack.EMPTY);
+            ContainerHelper.loadAllItems(nbt.getCompound("Banner"), banner, registryAccess());
+        }
+        syncBanner();
+        if(nbt.contains("Lantern", net.minecraft.nbt.Tag.TAG_COMPOUND)) {
+            lantern.set(0, ItemStack.EMPTY);
+            ContainerHelper.loadAllItems(nbt.getCompound("Lantern"), lantern, registryAccess());
+        }
+        syncLantern();
+    }
+
+    @Override
+    public void addAdditionalSaveData(CompoundTag nbt) {
+        super.addAdditionalSaveData(nbt);
+        CompoundTag bannerTag = new CompoundTag();
+        ContainerHelper.saveAllItems(bannerTag, banner, registryAccess());
+        nbt.put("Banner", bannerTag);
+        CompoundTag lanternTag = new CompoundTag();
+        ContainerHelper.saveAllItems(lanternTag, lantern, registryAccess());
+        nbt.put("Lantern", lanternTag);
+    }
+
+    public ItemStackHandler getBannerItems() {
+        return bannerItems;
+    }
+
+    public ItemStack getBannerStack() {
+        return entityData.get(DATA_BANNER);
+    }
+
+    private void syncBanner() {
+        entityData.set(DATA_BANNER, banner.get(0).copy());
+    }
+
+    public ItemStackHandler getLanternItems() {
+        return lanternItems;
+    }
+
+    public boolean hasLantern() {
+        return entityData.get(DATA_LANTERN);
+    }
+
+    private void syncLantern() {
+        boolean filled = !lantern.get(0).isEmpty();
+        entityData.set(DATA_LANTERN, filled);
+        if(!filled && !level().isClientSide)
+            clearLanternLight();
+    }
+
+    private void updateLanternLight() {
+        if(!hasLantern()) {
+            clearLanternLight(false);
+            return;
+        }
+        BlockPos next = lampBlockPos();
+        if(next.equals(lanternLight))
+            return;
+        // The placed cell is not saved. After a reload the light is still there, but lanternLight is empty.
+        if(lanternLight == null && level().getBlockState(next).is(Blocks.LIGHT)) {
+            lanternLight = next;
+            return;
+        }
+        clearLanternLight(false);
+        if(level().getBlockState(next).isAir()) {
+            level().setBlock(next, Blocks.LIGHT.defaultBlockState().setValue(LightBlock.LEVEL, 15), 3);
+            lanternLight = next;
+        }
+    }
+
+    private BlockPos lampBlockPos() {
+        return BlockPos.containing(position().add(rotateY(LAMP_POS, getYRot())));
+    }
+
+    private void clearLanternLight() {
+        clearLanternLight(false);
+    }
+
+    private void clearLanternLight(boolean atLamp) {
+        if(level().isClientSide)
+            return;
+        removeLightBlock(lanternLight);
+        if(atLamp)
+            removeLightBlock(lampBlockPos());
+        lanternLight = null;
+    }
+
+    private void removeLightBlock(BlockPos pos) {
+        if(pos != null && level().getBlockState(pos).is(Blocks.LIGHT))
+            level().setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
     }
 
     public int getPumpkinCount() {

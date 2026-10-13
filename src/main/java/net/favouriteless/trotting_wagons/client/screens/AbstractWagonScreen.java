@@ -109,6 +109,7 @@ public abstract class AbstractWagonScreen<T extends AbstractWagonMenu> extends A
         if(rest > 0)
             graphics.blit(texture, artX, restTop, 0, inventoryArtY(), art, rest, texWidth, texHeight);
         WagonGui.drawWheelCaption(graphics, font, menu, menu.getWagon(), leftPos, topPos);
+        WagonGui.drawEmptySlotIcons(graphics, leftPos, topPos, menu);
     }
 
     protected void drawSeatStrip(GuiGraphics graphics, int frameX, int frameWidth) {

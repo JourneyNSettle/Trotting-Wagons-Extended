@@ -31,6 +31,7 @@ public class RoyalScreen extends AbstractWagonScreen<RoyalMenu> {
         drawSeatStrip(graphics, leftPos, imageWidth);
         graphics.blit(TEXTURE, leftPos + 79, topPos + 192, 7, 139, 162, 76, 256, 256);
         WagonGui.drawWheelCaption(graphics, font, menu, menu.getWagon(), leftPos, topPos);
+        WagonGui.drawEmptySlotIcons(graphics, leftPos, topPos, menu);
     }
 
 }
