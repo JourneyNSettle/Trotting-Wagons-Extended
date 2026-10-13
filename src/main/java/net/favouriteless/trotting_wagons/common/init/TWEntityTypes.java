@@ -3,6 +3,7 @@ package net.favouriteless.trotting_wagons.common.init;
 import net.favouriteless.trotting_wagons.TrottingWagons;
 import net.favouriteless.trotting_wagons.common.entities.wagons.ArmoredWagon;
 import net.favouriteless.trotting_wagons.common.entities.wagons.ConestogaWagon;
+import net.favouriteless.trotting_wagons.common.entities.wagons.DebugWagon;
 import net.favouriteless.trotting_wagons.common.entities.wagons.RoyalWagon;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.entity.EntityType;
@@ -22,5 +23,8 @@ public class TWEntityTypes {
 
     public static final DeferredHolder<EntityType<?>, EntityType<ArmoredWagon>> ARMORED_WAGON = REGISTRY.register("armored_wagon", () ->
             EntityType.Builder.of(ArmoredWagon::new, MobCategory.MISC).sized(3.0F, 2.9F).build("armored_wagon"));
+
+    public static final DeferredHolder<EntityType<?>, EntityType<DebugWagon>> DEBUG_WAGON = REGISTRY.register("debug_wagon", () ->
+            EntityType.Builder.of(DebugWagon::new, MobCategory.MISC).sized(3.5F, 4.0F).build("debug_wagon"));
 
 }

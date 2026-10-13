@@ -33,6 +33,11 @@ public class ServerConfig {
     public final DoubleValue armoredAcceleration;
     public final DoubleValue armoredTurnRate;
 
+    public final IntValue debugHealth;
+    public final DoubleValue debugSpeed;
+    public final DoubleValue debugAcceleration;
+    public final DoubleValue debugTurnRate;
+
     public ServerConfig(Builder builder) {
         this.allowedEntities = builder.comment("EntityTypes allowed to pull wagons").defineList("allowed_entities", List.of(
                 "minecraft:horse",
@@ -62,6 +67,12 @@ public class ServerConfig {
         this.armoredSpeed = builder.comment("Speed (per level)").defineInRange("armored_wagon_speed", 0.1D, 0.0D, Double.MAX_VALUE);
         this.armoredAcceleration = builder.comment("Acceleration (seconds until maximum speed)").defineInRange("armored_wagon_acceleration", 4.0D, 0.0D, Double.MAX_VALUE);
         this.armoredTurnRate = builder.comment("Turn rate").defineInRange("armored_wagon_turn_rate", 2.0D, 0.0D, Double.MAX_VALUE);
+        builder.pop();
+        builder.push("Debug Wagon Options");
+        this.debugHealth = builder.comment("Maximum health").defineInRange("debug_wagon_health", 67, 0, Integer.MAX_VALUE);
+        this.debugSpeed = builder.comment("Speed (per level)").defineInRange("debug_wagon_speed", 0.15D, 0.0D, Double.MAX_VALUE);
+        this.debugAcceleration = builder.comment("Acceleration (seconds until maximum speed)").defineInRange("debug_wagon_acceleration", 3.0D, 0.0D, Double.MAX_VALUE);
+        this.debugTurnRate = builder.comment("Turn rate").defineInRange("debug_wagon_turn_rate", 2.0D, 0.0D, Double.MAX_VALUE);
         builder.pop();
     }
 
