@@ -16,6 +16,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
 
+import java.util.Locale;
+
 final class WagonGui {
 
     private WagonGui() {}
@@ -63,6 +65,16 @@ final class WagonGui {
         Component state = wagon.wheelSet().label();
         graphics.drawString(font, title, center - font.width(title) / 2, y, 4210752, false);
         graphics.drawString(font, state, center - font.width(state) / 2, y + 10, 4210752, false);
+    }
+
+    static void drawStatus(GuiGraphics graphics, Font font, AbstractWagon wagon, int titleX, int titleY, int imageWidth) {
+        if(wagon == null)
+            return;
+        String name = wagon.getOwnerName();
+        if(!name.isEmpty())
+            graphics.drawString(font, Component.translatable("gui.trotting_wagons.owner", name), titleX, titleY + 10, 4210752, false);
+        Component distance = Component.translatable("gui.trotting_wagons.distance", String.format(Locale.ROOT, "%.1f", wagon.getDistance() / 1000.0F));
+        graphics.drawString(font, distance, imageWidth - 8 - font.width(distance), 6, 4210752, false);
     }
 
     static void drawEmptySlotIcons(GuiGraphics graphics, int left, int top, AbstractContainerMenu menu) {

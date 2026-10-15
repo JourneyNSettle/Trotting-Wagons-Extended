@@ -111,6 +111,11 @@ public class DebugWagon extends AbstractInventoryWagon {
     }
 
     @Override
+    protected double hitchedTongueTarget() {
+        return 1.2D;
+    }
+
+    @Override
     protected ItemStackHandler createHandler(NonNullList<ItemStack> inventory) {
         return new ItemStackHandler(inventory) {
             @Override

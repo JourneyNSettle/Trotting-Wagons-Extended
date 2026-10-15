@@ -13,6 +13,8 @@ import net.favouriteless.trotting_wagons.common.network.packets.SelectSeatPayloa
 import net.favouriteless.trotting_wagons.common.network.packets.SteeringPayload;
 import net.favouriteless.trotting_wagons.common.network.packets.SyncSeatsPayload;
 import net.favouriteless.trotting_wagons.common.network.packets.ToggleSeatLockPayload;
+import net.favouriteless.trotting_wagons.common.network.packets.ToggleWagonLockPayload;
+import net.favouriteless.trotting_wagons.common.network.packets.WhipLowerGearPayload;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.DyeColor;
@@ -59,6 +61,8 @@ public class CommonSetupEvents {
         registrar.playToServer(EjectSeatPayload.TYPE, EjectSeatPayload.CODEC, EjectSeatPayload::handle);
         registrar.playToServer(MoveAnimalPayload.TYPE, MoveAnimalPayload.CODEC, MoveAnimalPayload::handle);
         registrar.playToServer(ToggleSeatLockPayload.TYPE, ToggleSeatLockPayload.CODEC, ToggleSeatLockPayload::handle);
+        registrar.playToServer(ToggleWagonLockPayload.TYPE, ToggleWagonLockPayload.CODEC, ToggleWagonLockPayload::handle);
+        registrar.playToServer(WhipLowerGearPayload.TYPE, WhipLowerGearPayload.CODEC, WhipLowerGearPayload::handle);
         registrar.playToClient(SyncSeatsPayload.TYPE, SyncSeatsPayload.CODEC, SyncSeatsPayload::handle);
     }
 }

@@ -9,6 +9,7 @@
   "entity.trotting_wagons.debug_wagon": "Debug Wagon",
   "item.trotting_wagons.horse_whip": "Horse Whip",
   "item.trotting_wagons.wheel": "Wheel",
+  "item.trotting_wagons.wheel.durability": "Durability %s/%s",
   "key.trotting_wagons.hitch": "Hitch Animal",
   "key.categories.trotting_wagons": "Trotting Wagons",
   "gui.trotting_wagons.seat.driver": "Driver",
@@ -33,6 +34,10 @@
   "gui.trotting_wagons.tooltip.unknown": "Seat is occupied",
   "gui.trotting_wagons.tooltip.lock": "Shift + click: close this seat to animals",
   "gui.trotting_wagons.tooltip.unlock": "Shift + click: open this seat to animals",
+  "gui.trotting_wagons.owner": "Owner: %s",
+  "gui.trotting_wagons.distance": "%s km",
+  "gui.trotting_wagons.lock": "Lock",
+  "gui.trotting_wagons.unlock": "Unlock",
   "advancements.trotting_wagons.sinner.title": "Sinner",
   "advancements.trotting_wagons.sinner.description": "Hitch two different kinds of animals to one wagon"
 }

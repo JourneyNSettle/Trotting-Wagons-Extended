@@ -31,6 +31,14 @@ public class DebugScreen extends AbstractContainerScreen<DebugMenu> {
         seatButtons = SeatButtons.create(wagon, leftPos, topPos + DebugMenu.SEAT_Y, imageWidth, topPos + DebugMenu.SEAT_Y);
         for(SeatButton button : seatButtons)
             addRenderableWidget(button);
+        if(minecraft != null && minecraft.player != null && wagon.isOwnedBy(minecraft.player))
+            addRenderableWidget(new WagonLockButton(leftPos + 6, topPos + imageHeight - 22, wagon));
+    }
+
+    @Override
+    protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
+        super.renderLabels(graphics, mouseX, mouseY);
+        WagonGui.drawStatus(graphics, font, menu.getWagon(), titleLabelX, titleLabelY, imageWidth);
     }
 
     @Override

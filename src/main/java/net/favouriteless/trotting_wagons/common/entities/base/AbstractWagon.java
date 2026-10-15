@@ -6,6 +6,7 @@ import net.favouriteless.trotting_wagons.client.TWClient;
 import net.favouriteless.trotting_wagons.common.init.TWItems;
 import net.favouriteless.trotting_wagons.common.util.LevelUtils;
 import net.minecraft.advancements.AdvancementHolder;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
@@ -68,6 +69,12 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
     private static final EntityDataAccessor<Byte> DATA_WHEELS = SynchedEntityData.defineId(AbstractWagon.class, EntityDataSerializers.BYTE);
     private static final EntityDataAccessor<Integer> DATA_HITCH_LEFT = SynchedEntityData.defineId(AbstractWagon.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> DATA_HITCH_RIGHT = SynchedEntityData.defineId(AbstractWagon.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Float> DATA_DISTANCE = SynchedEntityData.defineId(AbstractWagon.class, EntityDataSerializers.FLOAT);
+    private static final EntityDataAccessor<String> DATA_OWNER_NAME = SynchedEntityData.defineId(AbstractWagon.class, EntityDataSerializers.STRING);
+    private static final EntityDataAccessor<Boolean> DATA_LOCKED = SynchedEntityData.defineId(AbstractWagon.class, EntityDataSerializers.BOOLEAN);
+    private static final EntityDataAccessor<Integer> DATA_SPEED_LEVEL = SynchedEntityData.defineId(AbstractWagon.class, EntityDataSerializers.INT);
+    private static final int WHEEL_DURABILITY = 100;
+    private static final int WHEEL_BREAK_BELOW = 20;
 
     public static final double GRAVITY = 0.04D;
     public static final int SPEED_LEVELS = 3;
@@ -87,7 +94,10 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
     private final float shaftAngle;
 
     public UUID owner;
-    private int speedLevel = 0;
+    private String ownerName = "";
+    private double distance;
+    private double kilometerPart;
+    private boolean movedRecently;
     private double currentSpeed;
 
     private final Mob[] horses = new Mob[2];
@@ -160,6 +170,12 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
             validateHorses();
             if(hasFixedSeats())
                 boardNearbyAnimals();
+            if(tickCount % 20 == 0 && movedRecently) {
+                maybeBreakWornWheels();
+                movedRecently = false;
+            }
+            if(tickCount % 10 == 0)
+                entityData.set(DATA_DISTANCE, (float)distance);
         }
         super.tick();
     }
@@ -197,7 +213,7 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         final Mob rightHorse = getHorse(Side.RIGHT);
 
         if(!isVehicle() || !(this.getControllingPassenger() instanceof Player) || !hasPullers()) {
-            speedLevel = 0;
+            setSpeedLevel(0);
             setSteeringImpulse(0);
         }
         if(!hasAllWheels())
@@ -234,7 +250,10 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         }
 
         setDeltaMovement(move.add(0, getDeltaMovement().y, 0));
+        Vec3 before = position();
         move(MoverType.SELF, getDeltaMovement());
+        if(!level().isClientSide)
+            addTravel(Math.sqrt(position().subtract(before).horizontalDistanceSqr()));
         setXRot(rotlerp(getXRot(), calculateTargetXRot(), (float)(9 * currentSpeed / (SPEED_LEVELS * currentSpeed)))); // 7 is just a magic scaling number for smoothing.
     }
 
@@ -264,7 +283,7 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
     }
 
     private void handleAcceleration() {
-        double targetSpeed = speed * speedLevel;
+        double targetSpeed = speed * getSpeedLevel();
         if(isReversing())
             targetSpeed *= -0.25D;
 
@@ -349,6 +368,8 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
 
         }
         else if(player.getVehicle() != this) {
+            if(WagonParts.use(this, player, hand))
+                return InteractionResult.sidedSuccess(isClientSide);
             if(!isClientSide) {
                 player.setYRot(getYRot());
                 player.setXRot(getXRot());
@@ -497,6 +518,10 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         builder.define(DATA_WHEELS, (byte)0x0F);
         builder.define(DATA_HITCH_LEFT, -1);
         builder.define(DATA_HITCH_RIGHT, -1);
+        builder.define(DATA_DISTANCE, 0.0F);
+        builder.define(DATA_OWNER_NAME, "");
+        builder.define(DATA_LOCKED, false);
+        builder.define(DATA_SPEED_LEVEL, 0);
     }
 
     @Override
@@ -505,6 +530,20 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
             setColor(DyeColor.byId(nbt.getInt("color")));
         if(nbt.contains("owner"))
             owner = nbt.getUUID("owner");
+        if(nbt.contains("ownerName"))
+            setOwnerName(nbt.getString("ownerName"));
+        else
+            rememberOwnerName();
+        if(nbt.contains("health"))
+            setHealth(nbt.getFloat("health"));
+        if(nbt.contains("distance"))
+            distance = nbt.getDouble("distance");
+        if(nbt.contains("distancePart"))
+            kilometerPart = nbt.getDouble("distancePart");
+        entityData.set(DATA_DISTANCE, (float)distance);
+        entityData.set(DATA_LOCKED, nbt.getBoolean("locked"));
+        if(nbt.contains("speedLevel"))
+            setSpeedLevel(nbt.getInt("speedLevel"));
         if(nbt.contains("leftHorse"))
             setHorseUUID(nbt.getUUID("leftHorse"), Side.LEFT);
         if(nbt.contains("rightHorse"))
@@ -537,6 +576,13 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
             nbt.putByte("color", (byte)getColor().getId());
         if(owner != null)
             nbt.putUUID("owner", owner);
+        if(!ownerName.isEmpty())
+            nbt.putString("ownerName", ownerName);
+        nbt.putFloat("health", getHealth());
+        nbt.putDouble("distance", distance);
+        nbt.putDouble("distancePart", kilometerPart);
+        nbt.putBoolean("locked", isLocked());
+        nbt.putInt("speedLevel", getSpeedLevel());
         if(getHorseUUID(Side.LEFT) != null)
             nbt.putUUID("leftHorse", getHorseUUID(Side.LEFT));
         if(getHorseUUID(Side.RIGHT) != null)
@@ -560,9 +606,140 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         nbt.put("Wheels", wheelsTag);
     }
 
+    public void setOwner(Player player) {
+        owner = player.getUUID();
+        setOwnerName(player.getGameProfile().getName());
+    }
+
+    public void setOwnerName(String name) {
+        ownerName = name == null ? "" : name;
+        entityData.set(DATA_OWNER_NAME, ownerName);
+    }
+
+    public String getOwnerName() {
+        return entityData.get(DATA_OWNER_NAME);
+    }
+
+    public boolean isOwnedBy(Player player) {
+        return owner != null && owner.equals(player.getUUID());
+    }
+
+    public float getDistance() {
+        return entityData.get(DATA_DISTANCE);
+    }
+
+    public boolean isLocked() {
+        return entityData.get(DATA_LOCKED);
+    }
+
+    public void toggleLock(Player player) {
+        if(isOwnedBy(player))
+            entityData.set(DATA_LOCKED, !isLocked());
+    }
+
+    public Vec3 toWorld(Vec3 local) {
+        return offsetToWorld(local, false);
+    }
+
+    public Vec3 fromWorld(Vec3 world) {
+        Vec3 local = world.subtract(position());
+        local = rotateY(local, -getYRot());
+        WheelSag sag = wheelSag();
+        local = local.add(0, sag.drop(), 0);
+        local = rotateX(local, -sag.pitch());
+        local = rotateZ(local, -sag.roll());
+        Vec3 mid = new Vec3(0, 0, getXRot() < 0 ? getWheelLength() : -getWheelLength());
+        local = local.subtract(mid);
+        local = rotateX(local, -getXRot());
+        return local.add(mid);
+    }
+
+    private void addTravel(double blocks) {
+        if(blocks <= 1.0E-4D)
+            return;
+        movedRecently = true;
+        distance += blocks;
+        kilometerPart += blocks;
+        while(kilometerPart >= 1000.0D) {
+            kilometerPart -= 1000.0D;
+            wearWheels();
+        }
+    }
+
+    private void wearWheels() {
+        boolean broke = false;
+        for(int i = 0; i < wheels.size(); i++) {
+            ItemStack stack = wheels.get(i);
+            if(stack.isEmpty())
+                continue;
+            ensureWheelDurability(stack);
+            int damage = stack.getDamageValue() + 1;
+            if(damage >= stack.getMaxDamage()) {
+                wheelHandler.setStackInSlot(i, ItemStack.EMPTY);
+                broke = true;
+            } else {
+                stack.setDamageValue(damage);
+                wheelHandler.setStackInSlot(i, stack);
+            }
+        }
+        if(broke)
+            level().playSound(null, blockPosition(), SoundEvents.ITEM_BREAK, SoundSource.PLAYERS, 0.8F, 1.0F);
+    }
+
+    private void maybeBreakWornWheels() {
+        boolean broke = false;
+        for(int i = 0; i < wheels.size(); i++) {
+            ItemStack stack = wheels.get(i);
+            if(stack.isEmpty())
+                continue;
+            ensureWheelDurability(stack);
+            int remaining = stack.getMaxDamage() - stack.getDamageValue();
+            if(remaining < WHEEL_BREAK_BELOW && RANDOM.nextFloat() < 0.01F) {
+                wheelHandler.setStackInSlot(i, ItemStack.EMPTY);
+                broke = true;
+            }
+        }
+        if(broke)
+            level().playSound(null, blockPosition(), SoundEvents.ITEM_BREAK, SoundSource.PLAYERS, 0.8F, 1.0F);
+    }
+
+    private static void ensureWheelDurability(ItemStack stack) {
+        if(stack.getMaxDamage() <= 0)
+            stack.set(DataComponents.MAX_DAMAGE, WHEEL_DURABILITY);
+    }
+
+    private void rememberOwnerName() {
+        if(owner == null || !ownerName.isEmpty() || level().getServer() == null)
+            return;
+        ServerPlayer online = level().getServer().getPlayerList().getPlayer(owner);
+        if(online != null) {
+            setOwnerName(online.getGameProfile().getName());
+            return;
+        }
+        if(level().getServer().getProfileCache() != null)
+            level().getServer().getProfileCache().get(owner).ifPresent(profile -> setOwnerName(profile.getName()));
+    }
+
+    public int getSpeedLevel() {
+        return entityData.get(DATA_SPEED_LEVEL);
+    }
+
+    public void setSpeedLevel(int level) {
+        int clamped = Mth.clamp(level, 0, SPEED_LEVELS - 1);
+        if(getSpeedLevel() != clamped)
+            entityData.set(DATA_SPEED_LEVEL, clamped);
+    }
+
     public void tryCycleSpeed(Player player) {
         if(player == getControllingPassenger())
-            speedLevel = (speedLevel + 1) % SPEED_LEVELS;
+            setSpeedLevel((getSpeedLevel() + 1) % SPEED_LEVELS);
+    }
+
+    public boolean tryLowerSpeed(Player player) {
+        if(player != getControllingPassenger() || getSpeedLevel() <= 0)
+            return false;
+        setSpeedLevel(getSpeedLevel() - 1);
+        return true;
     }
 
     private Mob getHorse(Side side) {
@@ -619,7 +796,7 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         else if(!hitched && pitch < 0)
             reach += 1.25D * getWheelLength();
         double rest = tongueHeight() * Math.cos(roll) * Math.cos(pitch) - reach * Math.sin(pitch) - drop;
-        double target = hitched ? 0.85D : 0;
+        double target = hitched ? hitchedTongueTarget() : 0;
         double sine = Mth.clamp((target - rest) / tongueLength(), -1D, 1D);
         return (float)Math.asin(sine);
     }
@@ -630,6 +807,10 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
 
     protected double tongueHeight() {
         return 7.5D / 16D;
+    }
+
+    protected double hitchedTongueTarget() {
+        return 0.85D;
     }
 
     public DyeColor getColor() {
@@ -1060,9 +1241,9 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
     private void assignSeat(Entity passenger) {
         int seat = -1;
         Integer saved = savedSeatByUuid.remove(passenger.getUUID());
-        if(saved != null && saved >= 0 && saved < seats.length && seatEntities[saved] == null)
+        if(saved != null && saved >= 0 && saved < seats.length && seatEntities[saved] == null && seatAccepts(saved, passenger))
             seat = saved;
-        else if(pendingSeat >= 0 && seatEntities[pendingSeat] == null)
+        else if(pendingSeat >= 0 && seatEntities[pendingSeat] == null && seatAccepts(pendingSeat, passenger))
             seat = pendingSeat;
         else
             seat = findNearestSeat(passenger);
@@ -1123,13 +1304,20 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         boolean player = entity instanceof Player;
         if(seatLocked[index] && !player && seat.canLockAnimals())
             return false;
-        boolean large = entity.getType().is(TrottingWagons.LARGE_WAGON_PASSENGER);
+        if(!player && isLargePassenger(entity))
+            return seat.kind() == WagonSeat.Kind.ANIMALBIG;
         return switch(seat.kind()) {
             case DRIVER, PLAYER -> player;
-            case ANIMAL, UNIVERSAL -> !player && !large || player && seat.kind() == WagonSeat.Kind.UNIVERSAL;
+            case ANIMAL -> !player;
+            case UNIVERSAL -> true;
             case ANIMALBIG -> !player;
             case DRAFT -> false;
         };
+    }
+
+    private static boolean isLargePassenger(Entity entity) {
+        EntityType<?> type = entity.getType();
+        return type == EntityType.HORSE || type == EntityType.MULE || type == EntityType.COW || type.is(TrottingWagons.LARGE_WAGON_PASSENGER);
     }
 
     private void boardNearbyAnimals() {
