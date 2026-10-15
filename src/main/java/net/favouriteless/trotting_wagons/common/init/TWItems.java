@@ -1,8 +1,9 @@
 package net.favouriteless.trotting_wagons.common.init;
 
 import net.favouriteless.trotting_wagons.TrottingWagons;
-import net.favouriteless.trotting_wagons.common.items.WagonItem;
 import net.favouriteless.trotting_wagons.common.items.HorseWhipItem;
+import net.favouriteless.trotting_wagons.common.items.WagonItem;
+import net.favouriteless.trotting_wagons.common.items.WheelItem;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.DyeColor;
@@ -22,7 +23,7 @@ public class TWItems {
     public static final DeferredHolder<Item, WagonItem> DEBUG_WAGON = REGISTRY.register("debug_wagon", () -> new WagonItem(TWEntityTypes.DEBUG_WAGON::get, wagonProps()));
 
     public static final DeferredHolder<Item, HorseWhipItem> HORSE_WHIP = REGISTRY.register("horse_whip", () -> new HorseWhipItem(new Properties().stacksTo(1)));
-    public static final DeferredHolder<Item, Item> WHEEL = REGISTRY.register("wheel", () -> new Item(new Properties()));
+    public static final DeferredHolder<Item, WheelItem> WHEEL = REGISTRY.register("wheel", () -> new WheelItem(new Properties().durability(100)));
 
     private static Properties wagonProps() {
         return new Properties()

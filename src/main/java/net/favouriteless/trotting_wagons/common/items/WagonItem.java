@@ -40,7 +40,7 @@ public class WagonItem extends Item {
         AbstractWagon wagon = entityType.get().create(level);
         wagon.setPos(Vec3.atBottomCenterOf(context.getClickedPos().above()).add(0, 0.05D, 0));
         wagon.setYRot(context.getPlayer().getYHeadRot());
-        wagon.owner = context.getPlayer().getUUID();
+        wagon.setOwner(context.getPlayer());
 
         wagon.setColor(stack.get(DataComponents.BASE_COLOR));
 

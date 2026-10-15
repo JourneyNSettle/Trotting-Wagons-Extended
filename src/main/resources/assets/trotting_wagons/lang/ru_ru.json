@@ -1,6 +1,7 @@
 {
   "item.trotting_wagons.debug_wagon": "Дебаг-вагон",
   "entity.trotting_wagons.debug_wagon": "Дебаг-вагон",
+  "item.trotting_wagons.wheel.durability": "Прочность %s/%s",
   "gui.trotting_wagons.seat.driver": "Возница",
   "gui.trotting_wagons.seat.player": "Пассажир",
   "gui.trotting_wagons.seat.universal": "Универсальный",
@@ -23,6 +24,10 @@
   "gui.trotting_wagons.tooltip.unknown": "Место занято",
   "gui.trotting_wagons.tooltip.lock": "Shift+клик: закрыть место для животных",
   "gui.trotting_wagons.tooltip.unlock": "Shift+клик: открыть место для животных",
+  "gui.trotting_wagons.owner": "Владелец: %s",
+  "gui.trotting_wagons.distance": "%s км",
+  "gui.trotting_wagons.lock": "Заблокировать",
+  "gui.trotting_wagons.unlock": "Разблокировать",
   "advancements.trotting_wagons.sinner.title": "Грешник",
   "advancements.trotting_wagons.sinner.description": "Запрягите двух животных разных видов в одну повозку"
 }

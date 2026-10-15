@@ -82,6 +82,18 @@ public abstract class AbstractWagonScreen<T extends AbstractWagonMenu> extends A
             for(SeatButton button : seatButtons)
                 addRenderableWidget(button);
         }
+        addWagonLock(wagon);
+    }
+
+    protected void addWagonLock(AbstractWagon wagon) {
+        if(wagon != null && minecraft != null && minecraft.player != null && wagon.isOwnedBy(minecraft.player))
+            addRenderableWidget(new WagonLockButton(leftPos + 6, topPos + imageHeight - 22, wagon));
+    }
+
+    @Override
+    protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
+        super.renderLabels(graphics, mouseX, mouseY);
+        WagonGui.drawStatus(graphics, font, menu.getWagon(), titleLabelX, titleLabelY, imageWidth);
     }
 
     @Override
