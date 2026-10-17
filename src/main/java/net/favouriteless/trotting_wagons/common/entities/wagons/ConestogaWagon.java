@@ -26,7 +26,7 @@ public class ConestogaWagon extends AbstractInventoryWagon {
     };
 
     public ConestogaWagon(EntityType<ConestogaWagon> type, Level level) {
-        super(type, level, 1, 1, SEATS, ServerConfig.INSTANCE.conestogaSpeed.get(), ServerConfig.INSTANCE.conestogaAcceleration.get(),
+        super(type, level, 1, 1, SEATS, ServerConfig.INSTANCE.conestogaSpeed.get(),
                 ServerConfig.INSTANCE.conestogaTurnRate.get(), ServerConfig.INSTANCE.conestogaHealth.get(), 0.6D, 3.6D,
                 13, 108);
     }

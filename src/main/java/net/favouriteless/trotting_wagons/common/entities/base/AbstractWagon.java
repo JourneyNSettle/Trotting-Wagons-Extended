@@ -10,7 +10,7 @@ import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.core.registries.BuiltInRegistries;
+
 import net.favouriteless.trotting_wagons.common.network.packets.SyncSeatsPayload;
 import net.minecraft.network.chat.Component;
 import net.minecraft.nbt.CompoundTag;
@@ -20,7 +20,7 @@ import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.network.syncher.SynchedEntityData.Builder;
-import net.minecraft.resources.ResourceLocation;
+
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -33,10 +33,13 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.*;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.Item;
+import net.minecraft.tags.ItemTags;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
@@ -73,19 +76,23 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
     private static final EntityDataAccessor<String> DATA_OWNER_NAME = SynchedEntityData.defineId(AbstractWagon.class, EntityDataSerializers.STRING);
     private static final EntityDataAccessor<Boolean> DATA_LOCKED = SynchedEntityData.defineId(AbstractWagon.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Integer> DATA_SPEED_LEVEL = SynchedEntityData.defineId(AbstractWagon.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Float> DATA_CURRENT_SPEED = SynchedEntityData.defineId(AbstractWagon.class, EntityDataSerializers.FLOAT);
+    private static final EntityDataAccessor<Float> DATA_MAX_SPEED = SynchedEntityData.defineId(AbstractWagon.class, EntityDataSerializers.FLOAT);
+    private static final EntityDataAccessor<String> DATA_REPAIR = SynchedEntityData.defineId(AbstractWagon.class, EntityDataSerializers.STRING);
+    public static final int REPAIR_SLOTS = 4;
     private static final int WHEEL_DURABILITY = 100;
     private static final int WHEEL_BREAK_BELOW = 20;
 
     public static final double GRAVITY = 0.04D;
-    public static final int SPEED_LEVELS = 3;
+    public static final int SPEED_LEVELS = 5;
+    private static final double BLOCKS_PER_SPEED_ATTRIBUTE = 43.17D;
     public static final double HORIZONTAL_TETHER = 0.5D * 0.5D; // Use sqr for performance
     public static final int BOARD_COOLDOWN_TICKS = 60;
     public static final double ANIMAL_BOARD_RANGE = 1.0D;
     public static final double HITCH_RANGE = 1.5D;
     private static final String BOARD_COOLDOWN = "tw_board_cooldown";
 
-    public final double speed;
-    private final double acceleration;
+    private final double speedCoefficient;
     private final float turnRate;
     private final int maxHealth;
 
@@ -127,13 +134,33 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
             updateWheelMask();
         }
     };
+    private final NonNullList<ItemStack> repair = NonNullList.withSize(REPAIR_SLOTS, ItemStack.EMPTY);
+    private final String[] repairNeed = new String[REPAIR_SLOTS];
+    private boolean repairUpdating;
+    private long repairBlockedUntil;
+    private final ItemStackHandler repairHandler = new ItemStackHandler(repair) {
+        @Override
+        public boolean isItemValid(int slot, ItemStack stack) {
+            return acceptsRepair(slot, stack);
+        }
+
+        @Override
+        public int getSlotLimit(int slot) {
+            return 1;
+        }
+
+        @Override
+        protected void onContentsChanged(int slot) {
+            if(!repairUpdating)
+                tryFinishRepair();
+        }
+    };
 
     public AbstractWagon(EntityType<? extends AbstractWagon> type, Level level, double wheelWidth, double wheelLength, WagonSeat[] seats,
-                         double speed, double acceleration, double turnRate, int maxHealth, double horseX, double horseY, float shaftAngle) {
+                         double speedCoefficient, double turnRate, int maxHealth, double horseX, double horseY, float shaftAngle) {
         super(type, level, wheelWidth, wheelLength, seatPositions(seats));
 
-        this.speed = speed;
-        this.acceleration = acceleration;
+        this.speedCoefficient = speedCoefficient;
         this.turnRate = (float)turnRate;
         this.maxHealth = maxHealth;
         this.horseX = horseX;
@@ -174,8 +201,10 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
                 maybeBreakWornWheels();
                 movedRecently = false;
             }
-            if(tickCount % 10 == 0)
+            if(tickCount % 10 == 0) {
                 entityData.set(DATA_DISTANCE, (float)distance);
+                refreshRepairSlots();
+            }
         }
         super.tick();
     }
@@ -194,6 +223,10 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         Mob horse = getHorse(side);
         if(horse == null)
             return;
+        if(horse.isBaby()) {
+            unhitch(horse);
+            return;
+        }
         if(!isHorseInRange(side))
             horse.setPos(getHorsePos(side));
     }
@@ -258,7 +291,8 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
     }
 
     private void handleSteering() {
-        float speedPercent = Math.abs(currentSpeed) < 1.0E-4 ? 0.5F : (float)(currentSpeed / (SPEED_LEVELS * speed));
+        double maxSpeed = maxSpeedPerTick();
+        float speedPercent = Math.abs(currentSpeed) < 1.0E-4 ? 0.5F : maxSpeed <= 1.0E-6 ? 0.0F : (float)(currentSpeed / maxSpeed);
         float steer = -getSteeringImpulse() * speedPercent * turnRate;
 
         if(steer != 0) {
@@ -283,14 +317,50 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
     }
 
     private void handleAcceleration() {
-        double targetSpeed = speed * getSpeedLevel();
+        double maxSpeed = computeMaxSpeedPerTick();
+        double targetSpeed = maxSpeed * getSpeedLevel() / (SPEED_LEVELS - 1);
         if(isReversing())
             targetSpeed *= -0.25D;
 
-        double accel = speed / (acceleration * 20.0D);
+        double accel = speedCoefficient / 400.0D;
         double speedDiff = targetSpeed - currentSpeed;
-
         currentSpeed += Mth.sign(speedDiff) * Math.min(Math.abs(accel), Math.abs(speedDiff));
+        if(!level().isClientSide) {
+            entityData.set(DATA_CURRENT_SPEED, (float)currentSpeed);
+            entityData.set(DATA_MAX_SPEED, (float)maxSpeed);
+        }
+    }
+
+    private double computeMaxSpeedPerTick() {
+        if(!hasAllWheels() || !hasPullers())
+            return 0;
+        double slowest = Double.POSITIVE_INFINITY;
+        for(Mob animal : horses) {
+            if(animal == null || !animal.isAlive())
+                continue;
+            var attribute = animal.getAttribute(Attributes.MOVEMENT_SPEED);
+            if(attribute == null)
+                continue;
+            slowest = Math.min(slowest, attribute.getValue() * BLOCKS_PER_SPEED_ATTRIBUTE);
+        }
+        if(slowest == Double.POSITIVE_INFINITY)
+            return 0;
+        return slowest * speedCoefficient / 20.0D;
+    }
+
+    public float syncedMaxSpeed() {
+        return entityData.get(DATA_MAX_SPEED);
+    }
+
+    public float speedFraction() {
+        float maxSpeed = entityData.get(DATA_MAX_SPEED);
+        if(maxSpeed <= 1.0E-4F)
+            return 0.0F;
+        return Mth.clamp(Math.abs(entityData.get(DATA_CURRENT_SPEED)) / maxSpeed, 0.0F, 1.0F);
+    }
+
+    private double maxSpeedPerTick() {
+        return level().isClientSide ? entityData.get(DATA_MAX_SPEED) : computeMaxSpeedPerTick();
     }
 
     private void setHorsePos(Mob horse, Vec3 pos, float rot) {
@@ -343,15 +413,6 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
             if(stack.is(TWItems.HORSE_WHIP.get())) {
                 if(!isClientSide)
                     toggleReversing();
-                return InteractionResult.sidedSuccess(isClientSide);
-            }
-
-            if(getHealth() < maxHealth && stack.is(BuiltInRegistries.ITEM.get(ResourceLocation.parse(ServerConfig.INSTANCE.repairItem.get())))) {
-                if(!isClientSide) {
-                    stack.shrink(1);
-                    setHealth(getHealth() + ServerConfig.INSTANCE.repairPerItem.get());
-                    level().playSound(null, getX(), getY(), getZ(), SoundEvents.ANVIL_USE, SoundSource.MASTER, 0.3F, 1);
-                }
                 return InteractionResult.sidedSuccess(isClientSide);
             }
 
@@ -444,6 +505,7 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
                 getX(), getY(), getZ(), 100, w, h, w, 0);
 
         setHealth(getHealth() - amount);
+        refreshRepairSlots();
         gameEvent(GameEvent.ENTITY_DAMAGE, source.getEntity());
 
         if(getHealth() <= 0)
@@ -522,6 +584,9 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         builder.define(DATA_OWNER_NAME, "");
         builder.define(DATA_LOCKED, false);
         builder.define(DATA_SPEED_LEVEL, 0);
+        builder.define(DATA_CURRENT_SPEED, 0.0F);
+        builder.define(DATA_MAX_SPEED, 0.0F);
+        builder.define(DATA_REPAIR, ",,,");
     }
 
     @Override
@@ -568,6 +633,14 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
             ContainerHelper.loadAllItems(nbt.getCompound("Wheels"), wheels, registryAccess());
         }
         updateWheelMask();
+        if(nbt.contains("Repair", Tag.TAG_COMPOUND)) {
+            for(int i = 0; i < repair.size(); i++)
+                repair.set(i, ItemStack.EMPTY);
+            ContainerHelper.loadAllItems(nbt.getCompound("Repair"), repair, registryAccess());
+        }
+        if(nbt.contains("RepairNeeds"))
+            readRepairNeeds(nbt.getString("RepairNeeds"));
+        refreshRepairSlots();
     }
 
     @Override
@@ -604,6 +677,10 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         CompoundTag wheelsTag = new CompoundTag();
         ContainerHelper.saveAllItems(wheelsTag, wheels, registryAccess());
         nbt.put("Wheels", wheelsTag);
+        CompoundTag repairTag = new CompoundTag();
+        ContainerHelper.saveAllItems(repairTag, repair, registryAccess());
+        nbt.put("Repair", repairTag);
+        nbt.putString("RepairNeeds", repairNeeds());
     }
 
     public void setOwner(Player player) {
@@ -732,7 +809,7 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
 
     public void tryCycleSpeed(Player player) {
         if(player == getControllingPassenger())
-            setSpeedLevel((getSpeedLevel() + 1) % SPEED_LEVELS);
+            setSpeedLevel(getSpeedLevel() + 1);
     }
 
     public boolean tryLowerSpeed(Player player) {
@@ -796,7 +873,7 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         else if(!hitched && pitch < 0)
             reach += 1.25D * getWheelLength();
         double rest = tongueHeight() * Math.cos(roll) * Math.cos(pitch) - reach * Math.sin(pitch) - drop;
-        double target = hitched ? hitchedTongueTarget() : 0;
+        double target = hitched ? hitchedBackHeight() : 0;
         double sine = Mth.clamp((target - rest) / tongueLength(), -1D, 1D);
         return (float)Math.asin(sine);
     }
@@ -811,6 +888,19 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
 
     protected double hitchedTongueTarget() {
         return 0.85D;
+    }
+
+    private double hitchedBackHeight() {
+        double lowest = Double.POSITIVE_INFINITY;
+        for(Side side : Side.values()) {
+            Entity animal = level().getEntity(getHitchEntityId(side));
+            if(!(animal instanceof Mob))
+                animal = getHorse(side);
+            if(animal == null || !animal.isAlive())
+                continue;
+            lowest = Math.min(lowest, animal.getBbHeight() * 0.7D);
+        }
+        return lowest == Double.POSITIVE_INFINITY ? hitchedTongueTarget() : lowest;
     }
 
     public DyeColor getColor() {
@@ -893,6 +983,8 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
     }
 
     public static boolean isAllowedPuller(Entity entity) {
+        if(entity instanceof LivingEntity living && living.isBaby())
+            return false;
         try {
             return ServerConfig.INSTANCE.allowedEntities.get().contains(entity.getType().builtInRegistryHolder().key().location().toString());
         } catch(IllegalStateException ignored) {
@@ -1039,6 +1131,160 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
 
     public ItemStackHandler getWheels() {
         return wheelHandler;
+    }
+
+    public ItemStackHandler getRepair() {
+        return repairHandler;
+    }
+
+    public int repairSlots() {
+        float percent = getMaxHealth() <= 0 ? 100F : getHealth() / getMaxHealth() * 100F;
+        if(percent >= 100F)
+            return 0;
+        if(percent >= 75F)
+            return 1;
+        if(percent >= 50F)
+            return 2;
+        if(percent >= 25F)
+            return 3;
+        return 4;
+    }
+
+    public Component conditionName() {
+        String key = switch(repairSlots()) {
+            case 0 -> "ok";
+            case 1 -> "scratched";
+            case 2 -> "damaged";
+            case 3 -> "severe";
+            default -> "critical";
+        };
+        return Component.translatable("gui.trotting_wagons.condition." + key);
+    }
+
+    public boolean acceptsRepair(int slot, ItemStack stack) {
+        if(level() != null && level().getGameTime() < repairBlockedUntil)
+            return false;
+        return switch(repairNeed(slot)) {
+            case "planks" -> stack.is(ItemTags.PLANKS);
+            case "iron" -> stack.is(Items.IRON_INGOT);
+            case "wool" -> stack.is(ItemTags.WOOL);
+            case "leather" -> stack.is(Items.LEATHER);
+            case "string" -> stack.is(Items.STRING);
+            case "slime" -> stack.is(Items.SLIME_BALL);
+            default -> false;
+        };
+    }
+
+    public boolean isRepairMaterial(ItemStack stack) {
+        return stack.is(ItemTags.PLANKS) || stack.is(Items.IRON_INGOT) || stack.is(ItemTags.WOOL)
+                || stack.is(Items.LEATHER) || stack.is(Items.STRING) || stack.is(Items.SLIME_BALL);
+    }
+
+    public ItemStack repairIcon(int slot) {
+        return switch(repairNeed(slot)) {
+            case "planks" -> new ItemStack(Items.OAK_PLANKS);
+            case "iron" -> new ItemStack(Items.IRON_INGOT);
+            case "wool" -> new ItemStack(Items.WHITE_WOOL);
+            case "leather" -> new ItemStack(Items.LEATHER);
+            case "string" -> new ItemStack(Items.STRING);
+            case "slime" -> new ItemStack(Items.SLIME_BALL);
+            default -> ItemStack.EMPTY;
+        };
+    }
+
+    public Component repairTooltip(int slot) {
+        return switch(repairNeed(slot)) {
+            case "planks" -> Component.translatable("gui.trotting_wagons.repair.planks");
+            case "wool" -> Component.translatable("gui.trotting_wagons.repair.wool");
+            default -> repairIcon(slot).getHoverName();
+        };
+    }
+
+    private String repairNeed(int slot) {
+        String raw = entityData.get(DATA_REPAIR);
+        String[] parts = raw.split(",", -1);
+        return slot >= 0 && slot < parts.length ? parts[slot] : "";
+    }
+
+    private String repairNeeds() {
+        return String.join(",", repairNeed[0] == null ? "" : repairNeed[0], repairNeed[1] == null ? "" : repairNeed[1],
+                repairNeed[2] == null ? "" : repairNeed[2], repairNeed[3] == null ? "" : repairNeed[3]);
+    }
+
+    private void readRepairNeeds(String raw) {
+        String[] parts = raw.split(",", -1);
+        for(int i = 0; i < repairNeed.length; i++)
+            repairNeed[i] = i < parts.length && !parts[i].isEmpty() ? parts[i] : null;
+        publishRepairNeeds();
+    }
+
+    private void publishRepairNeeds() {
+        entityData.set(DATA_REPAIR, repairNeeds());
+    }
+
+    public void refreshRepairSlots() {
+        if(level().isClientSide)
+            return;
+        int open = repairSlots();
+        boolean changed = false;
+        for(int i = 0; i < REPAIR_SLOTS; i++) {
+            if(i >= open) {
+                if(repairNeed[i] != null) {
+                    repairNeed[i] = null;
+                    changed = true;
+                }
+                if(!repair.get(i).isEmpty()) {
+                    spawnAtLocation(repair.get(i));
+                    setRepair(i, ItemStack.EMPTY);
+                }
+            } else if(repairNeed[i] == null) {
+                repairNeed[i] = rollRepairNeed();
+                changed = true;
+            }
+        }
+        if(changed)
+            publishRepairNeeds();
+    }
+
+    private String rollRepairNeed() {
+        int roll = getRandom().nextInt(100);
+        if(roll < 30)
+            return "planks";
+        if(roll < 60)
+            return "iron";
+        if(roll < 70)
+            return "wool";
+        if(roll < 80)
+            return "leather";
+        if(roll < 90)
+            return "string";
+        return "slime";
+    }
+
+    private void setRepair(int slot, ItemStack stack) {
+        repairUpdating = true;
+        repairHandler.setStackInSlot(slot, stack);
+        repairUpdating = false;
+    }
+
+    private void tryFinishRepair() {
+        if(level() == null || level().isClientSide)
+            return;
+        int open = repairSlots();
+        if(open == 0)
+            return;
+        for(int i = 0; i < open; i++) {
+            if(!acceptsRepair(i, repair.get(i)))
+                return;
+        }
+        for(int i = 0; i < open; i++)
+            setRepair(i, ItemStack.EMPTY);
+        setHealth(Math.min(getMaxHealth(), getHealth() + 5F * open));
+        level().playSound(null, getX(), getY(), getZ(), SoundEvents.ANVIL_USE, SoundSource.MASTER, 0.3F, 1);
+        repairBlockedUntil = level().getGameTime() + 1L;
+        for(int i = 0; i < REPAIR_SLOTS; i++)
+            repairNeed[i] = null;
+        refreshRepairSlots();
     }
 
     public int getWheelMask() {
@@ -1317,7 +1563,7 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
 
     private static boolean isLargePassenger(Entity entity) {
         EntityType<?> type = entity.getType();
-        return type == EntityType.HORSE || type == EntityType.MULE || type == EntityType.COW || type.is(TrottingWagons.LARGE_WAGON_PASSENGER);
+        return type == EntityType.HORSE || type == EntityType.MULE || type == EntityType.CAMEL || type == EntityType.COW || type.is(TrottingWagons.LARGE_WAGON_PASSENGER);
     }
 
     private void boardNearbyAnimals() {

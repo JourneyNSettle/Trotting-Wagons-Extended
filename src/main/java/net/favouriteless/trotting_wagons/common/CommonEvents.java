@@ -2,10 +2,7 @@ package net.favouriteless.trotting_wagons.common;
 
 import net.favouriteless.trotting_wagons.TrottingWagons;
 import net.favouriteless.trotting_wagons.common.entities.base.AbstractWagon;
-import net.favouriteless.trotting_wagons.common.init.TWSoundEvents;
 import net.favouriteless.trotting_wagons.common.items.HorseWhipItem;
-import net.favouriteless.trotting_wagons.common.network.packets.WhipLowerGearPayload;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionResultHolder;
@@ -21,7 +18,6 @@ import net.neoforged.neoforge.event.entity.EntityMountEvent;
 import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
-import net.neoforged.neoforge.network.PacketDistributor;
 
 @EventBusSubscriber(modid = TrottingWagons.MOD_ID)
 public class CommonEvents {
@@ -85,34 +81,14 @@ public class CommonEvents {
 
     @SubscribeEvent
     public static void onAttack(AttackEntityEvent event) {
-        lowerGear(event.getEntity(), event);
+        if(drivingWithWhip(event.getEntity()))
+            event.setCanceled(true);
     }
 
     @SubscribeEvent
     public static void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
-        lowerGear(event.getEntity(), event);
-    }
-
-    @SubscribeEvent
-    public static void onLeftClickAir(PlayerInteractEvent.LeftClickEmpty event) {
-        Player player = event.getEntity();
-        if(!drivingWithWhip(player) || player.getAttackStrengthScale(0.0F) < 0.9F)
-            return;
-        player.resetAttackStrengthTicker();
-        PacketDistributor.sendToServer(new WhipLowerGearPayload());
-    }
-
-    private static void lowerGear(Player player, net.neoforged.bus.api.ICancellableEvent event) {
-        if(!drivingWithWhip(player))
-            return;
-        event.setCanceled(true);
-        if(player.getAttackStrengthScale(0.0F) < 0.9F)
-            return;
-        player.resetAttackStrengthTicker();
-        if(player.level().isClientSide)
-            return;
-        if(player.getVehicle() instanceof AbstractWagon wagon && wagon.tryLowerSpeed(player))
-            player.level().playSound(null, player.getX(), player.getY(), player.getZ(), TWSoundEvents.WHIP.get(), SoundSource.PLAYERS, 1.0F, 1.0F);
+        if(drivingWithWhip(event.getEntity()))
+            event.setCanceled(true);
     }
 
     private static boolean drivingWithWhip(Player player) {
