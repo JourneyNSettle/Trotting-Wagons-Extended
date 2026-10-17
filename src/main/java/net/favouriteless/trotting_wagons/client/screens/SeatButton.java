@@ -36,6 +36,7 @@ public class SeatButton extends AbstractWidget {
     private final AbstractWagon wagon;
     private final int seat;
     private final AbstractWagon.Side draftSide;
+    private final boolean drawFrame;
     private long hoverStart = -1L;
     private Component tooltip = Component.empty();
 
@@ -126,20 +127,33 @@ public class SeatButton extends AbstractWidget {
     }
 
     public SeatButton(AbstractWagon wagon, int seat, int x, int y) {
-        this(wagon, seat, null, x, y, Component.literal(Integer.toString(seat + 1)));
+        this(wagon, seat, null, x, y, SIZE, true, Component.literal(Integer.toString(seat + 1)));
     }
 
     public static SeatButton draft(AbstractWagon wagon, AbstractWagon.Side side, int x, int y) {
-        String key = wagon.hitchSlots() == 1 ? "gui.trotting_wagons.draft.middle"
-                : side == AbstractWagon.Side.LEFT ? "gui.trotting_wagons.draft.left" : "gui.trotting_wagons.draft.right";
-        return new SeatButton(wagon, -1, side, x, y, Component.translatable(key));
+        return draft(wagon, side, x, y, SIZE, true);
     }
 
-    private SeatButton(AbstractWagon wagon, int seat, AbstractWagon.Side draftSide, int x, int y, Component message) {
-        super(x, y, SIZE, SIZE, message);
+    public static SeatButton placed(AbstractWagon wagon, int seat, int x, int y, int size) {
+        return new SeatButton(wagon, seat, null, x, y, size, false, Component.literal(Integer.toString(seat + 1)));
+    }
+
+    public static SeatButton placedDraft(AbstractWagon wagon, AbstractWagon.Side side, int x, int y, int size) {
+        return draft(wagon, side, x, y, size, false);
+    }
+
+    private static SeatButton draft(AbstractWagon wagon, AbstractWagon.Side side, int x, int y, int size, boolean drawFrame) {
+        String key = wagon.hitchSlots() == 1 ? "gui.trotting_wagons.draft.middle"
+                : side == AbstractWagon.Side.LEFT ? "gui.trotting_wagons.draft.left" : "gui.trotting_wagons.draft.right";
+        return new SeatButton(wagon, -1, side, x, y, size, drawFrame, Component.translatable(key));
+    }
+
+    private SeatButton(AbstractWagon wagon, int seat, AbstractWagon.Side draftSide, int x, int y, int size, boolean drawFrame, Component message) {
+        super(x, y, size, size, message);
         this.wagon = wagon;
         this.seat = seat;
         this.draftSide = draftSide;
+        this.drawFrame = drawFrame;
     }
 
     private int animalId() {
@@ -172,10 +186,17 @@ public class SeatButton extends AbstractWidget {
 
         boolean locked = draftSide == null && wagon.isSeatLocked(seat);
         int color = locked ? 0xFF6E3A3A : active ? 0xFF8B8B8B : 0xFF5A5A5A;
-        graphics.fill(getX(), getY(), getX() + width, getY() + height, 0xFF373737);
-        graphics.fill(getX() + 1, getY() + 1, getX() + width - 1, getY() + height - 1, color);
+        int x = getX();
+        int y = getY();
+        graphics.fill(x + 1, y + 1, x + width - 1, y + height - 1, color);
+        if(drawFrame) {
+            graphics.fill(x, y, x + width - 1, y + 1, 0xFF373737);
+            graphics.fill(x, y, x + 1, y + height - 1, 0xFF373737);
+            graphics.fill(x, y + height - 1, x + width, y + height, 0xFFFFFFFF);
+            graphics.fill(x + width - 1, y, x + width, y + height, 0xFFFFFFFF);
+        }
         if(dragSource != null && dragSource != this && accepts(dragSource))
-            graphics.fill(getX() + 1, getY() + 1, getX() + width - 1, getY() + height - 1, 0x8800C853);
+            graphics.fill(x + 1, y + 1, x + width - 1, y + height - 1, 0x8800C853);
 
         Occupant occupant = occupant();
         boolean carried = dragSource == this;
@@ -186,9 +207,9 @@ public class SeatButton extends AbstractWidget {
         else if(occupant.entity() == null && occupant.kind() == Kind.UNKNOWN)
             drawFitted(graphics, Component.literal("?"), 18);
         else if(carried || occupant.kind() == Kind.EMPTY_PLAYER || occupant.kind() == Kind.LOCKABLE)
-            drawFitted(graphics, draftSide != null ? Component.translatable("gui.trotting_wagons.seat.draft") : typeLabel(wagon.getSeat(seat)), 16);
+            drawFitted(graphics, draftSide != null ? Component.translatable("gui.trotting_wagons.seat.draft") : typeLabel(wagon.getSeat(seat)), height - 6);
 
-        graphics.drawCenteredString(Minecraft.getInstance().font, getMessage(), getX() + width / 2, getY() + 4, 0xFFFFFF);
+        graphics.drawString(Minecraft.getInstance().font, getMessage(), getX() + 2, getY() + 2, 0xFFFFFF, true);
     }
 
     @Override
@@ -287,7 +308,7 @@ public class SeatButton extends AbstractWidget {
 
     private void drawPlayer(GuiGraphics graphics, Player player) {
         if(player instanceof AbstractClientPlayer clientPlayer) {
-            PlayerFaceRenderer.draw(graphics, clientPlayer.getSkin().texture(), getX() + 5, getY() + 8, 14);
+            PlayerFaceRenderer.draw(graphics, clientPlayer.getSkin().texture(), getX() + 6, getY() + 8, 14);
             return;
         }
         drawFitted(graphics, player.getName(), 12);

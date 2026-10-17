@@ -4,6 +4,7 @@ import net.favouriteless.trotting_wagons.common.entities.base.AbstractWagon;
 import net.favouriteless.trotting_wagons.common.init.TWItems;
 import net.favouriteless.trotting_wagons.common.menus.BannerSlot;
 import net.favouriteless.trotting_wagons.common.menus.DebugMenu;
+import net.favouriteless.trotting_wagons.common.menus.RepairSlot;
 import net.favouriteless.trotting_wagons.common.menus.LanternSlot;
 import net.favouriteless.trotting_wagons.common.menus.WheelSlot;
 import net.minecraft.client.gui.Font;
@@ -79,13 +80,17 @@ final class WagonGui {
 
     static void drawEmptySlotIcons(GuiGraphics graphics, int left, int top, AbstractContainerMenu menu) {
         for(Slot slot : menu.slots) {
-            if(slot.hasItem())
+            if(!slot.isActive() || slot.hasItem())
                 continue;
             ItemStack icon = emptyIcon(menu, slot);
             if(icon.isEmpty())
                 continue;
             GraySlotIcons.draw(graphics, icon, left + slot.x, top + slot.y);
         }
+    }
+
+    static ItemStack ghostIcon(AbstractContainerMenu menu, Slot slot) {
+        return emptyIcon(menu, slot);
     }
 
     private static ItemStack emptyIcon(AbstractContainerMenu menu, Slot slot) {
@@ -95,6 +100,8 @@ final class WagonGui {
             return new ItemStack(Blocks.WHITE_BANNER);
         if(slot instanceof LanternSlot)
             return new ItemStack(Items.LANTERN);
+        if(slot instanceof RepairSlot repair && menu instanceof DebugMenu debug && debug.getWagon() != null)
+            return debug.getWagon().repairIcon(repair.getSlotIndex());
         if(menu instanceof DebugMenu && slot instanceof SlotItemHandler && slot.getSlotIndex() < 4)
             return new ItemStack(Items.PUMPKIN);
         return ItemStack.EMPTY;

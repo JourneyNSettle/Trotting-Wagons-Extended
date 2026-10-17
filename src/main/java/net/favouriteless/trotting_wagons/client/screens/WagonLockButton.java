@@ -12,14 +12,27 @@ public class WagonLockButton extends Button {
 
     private final AbstractWagon wagon;
 
+    private final boolean painted;
+
     public WagonLockButton(int x, int y, AbstractWagon wagon) {
-        super(x, y, 16, 16, Component.empty(), button -> PacketDistributor.sendToServer(new ToggleWagonLockPayload(wagon.getId())), DEFAULT_NARRATION);
+        this(x, y, 16, wagon, false);
+    }
+
+    public WagonLockButton(int x, int y, int size, AbstractWagon wagon) {
+        this(x, y, size, wagon, true);
+    }
+
+    private WagonLockButton(int x, int y, int size, AbstractWagon wagon, boolean painted) {
+        super(x, y, size, size, Component.empty(), button -> PacketDistributor.sendToServer(new ToggleWagonLockPayload(wagon.getId())), DEFAULT_NARRATION);
         this.wagon = wagon;
+        this.painted = painted;
     }
 
     @Override
     protected void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         setTooltip(Tooltip.create(Component.translatable(wagon.isLocked() ? "gui.trotting_wagons.unlock" : "gui.trotting_wagons.lock")));
+        if(painted)
+            return;
         int x = getX();
         int y = getY();
         graphics.fill(x, y, x + 16, y + 16, isHovered() ? 0xFF9A9A9A : 0xFF8B8B8B);

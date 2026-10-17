@@ -29,7 +29,7 @@ public class ArmoredWagon extends AbstractWagon implements MenuProvider {
     };
 
     public ArmoredWagon(EntityType<ArmoredWagon> type, Level level) {
-        super(type, level, 1, 1, SEATS, ServerConfig.INSTANCE.armoredSpeed.get(), ServerConfig.INSTANCE.armoredAcceleration.get(),
+        super(type, level, 1, 1, SEATS, ServerConfig.INSTANCE.armoredSpeed.get(),
                 ServerConfig.INSTANCE.armoredTurnRate.get(), ServerConfig.INSTANCE.armoredHealth.get(), 0.6D, 3.6D, 13);
     }
 

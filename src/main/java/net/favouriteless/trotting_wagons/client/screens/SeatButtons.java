@@ -35,6 +35,25 @@ public final class SeatButtons {
         return buttons;
     }
 
+    public static List<SeatButton> place(AbstractWagon wagon, int[] seatX, int seatY, int draftX, int draftY, int size) {
+        List<SeatButton> buttons = new ArrayList<>(seatX.length + 2);
+        for(int i = 0; i < wagon.getSeatCount() && i < seatX.length; i++) {
+            SeatButton button = SeatButton.placed(wagon, i, seatX[i], seatY, size);
+            button.refresh();
+            buttons.add(button);
+        }
+        SeatButton left = SeatButton.placedDraft(wagon, AbstractWagon.Side.LEFT, draftX, draftY, size);
+        left.refresh();
+        buttons.add(left);
+        if(wagon.hitchSlots() > 1) {
+            SeatButton right = SeatButton.placedDraft(wagon, AbstractWagon.Side.RIGHT, draftX + size, draftY, size);
+            right.refresh();
+            buttons.add(right);
+        }
+        SeatButton.bind(buttons);
+        return buttons;
+    }
+
     private static SeatButton draftButton(AbstractWagon wagon, AbstractWagon.Side side, int left, int y) {
         SeatButton button = SeatButton.draft(wagon, side, WagonLayout.draftX(left, side.ordinal()), y);
         button.refresh();

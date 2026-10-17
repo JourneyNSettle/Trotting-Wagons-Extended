@@ -15,8 +15,8 @@ public abstract class AbstractInventoryWagon extends AbstractWagon implements Me
     private final ItemStackHandler itemHandler;
 
     public AbstractInventoryWagon(EntityType<? extends AbstractWagon> type, Level level, double wheelWidth, double wheelLength, WagonSeat[] seats,
-                                  double speed, double acceleration, double turnRate, int maxHealth, double horseX, double horseY, float shaftAngle, int capacity) {
-        super(type, level, wheelWidth, wheelLength, seats, speed, acceleration, turnRate, maxHealth, horseX, horseY, shaftAngle);
+                                  double speedCoefficient, double turnRate, int maxHealth, double horseX, double horseY, float shaftAngle, int capacity) {
+        super(type, level, wheelWidth, wheelLength, seats, speedCoefficient, turnRate, maxHealth, horseX, horseY, shaftAngle);
         this.inventory = NonNullList.withSize(capacity, ItemStack.EMPTY);
         this.itemHandler = createHandler(inventory);
     }

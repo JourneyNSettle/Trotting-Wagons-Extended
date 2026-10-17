@@ -82,7 +82,7 @@ public class DebugWagon extends AbstractInventoryWagon {
     };
 
     public DebugWagon(EntityType<DebugWagon> type, Level level) {
-        super(type, level, 1.5D, 1.5D, SEATS, ServerConfig.INSTANCE.debugSpeed.get(), ServerConfig.INSTANCE.debugAcceleration.get(),
+        super(type, level, 1.5D, 1.5D, SEATS, ServerConfig.INSTANCE.debugSpeed.get(),
                 ServerConfig.INSTANCE.debugTurnRate.get(), ServerConfig.INSTANCE.debugHealth.get(), 0.3125D, 4.805D, 13, PUMPKIN_SLOTS);
     }
 

@@ -1,25 +1,34 @@
 package net.favouriteless.trotting_wagons.client.screens;
 
+import net.favouriteless.trotting_wagons.TrottingWagons;
 import net.favouriteless.trotting_wagons.common.entities.base.AbstractWagon;
 import net.favouriteless.trotting_wagons.common.menus.DebugMenu;
+import net.favouriteless.trotting_wagons.common.menus.RepairSlot;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.Util;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.ItemStack;
 
 import java.util.List;
 
 public class DebugScreen extends AbstractContainerScreen<DebugMenu> {
 
+    private static final ResourceLocation TEXTURE = TrottingWagons.id("textures/gui/debug_wagon.png");
+    private static final long TOOLTIP_DELAY_MS = 1000L;
     private List<SeatButton> seatButtons;
+    private Slot tooltipSlot;
+    private long tooltipStart = -1L;
 
     public DebugScreen(DebugMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
         this.imageWidth = 320;
-        this.imageHeight = 184;
-        this.titleLabelY = DebugMenu.CARGO_Y;
-        this.inventoryLabelX = 80;
-        this.inventoryLabelY = 88;
+        this.imageHeight = 196;
+        this.titleLabelY = 6;
+        this.inventoryLabelY = 1000;
     }
 
     @Override
@@ -28,17 +37,69 @@ public class DebugScreen extends AbstractContainerScreen<DebugMenu> {
         AbstractWagon wagon = menu.getWagon();
         if(wagon == null)
             return;
-        seatButtons = SeatButtons.create(wagon, leftPos, topPos + DebugMenu.SEAT_Y, imageWidth, topPos + DebugMenu.SEAT_Y);
+        seatButtons = SeatButtons.place(wagon, new int[] {leftPos + 108, leftPos + 134, leftPos + 160, leftPos + 186}, topPos + 60, leftPos + 21, topPos + 60, 26);
         for(SeatButton button : seatButtons)
             addRenderableWidget(button);
         if(minecraft != null && minecraft.player != null && wagon.isOwnedBy(minecraft.player))
-            addRenderableWidget(new WagonLockButton(leftPos + 6, topPos + imageHeight - 22, wagon));
+            addRenderableWidget(new WagonLockButton(leftPos + 20, topPos + 160, 26, wagon));
     }
 
     @Override
     protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
-        super.renderLabels(graphics, mouseX, mouseY);
-        WagonGui.drawStatus(graphics, font, menu.getWagon(), titleLabelX, titleLabelY, imageWidth);
+        graphics.drawString(font, title, titleLabelX, titleLabelY, 4210752, false);
+        AbstractWagon wagon = menu.getWagon();
+        if(wagon == null)
+            return;
+        String name = wagon.getOwnerName();
+        if(!name.isEmpty())
+            graphics.drawString(font, Component.translatable("gui.trotting_wagons.owner", name), 108, 6, 4210752, false);
+        Component distance = Component.translatable("gui.trotting_wagons.distance", String.format(java.util.Locale.ROOT, "%.1f", wagon.getDistance() / 1000.0F));
+        graphics.drawString(font, distance, imageWidth - 8 - font.width(distance), 6, 4210752, false);
+        graphics.drawString(font, Component.translatable("gui.trotting_wagons.wheels"), 16, 92, 4210752, false);
+        graphics.drawString(font, wagon.wheelSet().label(), 16, 102, 4210752, false);
+        int slotsCenter = DebugMenu.REPAIR_X + 17;
+        drawCentered(graphics, Component.translatable("gui.trotting_wagons.durability"), slotsCenter, 60);
+        drawCentered(graphics, wagon.conditionName(), slotsCenter, 70);
+        drawCentered(graphics, Component.translatable("gui.trotting_wagons.custom_items"), slotsCenter, 126);
+        drawCentered(graphics, Component.translatable("gui.trotting_wagons.custom_items.line2"), slotsCenter, 136);
+    }
+
+    private void drawCentered(GuiGraphics graphics, Component text, int centerX, int y) {
+        graphics.drawString(font, text, centerX - font.width(text) / 2, y, 4210752, false);
+    }
+
+    @Override
+    protected void renderTooltip(GuiGraphics graphics, int mouseX, int mouseY) {
+        if(hoveredSlot != null && isWagonSlot(hoveredSlot)) {
+            Component tip = delayedSlotTip(hoveredSlot);
+            if(tip != null)
+                graphics.renderTooltip(font, tip, mouseX, mouseY);
+            return;
+        }
+        tooltipSlot = null;
+        tooltipStart = -1L;
+        super.renderTooltip(graphics, mouseX, mouseY);
+    }
+
+    private boolean isWagonSlot(Slot slot) {
+        int index = menu.slots.indexOf(slot);
+        return index >= 0 && (index < 8 || index >= menu.slots.size() - 6);
+    }
+
+    private Component delayedSlotTip(Slot slot) {
+        if(slot != tooltipSlot) {
+            tooltipSlot = slot;
+            tooltipStart = Util.getMillis();
+            return null;
+        }
+        if(Util.getMillis() - tooltipStart < TOOLTIP_DELAY_MS)
+            return null;
+        if(slot.hasItem())
+            return slot.getItem().getHoverName();
+        if(slot instanceof RepairSlot repair && menu.getWagon() != null)
+            return menu.getWagon().repairTooltip(repair.getSlotIndex());
+        ItemStack icon = WagonGui.ghostIcon(menu, slot);
+        return icon.isEmpty() ? null : icon.getHoverName();
     }
 
     @Override
@@ -50,12 +111,13 @@ public class DebugScreen extends AbstractContainerScreen<DebugMenu> {
 
     @Override
     protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
-        WagonGui.drawFrame(graphics, leftPos, topPos, imageWidth, imageHeight);
+        graphics.blit(TEXTURE, leftPos, topPos, 0, 0, imageWidth, imageHeight, 320, 196);
         if(menu.getWagon() != null)
-            SeatButtons.drawHealth(graphics, font, menu.getWagon(), leftPos + 16, topPos + DebugMenu.HEALTH_Y, imageWidth - 32);
-        for(var slot : menu.slots)
-            WagonGui.drawSlot(graphics, leftPos, topPos, slot);
-        WagonGui.drawWheelCaption(graphics, font, menu, menu.getWagon(), leftPos, topPos);
+            SeatButtons.drawHealth(graphics, font, menu.getWagon(), leftPos + DebugMenu.HEALTH_X, topPos + DebugMenu.HEALTH_Y, DebugMenu.HEALTH_W);
+        for(var slot : menu.slots) {
+            if(slot instanceof RepairSlot && slot.isActive())
+                WagonGui.drawSlot(graphics, leftPos, topPos, slot);
+        }
         WagonGui.drawEmptySlotIcons(graphics, leftPos, topPos, menu);
     }
 

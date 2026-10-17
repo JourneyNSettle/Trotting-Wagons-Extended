@@ -38,7 +38,8 @@ public class WagonSoundInstance extends AbstractTickableSoundInstance {
 
             double speed = wagon.getDeltaMovement().horizontalDistance();
             if(speed >= 0.01F) {
-                float f = (float)(speed / ((AbstractWagon.SPEED_LEVELS-1) * wagon.speed));
+                float maxSpeed = wagon.syncedMaxSpeed();
+                float f = maxSpeed <= 1.0E-4F ? 0.0F : Mth.clamp((float)(speed / maxSpeed), 0.0F, 1.0F);
                 pitch = Mth.lerp(f, 0.75F, 1.0F);
                 volume = Mth.lerp(f, 0.0F, 1F);
             } else {

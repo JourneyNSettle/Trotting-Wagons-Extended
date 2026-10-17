@@ -25,7 +25,7 @@ public class RoyalWagon extends AbstractInventoryWagon {
 
     public RoyalWagon(EntityType<RoyalWagon> type, Level level) {
         super(type, level, 1.1D, 1.3D, SEATS, ServerConfig.INSTANCE.royalSpeed.get(),
-                ServerConfig.INSTANCE.royalAcceleration.get(), ServerConfig.INSTANCE.conestogaTurnRate.get(),
+                ServerConfig.INSTANCE.conestogaTurnRate.get(),
                 ServerConfig.INSTANCE.royalHealth.get(), 0.6D, 4.3D, 7, 54);
     }
 
