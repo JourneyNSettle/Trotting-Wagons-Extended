@@ -1,6 +1,9 @@
 {
   "item.trotting_wagons.debug_wagon": "Дебаг-вагон",
   "entity.trotting_wagons.debug_wagon": "Дебаг-вагон",
+  "item.trotting_wagons.animal_wagon": "Повозка для животных",
+  "itemGroup.trotting_wagons": "Повозки",
+  "entity.trotting_wagons.animal_wagon": "Повозка для животных",
   "item.trotting_wagons.wide_wheel": "Широкое колесо",
   "item.trotting_wagons.reinforced_wheel": "Укреплённое колесо",
   "item.trotting_wagons.wheel.durability": "Прочность %s/%s",
@@ -30,6 +33,8 @@
   "gui.trotting_wagons.tooltip.unknown": "Место занято",
   "gui.trotting_wagons.tooltip.lock": "Shift+клик: закрыть место для животных",
   "gui.trotting_wagons.tooltip.unlock": "Shift+клик: открыть место для животных",
+  "gui.trotting_wagons.tooltip.large_needs_space": "Освободите соседние места для размещения крупного животного",
+  "gui.trotting_wagons.tooltip.small_blocked": "Места заняты крупным животным",
   "gui.trotting_wagons.owner": "Владелец: %s",
   "gui.trotting_wagons.distance": "%s км",
   "gui.trotting_wagons.lock": "Заблокировать",

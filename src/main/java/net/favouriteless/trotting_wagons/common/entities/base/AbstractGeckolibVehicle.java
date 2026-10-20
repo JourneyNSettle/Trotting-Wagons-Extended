@@ -142,13 +142,17 @@ public abstract class AbstractGeckolibVehicle extends Entity implements GeoEntit
     }
 
     protected Vec3 offsetToWorld(Vec3 local, boolean sitOffset) {
+        return offsetToWorld(local, sitOffset, getYRot());
+    }
+
+    protected Vec3 offsetToWorld(Vec3 local, boolean sitOffset, float yaw) {
         Vec3 mid = new Vec3(0, 0, getXRot() < 0 ? wheelLength : -wheelLength); // Pivot point is different for positive vs negative rotation.
 
         local = local.subtract(mid);
         local = rotateX(local, getXRot());
         local = local.add(mid);
         local = adjustLocalOffset(local);
-        local = rotateY(local, getYRot());
+        local = rotateY(local, yaw);
         if(sitOffset)
             local = local.subtract(0, 0.7D, 0); // Offset player positions because the sit anim makes them float.
 

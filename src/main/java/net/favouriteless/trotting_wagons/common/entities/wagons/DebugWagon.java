@@ -102,6 +102,11 @@ public class DebugWagon extends AbstractInventoryWagon {
     }
 
     @Override
+    protected float diagonalPitch() {
+        return -8F;
+    }
+
+    @Override
     protected Vec3 hitchOffset(Side side) {
         return new Vec3(1D / 16D, 0, 76.88461D / 16D);
     }

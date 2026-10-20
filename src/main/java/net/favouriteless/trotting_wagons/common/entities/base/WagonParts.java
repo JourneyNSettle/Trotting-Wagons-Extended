@@ -1,6 +1,7 @@
 package net.favouriteless.trotting_wagons.common.entities.base;
 
 import net.favouriteless.trotting_wagons.TrottingWagons;
+import net.favouriteless.trotting_wagons.common.entities.wagons.AnimalWagon;
 import net.favouriteless.trotting_wagons.common.entities.wagons.ArmoredWagon;
 import net.favouriteless.trotting_wagons.common.entities.wagons.ConestogaWagon;
 import net.favouriteless.trotting_wagons.common.entities.wagons.DebugWagon;
@@ -28,6 +29,7 @@ public final class WagonParts {
 
     private static final double WHEEL_X = 0.22D;
     private static final double WHEEL_R = 0.75D;
+    private static final double WHEEL_WIDE_OUTER = 0.25D;
 
     private static final List<Part> CONESTOGA = List.of(
             wheel(0, 16, 7.15385D, -16),
@@ -48,6 +50,12 @@ public final class WagonParts {
             wheel(3, -16, 8.5D, 17)
     );
     private static final List<Part> DEBUG = debugParts();
+    private static final List<Part> ANIMAL = List.of(
+            wheel(0, 19.25D, 9.5D, -17),
+            wheel(1, -18.75D, 9.5D, -17),
+            wheel(2, 19.75D, 9.5D, 29),
+            wheel(3, -19.75D, 9.5D, 29)
+    );
 
     private WagonParts() {}
 
@@ -60,6 +68,8 @@ public final class WagonParts {
             return ROYAL;
         if(wagon instanceof ArmoredWagon)
             return ARMORED;
+        if(wagon instanceof AnimalWagon)
+            return ANIMAL;
         return List.of();
     }
 
@@ -73,7 +83,7 @@ public final class WagonParts {
         for(Part part : of(wagon)) {
             if(!present(wagon, part))
                 continue;
-            for(AABB local : part.local()) {
+            for(AABB local : clickBoxes(wagon, part)) {
                 Optional<Vec3> hit = clipPart(wagon, local, eye, end);
                 if(hit.isEmpty())
                     continue;
@@ -124,6 +134,16 @@ public final class WagonParts {
     private static Optional<Vec3> clipPart(AbstractWagon wagon, AABB local, Vec3 eye, Vec3 end) {
         Optional<Vec3> hit = local.clip(wagon.fromWorld(eye), wagon.fromWorld(end));
         return hit.map(wagon::toWorld);
+    }
+
+    public static List<AABB> clickBoxes(AbstractWagon wagon, Part part) {
+        if(part.kind() != Kind.WHEEL || wagon.getWheelKind(part.index()) != AbstractWagon.WheelKind.WIDE)
+            return part.local();
+        boolean outward = part.index() % 2 == 0; // 0 and 2 are the +X wheels; the wide rim sticks out on that side.
+        List<AABB> boxes = new ArrayList<>();
+        for(AABB local : part.local())
+            boxes.add(outward ? local.expandTowards(WHEEL_WIDE_OUTER, 0, 0) : local.expandTowards(-WHEEL_WIDE_OUTER, 0, 0));
+        return boxes;
     }
 
     public static AABB worldBox(AbstractWagon wagon, AABB local) {
@@ -177,7 +197,7 @@ public final class WagonParts {
         Vec3 closest = null;
         double closestDistance = Double.MAX_VALUE;
         for(Part part : of(wagon)) {
-            for(AABB local : part.local()) {
+            for(AABB local : clickBoxes(wagon, part)) {
                 Optional<Vec3> hit = clipPart(wagon, local, eye, end);
                 if(hit.isEmpty())
                     continue;

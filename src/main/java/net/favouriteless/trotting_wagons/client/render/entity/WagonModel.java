@@ -2,6 +2,7 @@ package net.favouriteless.trotting_wagons.client.render.entity;
 
 import net.favouriteless.trotting_wagons.TrottingWagons;
 import net.favouriteless.trotting_wagons.common.entities.base.AbstractWagon;
+import net.favouriteless.trotting_wagons.common.entities.wagons.AnimalWagon;
 import net.favouriteless.trotting_wagons.common.entities.wagons.ConestogaWagon;
 import net.favouriteless.trotting_wagons.common.entities.wagons.DebugWagon;
 import net.favouriteless.trotting_wagons.common.entities.wagons.RoyalWagon;
@@ -23,7 +24,7 @@ public class WagonModel<T extends AbstractWagon> extends DefaultedEntityGeoModel
 
     @Override
     public ResourceLocation getTextureResource(T wagon) {
-        if(wagon instanceof DebugWagon)
+        if(wagon instanceof DebugWagon || wagon instanceof AnimalWagon)
             return TrottingWagons.id(texturePathPrefix + "none.png");
         DyeColor color = wagon.getColor();
         return TrottingWagons.id(texturePathPrefix + (color != null ? color.getName() : "none") + ".png");
@@ -43,7 +44,7 @@ public class WagonModel<T extends AbstractWagon> extends DefaultedEntityGeoModel
         spinAxle(processor, "RearWheels_Wide", -rot);
         spinAxle(processor, "FrontWheels_Iron", -rot);
         spinAxle(processor, "RearWheels_Iron", -rot);
-        if(wagon instanceof DebugWagon)
+        if(wagon instanceof DebugWagon || wagon instanceof AnimalWagon)
             hideDebugWheels(processor, wagon);
         else
             hideMissingWheels(processor, wagon);

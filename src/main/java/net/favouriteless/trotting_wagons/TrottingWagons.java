@@ -1,6 +1,7 @@
 package net.favouriteless.trotting_wagons;
 
 import com.mojang.logging.LogUtils;
+import net.favouriteless.trotting_wagons.common.init.TWCreativeTabs;
 import net.favouriteless.trotting_wagons.common.init.TWEntityTypes;
 import net.favouriteless.trotting_wagons.common.init.TWItems;
 import net.favouriteless.trotting_wagons.common.init.TWMenuTypes;
@@ -53,6 +54,7 @@ public class TrottingWagons {
     public TrottingWagons(IEventBus bus, ModContainer container) {
         TWEntityTypes.REGISTRY.register(bus);
         TWItems.REGISTRY.register(bus);
+        TWCreativeTabs.REGISTRY.register(bus);
         TWMenuTypes.REGISTRY.register(bus);
         TWSoundEvents.REGISTRY.register(bus);
 

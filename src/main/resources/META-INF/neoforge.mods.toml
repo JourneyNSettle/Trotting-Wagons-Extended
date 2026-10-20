@@ -24,3 +24,11 @@ license="${mod_license}"
     versionRange="${minecraft_version_range}"
     ordering="NONE"
     side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="blockrunner"
+    type="optional"
+    mandatory=false
+    versionRange="*"
+    ordering="NONE"
+    side="BOTH"

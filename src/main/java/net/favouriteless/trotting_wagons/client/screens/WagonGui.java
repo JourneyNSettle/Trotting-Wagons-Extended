@@ -2,6 +2,7 @@ package net.favouriteless.trotting_wagons.client.screens;
 
 import net.favouriteless.trotting_wagons.common.entities.base.AbstractWagon;
 import net.favouriteless.trotting_wagons.common.init.TWItems;
+import net.favouriteless.trotting_wagons.common.menus.AnimalMenu;
 import net.favouriteless.trotting_wagons.common.menus.BannerSlot;
 import net.favouriteless.trotting_wagons.common.menus.DebugMenu;
 import net.favouriteless.trotting_wagons.common.menus.RepairSlot;
@@ -100,11 +101,22 @@ final class WagonGui {
             return new ItemStack(Blocks.WHITE_BANNER);
         if(slot instanceof LanternSlot)
             return new ItemStack(Items.LANTERN);
-        if(slot instanceof RepairSlot repair && menu instanceof DebugMenu debug && debug.getWagon() != null)
-            return debug.getWagon().repairIcon(repair.getSlotIndex());
+        if(slot instanceof RepairSlot repair) {
+            AbstractWagon wagon = repairWagon(menu);
+            if(wagon != null)
+                return wagon.repairIcon(repair.getSlotIndex());
+        }
         if(menu instanceof DebugMenu && slot instanceof SlotItemHandler && slot.getSlotIndex() < 4)
             return new ItemStack(Items.PUMPKIN);
         return ItemStack.EMPTY;
+    }
+
+    private static AbstractWagon repairWagon(AbstractContainerMenu menu) {
+        if(menu instanceof DebugMenu debug)
+            return debug.getWagon();
+        if(menu instanceof AnimalMenu animal)
+            return animal.getWagon();
+        return null;
     }
 
 }
