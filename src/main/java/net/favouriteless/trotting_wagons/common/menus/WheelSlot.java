@@ -1,6 +1,6 @@
 package net.favouriteless.trotting_wagons.common.menus;
 
-import net.favouriteless.trotting_wagons.common.init.TWItems;
+import net.favouriteless.trotting_wagons.TrottingWagons;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.SlotItemHandler;
@@ -13,7 +13,7 @@ public class WheelSlot extends SlotItemHandler {
 
     @Override
     public boolean mayPlace(ItemStack stack) {
-        return stack.is(TWItems.WHEEL.get());
+        return stack.is(TrottingWagons.WAGON_WHEELS);
     }
 
     @Override

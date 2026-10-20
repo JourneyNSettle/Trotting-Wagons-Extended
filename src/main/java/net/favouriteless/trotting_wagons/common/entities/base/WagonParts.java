@@ -1,10 +1,10 @@
 package net.favouriteless.trotting_wagons.common.entities.base;
 
+import net.favouriteless.trotting_wagons.TrottingWagons;
 import net.favouriteless.trotting_wagons.common.entities.wagons.ArmoredWagon;
 import net.favouriteless.trotting_wagons.common.entities.wagons.ConestogaWagon;
 import net.favouriteless.trotting_wagons.common.entities.wagons.DebugWagon;
 import net.favouriteless.trotting_wagons.common.entities.wagons.RoyalWagon;
-import net.favouriteless.trotting_wagons.common.init.TWItems;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BannerItem;
@@ -151,7 +151,7 @@ public final class WagonParts {
     private static boolean canInsert(AbstractWagon wagon, ItemStack stack) {
         if(stack.isEmpty())
             return false;
-        if(stack.is(TWItems.WHEEL.get())) {
+        if(stack.is(TrottingWagons.WAGON_WHEELS)) {
             for(int i = 0; i < AbstractWagon.WHEEL_COUNT; i++) {
                 if(wagon.getWheels().getStackInSlot(i).isEmpty())
                     return true;
@@ -210,7 +210,7 @@ public final class WagonParts {
     }
 
     private static void insert(AbstractWagon wagon, Player player, ItemStack stack, Vec3 aim) {
-        if(stack.is(TWItems.WHEEL.get())) {
+        if(stack.is(TrottingWagons.WAGON_WHEELS)) {
             int slot = nearestEmptyWheel(wagon, aim);
             if(slot < 0)
                 return;

@@ -37,14 +37,24 @@ public class WagonModel<T extends AbstractWagon> extends DefaultedEntityGeoModel
         float partialTick = (float)state.animationTick - (int)state.animationTick;
         float rot = wagon.getWheelRot(partialTick);
 
-        processor.getBone("FrontWheels").setRotX(-rot);
-        processor.getBone("RearWheels").setRotX(-rot);
-        hideMissingWheels(processor, wagon);
+        spinAxle(processor, "FrontWheels", -rot);
+        spinAxle(processor, "RearWheels", -rot);
+        spinAxle(processor, "FrontWheels_Wide", -rot);
+        spinAxle(processor, "RearWheels_Wide", -rot);
+        spinAxle(processor, "FrontWheels_Iron", -rot);
+        spinAxle(processor, "RearWheels_Iron", -rot);
+        if(wagon instanceof DebugWagon)
+            hideDebugWheels(processor, wagon);
+        else
+            hideMissingWheels(processor, wagon);
 
         AbstractWagon.WheelSag sag = wagon.wheelSag();
         float bodyPitch = wagon.getXRot(partialTick) + sag.pitch();
         processor.getBone("Tongue").setRotX(wagon.tongueAngle(bodyPitch, sag.roll(), sag.drop()));
         if(wagon instanceof DebugWagon debugWagon) {
+            GeoBone ladder = processor.getBone("Ladder");
+            if(ladder != null)
+                ladder.setRotZ(debugWagon.ladderRender(partialTick) * DebugWagon.LADDER_DROP);
             hidePumpkins(processor, debugWagon.getPumpkinCount());
             boolean bare = debugWagon.getBannerStack().isEmpty();
             GeoBone banner = processor.getBone("banner");
@@ -59,10 +69,27 @@ public class WagonModel<T extends AbstractWagon> extends DefaultedEntityGeoModel
         }
     }
 
+    private static void spinAxle(AnimationProcessor<?> processor, String name, float rot) {
+        GeoBone bone = processor.getBone(name);
+        if(bone != null)
+            bone.setRotX(rot);
+    }
+
+    private static void hideDebugWheels(AnimationProcessor<?> processor, AbstractWagon wagon) {
+        for(int i = 0; i < DEBUG_WHEEL_VARIANTS.length; i++) {
+            int show = wagon.getWheelKind(i).ordinal() - 1;
+            String[] names = DEBUG_WHEEL_VARIANTS[i];
+            for(int variant = 0; variant < names.length; variant++) {
+                GeoBone bone = processor.getBone(names[variant]);
+                if(bone != null)
+                    bone.setHidden(variant != show);
+            }
+        }
+    }
+
     private static void hideMissingWheels(AnimationProcessor<?> processor, AbstractWagon wagon) {
         String[] bones = wagon instanceof ConestogaWagon ? CONESTOGA_WHEELS
                 : wagon instanceof RoyalWagon ? ROYAL_WHEELS
-                : wagon instanceof DebugWagon ? DEBUG_WHEELS
                 : ARMORED_WHEELS;
         int mask = wagon.getWheelMask();
         for(int i = 0; i < bones.length; i++) {
@@ -75,7 +102,12 @@ public class WagonModel<T extends AbstractWagon> extends DefaultedEntityGeoModel
     private static final String[] CONESTOGA_WHEELS = {"wheelleft", "wheelright", "bone", "bone2"};
     private static final String[] ROYAL_WHEELS = {"octagon2", "octagon", "octagon4", "octagon3"};
     private static final String[] ARMORED_WHEELS = {"bone3", "bone4", "bone", "bone2"};
-    private static final String[] DEBUG_WHEELS = {"LeftFrontWheel", "RightFrontWheel", "LeftRearWheel", "RightRearWheel"};
+    private static final String[][] DEBUG_WHEEL_VARIANTS = {
+            {"LeftFrontWheel", "LeftFrontWheel2", "LeftFrontWheel3"},
+            {"RightFrontWheel", "RightFrontWheel2", "RightFrontWheel3"},
+            {"LeftRearWheel", "LeftRearWheel2", "LeftRearWheel3"},
+            {"RightRearWheel", "RightRearWheel2", "RightRearWheel3"}
+    };
 
     private static void hidePumpkins(AnimationProcessor<?> processor, int count) {
         for(int i = 0; i < DebugWagon.PUMPKIN_SLOTS; i++) {

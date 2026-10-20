@@ -24,6 +24,8 @@ public class TWItems {
 
     public static final DeferredHolder<Item, HorseWhipItem> HORSE_WHIP = REGISTRY.register("horse_whip", () -> new HorseWhipItem(new Properties().stacksTo(1)));
     public static final DeferredHolder<Item, WheelItem> WHEEL = REGISTRY.register("wheel", () -> new WheelItem(new Properties().durability(100)));
+    public static final DeferredHolder<Item, WheelItem> WIDE_WHEEL = REGISTRY.register("wide_wheel", () -> new WheelItem(new Properties().durability(100)));
+    public static final DeferredHolder<Item, WheelItem> REINFORCED_WHEEL = REGISTRY.register("reinforced_wheel", () -> new WheelItem(new Properties().durability(100)));
 
     private static Properties wagonProps() {
         return new Properties()

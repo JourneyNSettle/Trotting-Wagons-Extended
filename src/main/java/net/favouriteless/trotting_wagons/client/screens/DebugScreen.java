@@ -2,13 +2,13 @@ package net.favouriteless.trotting_wagons.client.screens;
 
 import net.favouriteless.trotting_wagons.TrottingWagons;
 import net.favouriteless.trotting_wagons.common.entities.base.AbstractWagon;
+import net.favouriteless.trotting_wagons.common.entities.wagons.DebugWagon;
 import net.favouriteless.trotting_wagons.common.menus.DebugMenu;
 import net.favouriteless.trotting_wagons.common.menus.RepairSlot;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.Util;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
@@ -18,10 +18,8 @@ import java.util.List;
 public class DebugScreen extends AbstractContainerScreen<DebugMenu> {
 
     private static final ResourceLocation TEXTURE = TrottingWagons.id("textures/gui/debug_wagon.png");
-    private static final long TOOLTIP_DELAY_MS = 1000L;
+    private final TooltipDelay tooltips = new TooltipDelay();
     private List<SeatButton> seatButtons;
-    private Slot tooltipSlot;
-    private long tooltipStart = -1L;
 
     public DebugScreen(DebugMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
@@ -42,6 +40,8 @@ public class DebugScreen extends AbstractContainerScreen<DebugMenu> {
             addRenderableWidget(button);
         if(minecraft != null && minecraft.player != null && wagon.isOwnedBy(minecraft.player))
             addRenderableWidget(new WagonLockButton(leftPos + 20, topPos + 160, 26, wagon));
+        if(wagon instanceof DebugWagon debugWagon)
+            addRenderableWidget(new LadderButton(leftPos + imageWidth - 24, topPos + 6 + font.lineHeight + 2, debugWagon));
     }
 
     @Override
@@ -55,8 +55,9 @@ public class DebugScreen extends AbstractContainerScreen<DebugMenu> {
             graphics.drawString(font, Component.translatable("gui.trotting_wagons.owner", name), 108, 6, 4210752, false);
         Component distance = Component.translatable("gui.trotting_wagons.distance", String.format(java.util.Locale.ROOT, "%.1f", wagon.getDistance() / 1000.0F));
         graphics.drawString(font, distance, imageWidth - 8 - font.width(distance), 6, 4210752, false);
-        graphics.drawString(font, Component.translatable("gui.trotting_wagons.wheels"), 16, 92, 4210752, false);
-        graphics.drawString(font, wagon.wheelSet().label(), 16, 102, 4210752, false);
+        int wheelCenter = DebugMenu.WHEEL_X + 17;
+        drawCentered(graphics, Component.translatable("gui.trotting_wagons.wheels"), wheelCenter, 92);
+        drawCentered(graphics, wagon.wheelSet().label(), wheelCenter, 102);
         int slotsCenter = DebugMenu.REPAIR_X + 17;
         drawCentered(graphics, Component.translatable("gui.trotting_wagons.durability"), slotsCenter, 60);
         drawCentered(graphics, wagon.conditionName(), slotsCenter, 70);
@@ -70,15 +71,16 @@ public class DebugScreen extends AbstractContainerScreen<DebugMenu> {
 
     @Override
     protected void renderTooltip(GuiGraphics graphics, int mouseX, int mouseY) {
-        if(hoveredSlot != null && isWagonSlot(hoveredSlot)) {
-            Component tip = delayedSlotTip(hoveredSlot);
-            if(tip != null)
-                graphics.renderTooltip(font, tip, mouseX, mouseY);
+        if(hoveredSlot != null && hoveredSlot.hasItem()) {
+            tooltips.ready(null);
+            super.renderTooltip(graphics, mouseX, mouseY);
             return;
         }
-        tooltipSlot = null;
-        tooltipStart = -1L;
-        super.renderTooltip(graphics, mouseX, mouseY);
+        if(!tooltips.ready(hoveredSlot) || hoveredSlot == null || !isWagonSlot(hoveredSlot))
+            return;
+        Component tip = emptySlotTip(hoveredSlot);
+        if(tip != null)
+            graphics.renderTooltip(font, tip, mouseX, mouseY);
     }
 
     private boolean isWagonSlot(Slot slot) {
@@ -86,16 +88,7 @@ public class DebugScreen extends AbstractContainerScreen<DebugMenu> {
         return index >= 0 && (index < 8 || index >= menu.slots.size() - 6);
     }
 
-    private Component delayedSlotTip(Slot slot) {
-        if(slot != tooltipSlot) {
-            tooltipSlot = slot;
-            tooltipStart = Util.getMillis();
-            return null;
-        }
-        if(Util.getMillis() - tooltipStart < TOOLTIP_DELAY_MS)
-            return null;
-        if(slot.hasItem())
-            return slot.getItem().getHoverName();
+    private Component emptySlotTip(Slot slot) {
         if(slot instanceof RepairSlot repair && menu.getWagon() != null)
             return menu.getWagon().repairTooltip(repair.getSlotIndex());
         ItemStack icon = WagonGui.ghostIcon(menu, slot);
