@@ -27,7 +27,7 @@ import org.lwjgl.glfw.GLFW;
 public class SeatButton extends AbstractWidget {
 
     public static final int SIZE = 24;
-    private static final long TOOLTIP_DELAY_MS = 1000L;
+    private static final long TOOLTIP_DELAY_MS = TooltipDelay.MILLIS;
 
     private static final List<SeatButton> OPEN = new ArrayList<>();
     private static SeatButton dragSource;

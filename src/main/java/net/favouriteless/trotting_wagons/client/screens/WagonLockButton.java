@@ -8,6 +8,8 @@ import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
 import net.neoforged.neoforge.network.PacketDistributor;
 
+import java.time.Duration;
+
 public class WagonLockButton extends Button {
 
     private final AbstractWagon wagon;
@@ -26,6 +28,7 @@ public class WagonLockButton extends Button {
         super(x, y, size, size, Component.empty(), button -> PacketDistributor.sendToServer(new ToggleWagonLockPayload(wagon.getId())), DEFAULT_NARRATION);
         this.wagon = wagon;
         this.painted = painted;
+        setTooltipDelay(Duration.ofMillis(TooltipDelay.MILLIS));
     }
 
     @Override

@@ -12,6 +12,7 @@ import net.favouriteless.trotting_wagons.common.network.packets.OpenWagonMenuPay
 import net.favouriteless.trotting_wagons.common.network.packets.SelectSeatPayload;
 import net.favouriteless.trotting_wagons.common.network.packets.SteeringPayload;
 import net.favouriteless.trotting_wagons.common.network.packets.SyncSeatsPayload;
+import net.favouriteless.trotting_wagons.common.network.packets.ToggleLadderPayload;
 import net.favouriteless.trotting_wagons.common.network.packets.ToggleSeatLockPayload;
 import net.favouriteless.trotting_wagons.common.network.packets.ToggleWagonLockPayload;
 import net.favouriteless.trotting_wagons.common.network.packets.WhipLowerGearPayload;
@@ -42,6 +43,8 @@ public class CommonSetupEvents {
         event.accept(WagonItem.setupComponents(new ItemStack(TWItems.ROYAL_WAGON.get()), DyeColor.WHITE));
         event.accept(TWItems.HORSE_WHIP.get());
         event.accept(TWItems.WHEEL.get());
+        event.accept(TWItems.WIDE_WHEEL.get());
+        event.accept(TWItems.REINFORCED_WHEEL.get());
     }
 
     @SubscribeEvent
@@ -62,6 +65,7 @@ public class CommonSetupEvents {
         registrar.playToServer(MoveAnimalPayload.TYPE, MoveAnimalPayload.CODEC, MoveAnimalPayload::handle);
         registrar.playToServer(ToggleSeatLockPayload.TYPE, ToggleSeatLockPayload.CODEC, ToggleSeatLockPayload::handle);
         registrar.playToServer(ToggleWagonLockPayload.TYPE, ToggleWagonLockPayload.CODEC, ToggleWagonLockPayload::handle);
+        registrar.playToServer(ToggleLadderPayload.TYPE, ToggleLadderPayload.CODEC, ToggleLadderPayload::handle);
         registrar.playToServer(WhipLowerGearPayload.TYPE, WhipLowerGearPayload.CODEC, WhipLowerGearPayload::handle);
         registrar.playToClient(SyncSeatsPayload.TYPE, SyncSeatsPayload.CODEC, SyncSeatsPayload::handle);
     }

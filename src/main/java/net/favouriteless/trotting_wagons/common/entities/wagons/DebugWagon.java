@@ -6,6 +6,7 @@ import net.favouriteless.trotting_wagons.common.entities.base.WagonSeat;
 import net.favouriteless.trotting_wagons.common.init.TWItems;
 import net.favouriteless.trotting_wagons.common.items.WagonItem;
 import net.favouriteless.trotting_wagons.common.menus.DebugMenu;
+import net.minecraft.util.Mth;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.ContainerHelper;
@@ -30,7 +31,13 @@ import net.neoforged.neoforge.items.ItemStackHandler;
 public class DebugWagon extends AbstractInventoryWagon {
 
     public static final int PUMPKIN_SLOTS = 4;
+    /** Positive rotation swings the upright ladder outward. Negative folded it into the wagon. */
+    public static final float LADDER_DROP = (float)Math.toRadians(130.0D);
+    private static final int LADDER_TICKS = 40;
+    private static final float LADDER_STEP = 1.0F / LADDER_TICKS;
 
+    private static final EntityDataAccessor<Boolean> DATA_LADDER_OPEN = SynchedEntityData.defineId(DebugWagon.class, EntityDataSerializers.BOOLEAN);
+    private static final EntityDataAccessor<Float> DATA_LADDER = SynchedEntityData.defineId(DebugWagon.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Integer> DATA_PUMPKINS = SynchedEntityData.defineId(DebugWagon.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<ItemStack> DATA_BANNER = SynchedEntityData.defineId(DebugWagon.class, EntityDataSerializers.ITEM_STACK);
     private static final EntityDataAccessor<Boolean> DATA_LANTERN = SynchedEntityData.defineId(DebugWagon.class, EntityDataSerializers.BOOLEAN);
@@ -73,6 +80,9 @@ public class DebugWagon extends AbstractInventoryWagon {
     };
 
     private BlockPos lanternLight;
+    private float ladderFrom;
+    private float ladderTo;
+    private boolean ladderVisualReady;
 
     public static final WagonSeat[] SEATS = new WagonSeat[] {
             new WagonSeat(pivot(0, 27.5D, -28.5D), WagonSeat.Kind.DRIVER),
@@ -138,6 +148,8 @@ public class DebugWagon extends AbstractInventoryWagon {
     @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         super.defineSynchedData(builder);
+        builder.define(DATA_LADDER_OPEN, false);
+        builder.define(DATA_LADDER, 0.0F);
         builder.define(DATA_PUMPKINS, 0);
         builder.define(DATA_BANNER, ItemStack.EMPTY);
         builder.define(DATA_LANTERN, false);
@@ -146,8 +158,58 @@ public class DebugWagon extends AbstractInventoryWagon {
     @Override
     public void tick() {
         super.tick();
-        if(!level().isClientSide && tickCount % 10 == 0)
+        if(level().isClientSide) {
+            tickLadderVisual();
+            return;
+        }
+        tickLadder();
+        if(tickCount % 10 == 0)
             updateLanternLight();
+    }
+
+    @Override
+    protected boolean holdsTravel() {
+        return ladderProgress() > 0.001F;
+    }
+
+    public boolean isLadderOpen() {
+        return entityData.get(DATA_LADDER_OPEN);
+    }
+
+    public float ladderProgress() {
+        return entityData.get(DATA_LADDER);
+    }
+
+    public float ladderRender(float partialTick) {
+        if(!ladderVisualReady)
+            return ladderProgress();
+        return Mth.lerp(partialTick, ladderFrom, ladderTo);
+    }
+
+    public void toggleLadder(Player player) {
+        if(!(player.containerMenu instanceof DebugMenu menu) || menu.getWagon() != this)
+            return;
+        entityData.set(DATA_LADDER_OPEN, !isLadderOpen());
+    }
+
+    private void tickLadder() {
+        float next = approach(ladderProgress(), isLadderOpen() ? 1.0F : 0.0F);
+        if(next != ladderProgress())
+            entityData.set(DATA_LADDER, next);
+    }
+
+    private void tickLadderVisual() {
+        if(!ladderVisualReady) {
+            ladderFrom = ladderProgress();
+            ladderTo = ladderFrom;
+            ladderVisualReady = true;
+        }
+        ladderFrom = ladderTo;
+        ladderTo = approach(ladderTo, isLadderOpen() ? 1.0F : 0.0F);
+    }
+
+    private static float approach(float value, float target) {
+        return value + Mth.clamp(target - value, -LADDER_STEP, LADDER_STEP);
     }
 
     @Override
@@ -171,11 +233,15 @@ public class DebugWagon extends AbstractInventoryWagon {
             ContainerHelper.loadAllItems(nbt.getCompound("Lantern"), lantern, registryAccess());
         }
         syncLantern();
+        entityData.set(DATA_LADDER_OPEN, nbt.getBoolean("ladderOpen"));
+        entityData.set(DATA_LADDER, Mth.clamp(nbt.getFloat("ladderProgress"), 0.0F, 1.0F));
     }
 
     @Override
     public void addAdditionalSaveData(CompoundTag nbt) {
         super.addAdditionalSaveData(nbt);
+        nbt.putBoolean("ladderOpen", isLadderOpen());
+        nbt.putFloat("ladderProgress", ladderProgress());
         CompoundTag bannerTag = new CompoundTag();
         ContainerHelper.saveAllItems(bannerTag, banner, registryAccess());
         nbt.put("Banner", bannerTag);

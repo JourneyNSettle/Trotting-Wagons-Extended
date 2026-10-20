@@ -1,7 +1,7 @@
 package net.favouriteless.trotting_wagons.common.menus;
 
+import net.favouriteless.trotting_wagons.TrottingWagons;
 import net.favouriteless.trotting_wagons.common.entities.base.AbstractWagon;
-import net.favouriteless.trotting_wagons.common.init.TWItems;
 import net.favouriteless.trotting_wagons.common.init.TWMenuTypes;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Inventory;
@@ -52,7 +52,7 @@ public class ArmoredMenu extends AbstractContainerMenu {
         if(index < wheelEnd) {
             if(!moveItemStackTo(item, wheelEnd, slots.size(), false))
                 return ItemStack.EMPTY;
-        } else if(!item.is(TWItems.WHEEL.get()) || !moveItemStackTo(item, 0, wheelEnd, false)) {
+        } else if(!item.is(TrottingWagons.WAGON_WHEELS) || !moveItemStackTo(item, 0, wheelEnd, false)) {
             return ItemStack.EMPTY;
         }
         if(item.isEmpty())

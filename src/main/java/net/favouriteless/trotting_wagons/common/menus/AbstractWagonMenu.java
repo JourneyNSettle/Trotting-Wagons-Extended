@@ -1,8 +1,8 @@
 package net.favouriteless.trotting_wagons.common.menus;
 
+import net.favouriteless.trotting_wagons.TrottingWagons;
 import net.favouriteless.trotting_wagons.common.entities.base.AbstractInventoryWagon;
 import net.favouriteless.trotting_wagons.common.entities.base.AbstractWagon;
-import net.favouriteless.trotting_wagons.common.init.TWItems;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -68,7 +68,7 @@ public abstract class AbstractWagonMenu extends AbstractContainerMenu {
             if(index < wheelEnd) {
                 if(!moveItemStackTo(item, wheelEnd, slots.size(), false))
                     return ItemStack.EMPTY;
-            } else if(item.is(TWItems.WHEEL.get())) {
+            } else if(item.is(TrottingWagons.WAGON_WHEELS)) {
                 if(!moveItemStackTo(item, wheelStart, wheelEnd, false))
                     return ItemStack.EMPTY;
             } else if(!moveItemStackTo(item, 0, cargoSlots, false)) {

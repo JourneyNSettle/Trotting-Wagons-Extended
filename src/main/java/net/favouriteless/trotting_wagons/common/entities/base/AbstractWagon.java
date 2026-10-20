@@ -70,6 +70,7 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
     private static final EntityDataAccessor<Float> DATA_ID_HEALTH = SynchedEntityData.defineId(AbstractWagon.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<OptionalInt> DATA_ID_COLOR = SynchedEntityData.defineId(AbstractWagon.class, EntityDataSerializers.OPTIONAL_UNSIGNED_INT);
     private static final EntityDataAccessor<Byte> DATA_WHEELS = SynchedEntityData.defineId(AbstractWagon.class, EntityDataSerializers.BYTE);
+    private static final EntityDataAccessor<Byte> DATA_WHEEL_KINDS = SynchedEntityData.defineId(AbstractWagon.class, EntityDataSerializers.BYTE);
     private static final EntityDataAccessor<Integer> DATA_HITCH_LEFT = SynchedEntityData.defineId(AbstractWagon.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> DATA_HITCH_RIGHT = SynchedEntityData.defineId(AbstractWagon.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Float> DATA_DISTANCE = SynchedEntityData.defineId(AbstractWagon.class, EntityDataSerializers.FLOAT);
@@ -81,6 +82,7 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
     private static final EntityDataAccessor<String> DATA_REPAIR = SynchedEntityData.defineId(AbstractWagon.class, EntityDataSerializers.STRING);
     public static final int REPAIR_SLOTS = 4;
     private static final int WHEEL_DURABILITY = 100;
+    private static final double WIDE_WHEEL_FACTOR = 0.8D;
     private static final int WHEEL_BREAK_BELOW = 20;
 
     public static final double GRAVITY = 0.04D;
@@ -121,7 +123,7 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
     private final ItemStackHandler wheelHandler = new ItemStackHandler(wheels) {
         @Override
         public boolean isItemValid(int slot, ItemStack stack) {
-            return stack.is(TWItems.WHEEL.get());
+            return stack.is(TrottingWagons.WAGON_WHEELS);
         }
 
         @Override
@@ -249,7 +251,7 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
             setSpeedLevel(0);
             setSteeringImpulse(0);
         }
-        if(!hasAllWheels())
+        if(!hasAllWheels() || holdsTravel())
             currentSpeed = 0;
 
         handleSteering();
@@ -332,7 +334,7 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
     }
 
     private double computeMaxSpeedPerTick() {
-        if(!hasAllWheels() || !hasPullers())
+        if(!hasAllWheels() || !hasPullers() || holdsTravel())
             return 0;
         double slowest = Double.POSITIVE_INFINITY;
         for(Mob animal : horses) {
@@ -345,7 +347,14 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         }
         if(slowest == Double.POSITIVE_INFINITY)
             return 0;
-        return slowest * speedCoefficient / 20.0D;
+        double speed = slowest * speedCoefficient / 20.0D;
+        if(hasWideWheel())
+            speed *= WIDE_WHEEL_FACTOR;
+        return speed;
+    }
+
+    protected boolean holdsTravel() {
+        return false;
     }
 
     public float syncedMaxSpeed() {
@@ -578,6 +587,7 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         builder.define(DATA_ID_COLOR, color != null ? OptionalInt.of(color.getId()) : OptionalInt.empty());
         builder.define(DATA_ID_HEALTH, (float)0);
         builder.define(DATA_WHEELS, (byte)0x0F);
+        builder.define(DATA_WHEEL_KINDS, (byte)0x55);
         builder.define(DATA_HITCH_LEFT, -1);
         builder.define(DATA_HITCH_RIGHT, -1);
         builder.define(DATA_DISTANCE, 0.0F);
@@ -1291,8 +1301,21 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         return entityData.get(DATA_WHEELS) & 0x0F;
     }
 
+    public WheelKind getWheelKind(int index) {
+        int raw = entityData.get(DATA_WHEEL_KINDS) & 0xFF;
+        return WheelKind.BY_ID[(raw >> (index * 2)) & 3];
+    }
+
     public boolean hasAllWheels() {
         return getWheelMask() == 0x0F;
+    }
+
+    private boolean hasWideWheel() {
+        for(int i = 0; i < WHEEL_COUNT; i++) {
+            if(getWheelKind(i) == WheelKind.WIDE)
+                return true;
+        }
+        return false;
     }
 
     public WheelSet wheelSet() {
@@ -1307,7 +1330,13 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
             else if(stack.getItem() != same)
                 mismatch = true;
         }
-        return mismatch ? WheelSet.INCOMPATIBLE : WheelSet.REGULAR;
+        if(mismatch)
+            return WheelSet.INCOMPATIBLE;
+        if(same == TWItems.WIDE_WHEEL.get())
+            return WheelSet.WIDE;
+        if(same == TWItems.REINFORCED_WHEEL.get())
+            return WheelSet.REINFORCED;
+        return WheelSet.REGULAR;
     }
 
     public WheelSag wheelSag() {
@@ -1404,11 +1433,15 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
 
     private void updateWheelMask() {
         int mask = 0;
+        int kinds = 0;
         for(int i = 0; i < wheels.size(); i++) {
-            if(!wheels.get(i).isEmpty())
+            WheelKind kind = WheelKind.fromStack(wheels.get(i));
+            if(kind != WheelKind.NONE)
                 mask |= 1 << i;
+            kinds |= kind.ordinal() << (i * 2);
         }
         entityData.set(DATA_WHEELS, (byte)mask);
+        entityData.set(DATA_WHEEL_KINDS, (byte)kinds);
     }
 
     public boolean movePlayerToSeat(Player player, int seat) {
@@ -1638,8 +1671,29 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         LEFT, RIGHT
     }
 
+    public enum WheelKind {
+        NONE,
+        REGULAR,
+        WIDE,
+        REINFORCED;
+
+        private static final WheelKind[] BY_ID = values();
+
+        public static WheelKind fromStack(ItemStack stack) {
+            if(stack.is(TWItems.WIDE_WHEEL.get()))
+                return WIDE;
+            if(stack.is(TWItems.REINFORCED_WHEEL.get()))
+                return REINFORCED;
+            if(stack.is(TWItems.WHEEL.get()))
+                return REGULAR;
+            return NONE;
+        }
+    }
+
     public enum WheelSet {
         REGULAR("gui.trotting_wagons.wheels.regular"),
+        WIDE("gui.trotting_wagons.wheels.wide"),
+        REINFORCED("gui.trotting_wagons.wheels.reinforced"),
         MISSING("gui.trotting_wagons.wheels.missing"),
         INCOMPATIBLE("gui.trotting_wagons.wheels.incompatible");
 
