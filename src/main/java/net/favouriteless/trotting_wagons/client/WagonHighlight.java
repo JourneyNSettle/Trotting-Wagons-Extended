@@ -37,7 +37,7 @@ public class WagonHighlight {
             WagonParts.Part picked = WagonParts.pick(nearby, player);
             if(picked == null)
                 continue;
-            for(AABB local : picked.local()) {
+            for(AABB local : WagonParts.clickBoxes(nearby, picked)) {
                 double distance = WagonParts.worldBox(nearby, local).distanceToSqr(eye);
                 if(distance < best) {
                     best = distance;
@@ -53,7 +53,7 @@ public class WagonHighlight {
         MultiBufferSource.BufferSource buffers = minecraft.renderBuffers().bufferSource();
         VertexConsumer lines = buffers.getBuffer(RenderType.lines());
         pose.pushPose();
-        for(AABB local : part.local()) {
+        for(AABB local : WagonParts.clickBoxes(wagon, part)) {
             AABB world = WagonParts.worldBox(wagon, local).move(-camera.x, -camera.y, -camera.z);
             LevelRenderer.renderLineBox(pose, lines, world, 0.0F, 0.0F, 0.0F, 0.4F);
         }

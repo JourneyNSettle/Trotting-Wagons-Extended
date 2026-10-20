@@ -1,6 +1,7 @@
 package net.favouriteless.trotting_wagons.common.init;
 
 import net.favouriteless.trotting_wagons.TrottingWagons;
+import net.favouriteless.trotting_wagons.common.menus.AnimalMenu;
 import net.favouriteless.trotting_wagons.common.menus.ArmoredMenu;
 import net.favouriteless.trotting_wagons.common.menus.ConestogaMenu;
 import net.favouriteless.trotting_wagons.common.menus.DebugMenu;
@@ -20,5 +21,6 @@ public class TWMenuTypes {
     public static final DeferredHolder<MenuType<?>, MenuType<RoyalMenu>> ROYAL = REGISTRY.register("royal_wagon", () -> IMenuTypeExtension.create(RoyalMenu::new));
     public static final DeferredHolder<MenuType<?>, MenuType<ArmoredMenu>> ARMORED = REGISTRY.register("armored_wagon", () -> IMenuTypeExtension.create(ArmoredMenu::new));
     public static final DeferredHolder<MenuType<?>, MenuType<DebugMenu>> DEBUG = REGISTRY.register("debug_wagon", () -> IMenuTypeExtension.create(DebugMenu::new));
+    public static final DeferredHolder<MenuType<?>, MenuType<AnimalMenu>> ANIMAL = REGISTRY.register("animal_wagon", () -> IMenuTypeExtension.create(AnimalMenu::new));
 
 }

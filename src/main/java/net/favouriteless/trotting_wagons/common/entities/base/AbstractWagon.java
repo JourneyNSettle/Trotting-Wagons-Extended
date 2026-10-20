@@ -3,9 +3,11 @@ package net.favouriteless.trotting_wagons.common.entities.base;
 import net.favouriteless.trotting_wagons.ServerConfig;
 import net.favouriteless.trotting_wagons.TrottingWagons;
 import net.favouriteless.trotting_wagons.client.TWClient;
+import net.favouriteless.trotting_wagons.compat.BlockRunnerSpeed;
 import net.favouriteless.trotting_wagons.common.init.TWItems;
 import net.favouriteless.trotting_wagons.common.util.LevelUtils;
 import net.minecraft.advancements.AdvancementHolder;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.particles.BlockParticleOption;
@@ -41,12 +43,15 @@ import net.minecraft.tags.ItemTags;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -197,8 +202,10 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
 
         if(!level().isClientSide) {
             validateHorses();
-            if(hasFixedSeats())
+            if(hasFixedSeats()) {
+                keepHarnessedOutOfSeats();
                 boardNearbyAnimals();
+            }
             if(tickCount % 20 == 0 && movedRecently) {
                 maybeBreakWornWheels();
                 movedRecently = false;
@@ -213,12 +220,33 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
 
     private void validateHorses() {
         if(firstTick || level().getGameTime() % 100 == 0) { // Repeated checks help resolve chunk loading issues.
-            setHorse(getHorse(Side.LEFT), Side.LEFT);
-            setHorse(getHorse(Side.RIGHT), Side.RIGHT);
+            retainHorse(Side.LEFT);
+            retainHorse(Side.RIGHT);
         }
 
         validate(Side.LEFT);
         validate(Side.RIGHT);
+    }
+
+    // A missing animal stays harnessed until it loads again. Only a loaded dead animal is cleared.
+    private void retainHorse(Side side) {
+        if(horseUuids[side.ordinal()] == null)
+            return;
+        Mob horse = getHorse(side);
+        if(horse != null) {
+            setHorse(horse, side);
+            return;
+        }
+        Entity found = level().getEntities().get(horseUuids[side.ordinal()]);
+        if(found != null && !found.isAlive())
+            setHorse(null, side);
+    }
+
+    private void keepHarnessedOutOfSeats() {
+        for(Entity passenger : List.copyOf(getPassengers())) {
+            if(passenger instanceof Mob && harnesses(passenger))
+                passenger.stopRiding();
+        }
     }
 
     private void validate(Side side) {
@@ -229,8 +257,27 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
             unhitch(horse);
             return;
         }
-        if(!isHorseInRange(side))
-            horse.setPos(getHorsePos(side));
+        boolean tilted = isTilted();
+        Vec3 anchor = tilted ? shaftWorld(side, getYRot()) : hitchWorld(side, getYRot());
+        boolean pullHorizontal = tilted || !isHorseInRange(side);
+        double x = pullHorizontal ? anchor.x : horse.getX();
+        double z = pullHorizontal ? anchor.z : horse.getZ();
+        double y = horse.getY();
+        double ground = feetOnGround(x, z);
+        if(!Double.isNaN(ground) && (pullHorizontal || y < ground))
+            y = ground;
+        if(pullHorizontal || y != horse.getY()) {
+            horse.setPos(x, y, z);
+            if(y == ground)
+                horse.setDeltaMovement(horse.getDeltaMovement().multiply(1, 0, 1));
+        }
+    }
+
+    private boolean isTilted() {
+        if(Math.abs(getXRot()) > 0.05F)
+            return true;
+        WheelSag sag = wheelSag();
+        return sag.pitch() != 0 || sag.roll() != 0;
     }
 
     private boolean isHorseInRange(Side side) {
@@ -240,6 +287,40 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
 
         Vec3 displacement = horse.position().subtract(getHorsePos(side));
         return horse.isAlive() && displacement.horizontalDistanceSqr() < HORIZONTAL_TETHER;
+    }
+
+    private void moveHorse(Mob horse, Vec3 move) {
+        horse.setDeltaMovement(move.add(0, horse.getDeltaMovement().y, 0));
+        horse.move(MoverType.SELF, horse.getDeltaMovement());
+        double ground = feetOnGround(horse.getX(), horse.getZ());
+        if(Double.isNaN(ground) || horse.getY() >= ground)
+            return;
+        horse.setPos(horse.getX(), ground, horse.getZ());
+        Vec3 delta = horse.getDeltaMovement();
+        if(delta.y < 0)
+            horse.setDeltaMovement(delta.x, 0, delta.z);
+    }
+
+    private double feetOnGround(double x, double z) {
+        double ground = groundUnder(x, z);
+        if(Double.isNaN(ground) || ground < getY() - 1.5D || ground > getY() + 1.5D)
+            return Double.NaN;
+        return ground;
+    }
+
+    private double groundUnder(double x, double z) {
+        double top = getY() + 2.5D;
+        double bottom = getY() - 2.5D;
+        for(int i = 0; i < 8 && top > bottom; i++) {
+            Vec3 from = new Vec3(x, top, z);
+            BlockHitResult hit = level().clip(new ClipContext(from, new Vec3(x, bottom, z), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, this));
+            if(hit.getType() != HitResult.Type.BLOCK)
+                return Double.NaN;
+            if(from.y - hit.getLocation().y > 1.0E-3D)
+                return hit.getLocation().y;
+            top -= 0.5D;
+        }
+        return Double.NaN;
     }
 
     @Override
@@ -275,14 +356,10 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         if(!isNoGravity())
             move = move.add(0, -GRAVITY, 0);
 
-        if(leftHorse != null) {
-            leftHorse.setDeltaMovement(move.add(0, leftHorse.getDeltaMovement().y, 0));
-            leftHorse.move(MoverType.SELF, leftHorse.getDeltaMovement());
-        }
-        if(rightHorse != null) {
-            rightHorse.setDeltaMovement(move.add(0, rightHorse.getDeltaMovement().y, 0));
-            rightHorse.move(MoverType.SELF, rightHorse.getDeltaMovement());
-        }
+        if(leftHorse != null)
+            moveHorse(leftHorse, move);
+        if(rightHorse != null)
+            moveHorse(rightHorse, move);
 
         setDeltaMovement(move.add(0, getDeltaMovement().y, 0));
         Vec3 before = position();
@@ -343,14 +420,27 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
             var attribute = animal.getAttribute(Attributes.MOVEMENT_SPEED);
             if(attribute == null)
                 continue;
-            slowest = Math.min(slowest, attribute.getValue() * BLOCKS_PER_SPEED_ATTRIBUTE);
+            slowest = Math.min(slowest, BlockRunnerSpeed.movementSpeed(attribute) * BLOCKS_PER_SPEED_ATTRIBUTE);
         }
         if(slowest == Double.POSITIVE_INFINITY)
             return 0;
         double speed = slowest * speedCoefficient / 20.0D;
         if(hasWideWheel())
             speed *= WIDE_WHEEL_FACTOR;
+        speed *= groundSpeedFactor();
         return speed;
+    }
+
+    private double groundSpeedFactor() {
+        double slowest = Double.POSITIVE_INFINITY;
+        for(WagonParts.Part part : WagonParts.of(this)) {
+            if(part.kind() != WagonParts.Kind.WHEEL || (getWheelMask() & (1 << part.index())) == 0)
+                continue;
+            Vec3 center = WagonParts.worldCenter(this, part);
+            BlockPos pos = BlockPos.containing(center.x, getY() - 1.0E-5D, center.z);
+            slowest = Math.min(slowest, BlockRunnerSpeed.factor(level().getBlockState(pos).getBlock()));
+        }
+        return slowest == Double.POSITIVE_INFINITY ? 1.0D : slowest;
     }
 
     protected boolean holdsTravel() {
@@ -386,10 +476,8 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         if(horse == null)
             return Vec3.ZERO;
 
-        Vec3 desired = rotateY(hitchOffset(side), getYRot() + angle);
-        Vec3 local = horse.position().subtract(position()).multiply(1, 0, 1); // Local starting position.
-
-        Vec3 displacement = desired.subtract(local);
+        Vec3 desired = isTilted() ? shaftWorld(side, getYRot() + angle) : hitchWorld(side, getYRot() + angle);
+        Vec3 displacement = new Vec3(desired.x - horse.getX(), 0, desired.z - horse.getZ());
         Vec3 collidedDisplacement = horse.collide(displacement);
 
         if(!displacement.equals(collidedDisplacement.multiply(1, 0, 1)))
@@ -483,7 +571,26 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
     }
 
     public boolean isHitched(Entity entity) {
-        return entity == getHorse(Side.LEFT) || entity == getHorse(Side.RIGHT);
+        return harnesses(entity);
+    }
+
+    // Identity, synced entity id, and saved uuid. A stale horse reference must not hide a live harnessed animal.
+    public boolean harnesses(Entity entity) {
+        if(entity == null)
+            return false;
+        int id = entity.getId();
+        UUID uuid = entity.getUUID();
+        for(Side side : Side.values()) {
+            if(id >= 0 && getHitchEntityId(side) == id)
+                return true;
+            UUID stored = horseUuids[side.ordinal()];
+            if(stored != null && stored.equals(uuid))
+                return true;
+            Mob horse = horses[side.ordinal()];
+            if(horse == entity || (horse != null && uuid.equals(horse.getUUID())))
+                return true;
+        }
+        return false;
     }
 
     private void hitchHorse(Mob horse, Side side) {
@@ -830,15 +937,20 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
     }
 
     private Mob getHorse(Side side) {
-        final UUID uuid = horseUuids[side.ordinal()];
-        if(uuid == null) return null;
+        UUID uuid = horseUuids[side.ordinal()];
+        if(uuid == null)
+            return null;
 
         Mob horse = horses[side.ordinal()];
+        if(horse != null && horse.isAlive() && !horse.isRemoved() && horse.level() == level() && uuid.equals(horse.getUUID()))
+            return horse;
 
-        if(horse == null && level().getEntities().get(uuid) instanceof Mob mob)
-            horse = mob;
-
-        return horse != null && horse.isAlive() ? horse : null;
+        if(level().getEntities().get(uuid) instanceof Mob mob && mob.isAlive()) {
+            horses[side.ordinal()] = mob;
+            return mob;
+        }
+        horses[side.ordinal()] = null;
+        return null;
     }
 
     private void setHorse(Mob horse, Side side) {
@@ -864,7 +976,27 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
     }
 
     private Vec3 getHorsePos(Side side) {
-        return position().add(rotateY(hitchOffset(side), getYRot()));
+        return hitchWorld(side, getYRot());
+    }
+
+    private Vec3 hitchWorld(Side side, float yaw) {
+        return offsetToWorld(hitchLocal(side, 0), false, yaw);
+    }
+
+    private Vec3 shaftWorld(Side side, float yaw) {
+        return offsetToWorld(hitchLocal(side, hitchedBackHeight()), false, yaw);
+    }
+
+    private Vec3 hitchLocal(Side side, double y) {
+        Vec3 local = hitchOffset(side);
+        Mob horse = getHorse(side);
+        if(horse != null)
+            local = local.add(0, 0, draftForward(horse));
+        return new Vec3(local.x, y, local.z);
+    }
+
+    protected double draftForward(Mob animal) {
+        return 0;
     }
 
     public float getShaftAngle() {
@@ -968,6 +1100,11 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         return seatLocked[index];
     }
 
+    // Empty seat closed by another animal. Manual locks stay on isSeatLocked. Null on wagons without that rule.
+    public Component seatBlockHint(int index) {
+        return null;
+    }
+
     public boolean[] seatLocks() {
         return seatLocked.clone();
     }
@@ -1003,12 +1140,16 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
     }
 
     public static AbstractWagon findHitch(Entity entity) {
-        AABB box = entity.getBoundingBox().inflate(8.0D);
+        AABB box = entity.getBoundingBox().inflate(16.0D);
         for(AbstractWagon wagon : entity.level().getEntitiesOfClass(AbstractWagon.class, box)) {
-            if(wagon.isHitched(entity))
+            if(wagon.harnesses(entity))
                 return wagon;
         }
         return null;
+    }
+
+    public static boolean isHarnessed(Entity entity) {
+        return findHitch(entity) != null;
     }
 
     public static AbstractWagon findHitchTarget(Mob animal) {
@@ -1055,7 +1196,7 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         int occupied = seatIds[index];
         if(occupied >= 0)
             return false;
-        return seatAccepts(index, animal);
+        return seatAccepts(index, animal, true);
     }
 
     public int hitchSlots() {
@@ -1356,16 +1497,16 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         if(!fl && !fr && rl && rr)
             pitch = FRONT_SAG;
         else if(fl && fr && !rl && !rr)
-            pitch = -WHEEL_SAG;
+            pitch = missingRearPitch();
         else if(!fl && fr && !rl && rr)
             roll = -WHEEL_SAG;
         else if(fl && !fr && rl && !rr)
             roll = WHEEL_SAG;
         else if(!fl && fr && rl && !rr) {
-            pitch = -WHEEL_SAG;
+            pitch = diagonalPitch();
             roll = WHEEL_SAG;
         } else if(fl && !fr && !rl && rr) {
-            pitch = -WHEEL_SAG;
+            pitch = diagonalPitch();
             roll = -WHEEL_SAG;
         } else if(fl) {
             pitch = -half;
@@ -1389,6 +1530,14 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         else if(count == 1)
             drop += 2D / 16D;
         return new WheelSag(pitch, roll, drop);
+    }
+
+    protected float missingRearPitch() {
+        return -WHEEL_SAG;
+    }
+
+    protected float diagonalPitch() {
+        return -WHEEL_SAG;
     }
 
     @Override
@@ -1574,27 +1723,45 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
     }
 
     private boolean seatAccepts(int index, Entity entity) {
+        return seatAccepts(index, entity, false);
+    }
+
+    // manual is a drag from this wagon's hitch onto a seat. That unhitches first. Every other path refuses a harnessed animal.
+    private boolean seatAccepts(int index, Entity entity, boolean manual) {
         if(entity.getType().is(TrottingWagons.CANNOT_MOUNT_WAGON))
             return false;
-        AbstractWagon hitched = !(entity instanceof Player) ? findHitch(entity) : null;
-        if(hitched != null && hitched != this)
+        boolean harnessedHere = harnesses(entity);
+        if(!(entity instanceof Player) && (harnessedHere || isHarnessed(entity)) && !(manual && harnessedHere))
             return false;
         WagonSeat seat = seats[index];
         boolean player = entity instanceof Player;
         if(seatLocked[index] && !player && seat.canLockAnimals())
             return false;
-        if(!player && isLargePassenger(entity))
-            return seat.kind() == WagonSeat.Kind.ANIMALBIG;
-        return switch(seat.kind()) {
+        if(!player && isLargePassenger(entity) && seat.kind() != WagonSeat.Kind.ANIMALBIG)
+            return false;
+        boolean accepted = switch(seat.kind()) {
             case DRIVER, PLAYER -> player;
             case ANIMAL -> !player;
             case UNIVERSAL -> true;
-            case ANIMALBIG -> !player;
+            case ANIMALBIG -> !player && acceptsLargeSeat(entity);
             case DRAFT -> false;
         };
+        return accepted && seatOpen(index, entity);
     }
 
-    private static boolean isLargePassenger(Entity entity) {
+    // Animal wagon large seats are large passengers only. Other wagons still accept any non-player there.
+    protected boolean acceptsLargeSeat(Entity entity) {
+        return true;
+    }
+
+    /**
+     * Extra seat rule for a wagon. The animal being moved does not count as occupying its current seat.
+     */
+    protected boolean seatOpen(int index, Entity entity) {
+        return true;
+    }
+
+    protected static boolean isLargePassenger(Entity entity) {
         EntityType<?> type = entity.getType();
         return type == EntityType.HORSE || type == EntityType.MULE || type == EntityType.CAMEL || type == EntityType.COW || type.is(TrottingWagons.LARGE_WAGON_PASSENGER);
     }
@@ -1608,7 +1775,7 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
     }
 
     private boolean canAutoBoard(Mob mob) {
-        if(!mob.isAlive() || mob.isPassenger() || mob.isVehicle() || findHitch(mob) != null || isBoardCooldown(mob))
+        if(!mob.isAlive() || mob.isPassenger() || mob.isVehicle() || harnesses(mob) || isHarnessed(mob) || isBoardCooldown(mob))
             return false;
         if(mob.getType().is(TrottingWagons.CANNOT_MOUNT_WAGON))
             return false;

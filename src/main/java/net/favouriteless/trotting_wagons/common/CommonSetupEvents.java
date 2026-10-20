@@ -3,8 +3,6 @@ package net.favouriteless.trotting_wagons.common;
 import net.favouriteless.trotting_wagons.TrottingWagons;
 import net.favouriteless.trotting_wagons.common.entities.base.AbstractInventoryWagon;
 import net.favouriteless.trotting_wagons.common.init.TWEntityTypes;
-import net.favouriteless.trotting_wagons.common.init.TWItems;
-import net.favouriteless.trotting_wagons.common.items.WagonItem;
 import net.favouriteless.trotting_wagons.common.network.packets.EjectSeatPayload;
 import net.favouriteless.trotting_wagons.common.network.packets.HitchAnimalPayload;
 import net.favouriteless.trotting_wagons.common.network.packets.MoveAnimalPayload;
@@ -17,35 +15,16 @@ import net.favouriteless.trotting_wagons.common.network.packets.ToggleSeatLockPa
 import net.favouriteless.trotting_wagons.common.network.packets.ToggleWagonLockPayload;
 import net.favouriteless.trotting_wagons.common.network.packets.WhipLowerGearPayload;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
-import net.minecraft.world.item.CreativeModeTabs;
-import net.minecraft.world.item.DyeColor;
-import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.capabilities.Capabilities.ItemHandler;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
-import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
 @EventBusSubscriber(modid = TrottingWagons.MOD_ID)
 public class CommonSetupEvents {
-
-    @SubscribeEvent
-    public static void onCreativeTabContents(BuildCreativeModeTabContentsEvent event) {
-        if(!event.getTabKey().equals(CreativeModeTabs.REDSTONE_BLOCKS))
-            return;
-
-        event.accept(TWItems.ARMORED_WAGON.get());
-        event.accept(WagonItem.setupComponents(new ItemStack(TWItems.DEBUG_WAGON.get()), DyeColor.WHITE));
-        event.accept(WagonItem.setupComponents(new ItemStack(TWItems.CONESTOGA_WAGON.get()), DyeColor.WHITE));
-        event.accept(WagonItem.setupComponents(new ItemStack(TWItems.ROYAL_WAGON.get()), DyeColor.WHITE));
-        event.accept(TWItems.HORSE_WHIP.get());
-        event.accept(TWItems.WHEEL.get());
-        event.accept(TWItems.WIDE_WHEEL.get());
-        event.accept(TWItems.REINFORCED_WHEEL.get());
-    }
 
     @SubscribeEvent
     public static void onRegisterCapabilities(RegisterCapabilitiesEvent event) {

@@ -36,6 +36,11 @@ public class ServerConfig {
     public final DoubleValue debugAcceleration;
     public final DoubleValue debugTurnRate;
 
+    public final IntValue animalHealth;
+    public final DoubleValue animalSpeed;
+    public final DoubleValue animalAcceleration;
+    public final DoubleValue animalTurnRate;
+
     public ServerConfig(Builder builder) {
         this.allowedEntities = builder.comment("EntityTypes allowed to pull wagons").defineList("allowed_entities", List.of(
                 "minecraft:horse"
@@ -63,6 +68,12 @@ public class ServerConfig {
         this.debugSpeed = builder.comment("Speed coefficient, from 0 to 1.").defineInRange("debug_wagon_speed_coefficient", 0.9D, 0.0D, 1.0D);
         this.debugAcceleration = builder.comment("Unused. Acceleration is the speed coefficient, in blocks per second per second.").defineInRange("debug_wagon_acceleration", 3.0D, 0.0D, Double.MAX_VALUE);
         this.debugTurnRate = builder.comment("Turn rate").defineInRange("debug_wagon_turn_rate", 2.0D, 0.0D, Double.MAX_VALUE);
+        builder.pop();
+        builder.push("Animal Wagon Options");
+        this.animalHealth = builder.comment("Maximum health").defineInRange("animal_wagon_health", 60, 0, Integer.MAX_VALUE);
+        this.animalSpeed = builder.comment("Speed coefficient, from 0 to 1.").defineInRange("animal_wagon_speed_coefficient", 0.9D, 0.0D, 1.0D);
+        this.animalAcceleration = builder.comment("Unused. Acceleration is the speed coefficient, in blocks per second per second.").defineInRange("animal_wagon_acceleration", 3.0D, 0.0D, Double.MAX_VALUE);
+        this.animalTurnRate = builder.comment("Turn rate").defineInRange("animal_wagon_turn_rate", 2.0D, 0.0D, Double.MAX_VALUE);
         builder.pop();
     }
 
