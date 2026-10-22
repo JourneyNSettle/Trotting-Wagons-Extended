@@ -188,6 +188,10 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         }
     }
 
+    protected double speedCoefficient() {
+        return speedCoefficient;
+    }
+
     private static Vec3[] seatPositions(WagonSeat[] seats) {
         Vec3[] positions = new Vec3[seats.length];
         for(int i = 0; i < seats.length; i++)
@@ -401,7 +405,7 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         if(isReversing())
             targetSpeed *= -0.25D;
 
-        double accel = speedCoefficient / 400.0D;
+        double accel = speedCoefficient() / 400.0D;
         double speedDiff = targetSpeed - currentSpeed;
         currentSpeed += Mth.sign(speedDiff) * Math.min(Math.abs(accel), Math.abs(speedDiff));
         if(!level().isClientSide) {
@@ -424,7 +428,7 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         }
         if(slowest == Double.POSITIVE_INFINITY)
             return 0;
-        double speed = slowest * speedCoefficient / 20.0D;
+        double speed = slowest * speedCoefficient() / 20.0D;
         if(hasWideWheel())
             speed *= WIDE_WHEEL_FACTOR;
         speed *= groundSpeedFactor();
@@ -1523,13 +1527,21 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         }
 
         double drop = sagAnchor(pitch, roll, fl, fr, rl, rr);
-        if(pitch == 0 && roll != 0)
-            drop += 3D / 16D;
-        else if(count == 2 && pitch != 0 && roll != 0)
-            drop -= 12D / 16D;
-        else if(count == 1)
-            drop += 2D / 16D;
+        drop += sagDropCorrection(count, pitch, roll, drop);
         return new WheelSag(pitch, roll, drop);
+    }
+
+    /**
+     * Extra vertical shift after the remaining wheels are anchored. Positive lowers the body.
+     */
+    protected double sagDropCorrection(int count, float pitch, float roll, double anchored) {
+        if(pitch == 0 && roll != 0)
+            return 3D / 16D;
+        if(count == 2 && pitch != 0 && roll != 0)
+            return -12D / 16D;
+        if(count == 1)
+            return 2D / 16D;
+        return 0;
     }
 
     protected float missingRearPitch() {

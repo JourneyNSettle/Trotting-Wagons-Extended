@@ -2,6 +2,7 @@ package net.favouriteless.trotting_wagons.common;
 
 import net.favouriteless.trotting_wagons.TrottingWagons;
 import net.favouriteless.trotting_wagons.common.entities.base.AbstractInventoryWagon;
+import net.favouriteless.trotting_wagons.common.entities.wagons.LogWagon;
 import net.favouriteless.trotting_wagons.common.init.TWEntityTypes;
 import net.favouriteless.trotting_wagons.common.network.packets.EjectSeatPayload;
 import net.favouriteless.trotting_wagons.common.network.packets.HitchAnimalPayload;
@@ -31,6 +32,7 @@ public class CommonSetupEvents {
         event.registerEntity(ItemHandler.ENTITY, TWEntityTypes.CONESTOGA_WAGON.get(), AbstractInventoryWagon::getItemCapability);
         event.registerEntity(ItemHandler.ENTITY, TWEntityTypes.ROYAL_WAGON.get(), AbstractInventoryWagon::getItemCapability);
         event.registerEntity(ItemHandler.ENTITY, TWEntityTypes.DEBUG_WAGON.get(), AbstractInventoryWagon::getItemCapability);
+        event.registerEntity(ItemHandler.ENTITY, TWEntityTypes.LOG_WAGON.get(), LogWagon::getItemCapability);
     }
 
     @SubscribeEvent

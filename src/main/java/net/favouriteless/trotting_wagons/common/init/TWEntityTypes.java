@@ -5,6 +5,7 @@ import net.favouriteless.trotting_wagons.common.entities.wagons.AnimalWagon;
 import net.favouriteless.trotting_wagons.common.entities.wagons.ArmoredWagon;
 import net.favouriteless.trotting_wagons.common.entities.wagons.ConestogaWagon;
 import net.favouriteless.trotting_wagons.common.entities.wagons.DebugWagon;
+import net.favouriteless.trotting_wagons.common.entities.wagons.LogWagon;
 import net.favouriteless.trotting_wagons.common.entities.wagons.RoyalWagon;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.entity.EntityType;
@@ -30,5 +31,8 @@ public class TWEntityTypes {
 
     public static final DeferredHolder<EntityType<?>, EntityType<AnimalWagon>> ANIMAL_WAGON = REGISTRY.register("animal_wagon", () ->
             EntityType.Builder.of(AnimalWagon::new, MobCategory.MISC).sized(3.5F, 2.75F).build("animal_wagon"));
+
+    public static final DeferredHolder<EntityType<?>, EntityType<LogWagon>> LOG_WAGON = REGISTRY.register("log_wagon", () ->
+            EntityType.Builder.of(LogWagon::new, MobCategory.MISC).sized(4.5F, 3.25F).build("log_wagon"));
 
 }

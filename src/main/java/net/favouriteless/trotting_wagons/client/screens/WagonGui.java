@@ -5,6 +5,8 @@ import net.favouriteless.trotting_wagons.common.init.TWItems;
 import net.favouriteless.trotting_wagons.common.menus.AnimalMenu;
 import net.favouriteless.trotting_wagons.common.menus.BannerSlot;
 import net.favouriteless.trotting_wagons.common.menus.DebugMenu;
+import net.favouriteless.trotting_wagons.common.menus.LogCargoSlot;
+import net.favouriteless.trotting_wagons.common.menus.LogMenu;
 import net.favouriteless.trotting_wagons.common.menus.RepairSlot;
 import net.favouriteless.trotting_wagons.common.menus.LanternSlot;
 import net.favouriteless.trotting_wagons.common.menus.WheelSlot;
@@ -81,7 +83,7 @@ final class WagonGui {
 
     static void drawEmptySlotIcons(GuiGraphics graphics, int left, int top, AbstractContainerMenu menu) {
         for(Slot slot : menu.slots) {
-            if(!slot.isActive() || slot.hasItem())
+            if(!slot.isActive() || slot.hasItem() || slot.x < 0 || slot.y < 0)
                 continue;
             ItemStack icon = emptyIcon(menu, slot);
             if(icon.isEmpty())
@@ -101,6 +103,8 @@ final class WagonGui {
             return new ItemStack(Blocks.WHITE_BANNER);
         if(slot instanceof LanternSlot)
             return new ItemStack(Items.LANTERN);
+        if(slot instanceof LogCargoSlot)
+            return new ItemStack(Items.OAK_LOG);
         if(slot instanceof RepairSlot repair) {
             AbstractWagon wagon = repairWagon(menu);
             if(wagon != null)
@@ -116,6 +120,8 @@ final class WagonGui {
             return debug.getWagon();
         if(menu instanceof AnimalMenu animal)
             return animal.getWagon();
+        if(menu instanceof LogMenu log)
+            return log.getWagon();
         return null;
     }
 

@@ -5,6 +5,7 @@ import net.favouriteless.trotting_wagons.common.entities.base.AbstractWagon;
 import net.favouriteless.trotting_wagons.common.entities.wagons.AnimalWagon;
 import net.favouriteless.trotting_wagons.common.entities.wagons.ConestogaWagon;
 import net.favouriteless.trotting_wagons.common.entities.wagons.DebugWagon;
+import net.favouriteless.trotting_wagons.common.entities.wagons.LogWagon;
 import net.favouriteless.trotting_wagons.common.entities.wagons.RoyalWagon;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.DyeColor;
@@ -24,7 +25,7 @@ public class WagonModel<T extends AbstractWagon> extends DefaultedEntityGeoModel
 
     @Override
     public ResourceLocation getTextureResource(T wagon) {
-        if(wagon instanceof DebugWagon || wagon instanceof AnimalWagon)
+        if(wagon instanceof DebugWagon || wagon instanceof AnimalWagon || wagon instanceof LogWagon)
             return TrottingWagons.id(texturePathPrefix + "none.png");
         DyeColor color = wagon.getColor();
         return TrottingWagons.id(texturePathPrefix + (color != null ? color.getName() : "none") + ".png");
@@ -44,10 +45,14 @@ public class WagonModel<T extends AbstractWagon> extends DefaultedEntityGeoModel
         spinAxle(processor, "RearWheels_Wide", -rot);
         spinAxle(processor, "FrontWheels_Iron", -rot);
         spinAxle(processor, "RearWheels_Iron", -rot);
-        if(wagon instanceof DebugWagon || wagon instanceof AnimalWagon)
+        if(wagon instanceof DebugWagon || wagon instanceof AnimalWagon || wagon instanceof LogWagon)
             hideDebugWheels(processor, wagon);
         else
             hideMissingWheels(processor, wagon);
+        if(wagon instanceof LogWagon logWagon) {
+            hideLogCargo(processor, logWagon);
+            levelLogs(processor);
+        }
 
         AbstractWagon.WheelSag sag = wagon.wheelSag();
         float bodyPitch = wagon.getXRot(partialTick) + sag.pitch();
@@ -109,6 +114,41 @@ public class WagonModel<T extends AbstractWagon> extends DefaultedEntityGeoModel
             {"LeftRearWheel", "LeftRearWheel2", "LeftRearWheel3"},
             {"RightRearWheel", "RightRearWheel2", "RightRearWheel3"}
     };
+
+    /** Cart pitch is the inner rotation. Undoing it on the pile leaves only the side roll. */
+    private static void levelLogs(AnimationProcessor<?> processor) {
+        GeoBone pile = processor.getBone("Logs");
+        GeoBone cart = processor.getBone("cart");
+        if(pile != null && cart != null)
+            pile.setRotX(-cart.getRotX());
+    }
+
+    private static void hideLogCargo(AnimationProcessor<?> processor, LogWagon wagon) {
+        boolean wide = true;
+        boolean iron = true;
+        for(int i = 0; i < AbstractWagon.WHEEL_COUNT; i++) {
+            AbstractWagon.WheelKind kind = wagon.getWheelKind(i);
+            if(kind != AbstractWagon.WheelKind.WIDE)
+                wide = false;
+            if(kind != AbstractWagon.WheelKind.REINFORCED)
+                iron = false;
+        }
+        hideBone(processor, "FrontAxle", wide || iron);
+        hideBone(processor, "RearAxle", wide || iron);
+        hideBone(processor, "FrontAxleWide", !wide);
+        hideBone(processor, "RearAxleWide", !wide);
+        hideBone(processor, "FrontAxleIron", !iron);
+        hideBone(processor, "RearAxleIron", !iron);
+        int logs = LogWagon.visibleLogs(wagon.syncedCargo());
+        for(int i = 1; i <= LogWagon.LOG_BONES; i++)
+            hideBone(processor, "Log_" + i, i > logs);
+    }
+
+    private static void hideBone(AnimationProcessor<?> processor, String name, boolean hidden) {
+        GeoBone bone = processor.getBone(name);
+        if(bone != null)
+            bone.setHidden(hidden);
+    }
 
     private static void hidePumpkins(AnimationProcessor<?> processor, int count) {
         for(int i = 0; i < DebugWagon.PUMPKIN_SLOTS; i++) {
