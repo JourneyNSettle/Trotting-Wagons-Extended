@@ -48,6 +48,13 @@ public class ServerConfig {
     public final DoubleValue logAcceleration;
     public final DoubleValue logTurnRate;
 
+    public final IntValue barrelHealth;
+    public final DoubleValue barrelSpeedEmpty;
+    public final DoubleValue barrelSpeedPartial;
+    public final DoubleValue barrelSpeedFull;
+    public final DoubleValue barrelAcceleration;
+    public final DoubleValue barrelTurnRate;
+
     public ServerConfig(Builder builder) {
         this.allowedEntities = builder.comment("EntityTypes allowed to pull wagons").defineList("allowed_entities", List.of(
                 "minecraft:horse"
@@ -89,6 +96,14 @@ public class ServerConfig {
         this.logSpeedFull = builder.comment("Speed coefficient above 1000 items, from 0 to 1.").defineInRange("log_wagon_speed_full", 0.8D, 0.0D, 1.0D);
         this.logAcceleration = builder.comment("Unused. Acceleration is the current speed coefficient, in blocks per second per second.").defineInRange("log_wagon_acceleration", 3.0D, 0.0D, Double.MAX_VALUE);
         this.logTurnRate = builder.comment("Turn rate").defineInRange("log_wagon_turn_rate", 2.0D, 0.0D, Double.MAX_VALUE);
+        builder.pop();
+        builder.push("Barrel Wagon Options");
+        this.barrelHealth = builder.comment("Maximum health").defineInRange("barrel_wagon_health", 80, 0, Integer.MAX_VALUE);
+        this.barrelSpeedEmpty = builder.comment("Speed coefficient with no barrels, from 0 to 1.").defineInRange("barrel_wagon_speed_empty", 1.0D, 0.0D, 1.0D);
+        this.barrelSpeedPartial = builder.comment("Speed coefficient from 1 to 6 barrels, from 0 to 1.").defineInRange("barrel_wagon_speed_partial", 0.9D, 0.0D, 1.0D);
+        this.barrelSpeedFull = builder.comment("Speed coefficient from 7 to 12 barrels, from 0 to 1.").defineInRange("barrel_wagon_speed_full", 0.8D, 0.0D, 1.0D);
+        this.barrelAcceleration = builder.comment("Unused. Acceleration is the current speed coefficient, in blocks per second per second.").defineInRange("barrel_wagon_acceleration", 3.0D, 0.0D, Double.MAX_VALUE);
+        this.barrelTurnRate = builder.comment("Turn rate").defineInRange("barrel_wagon_turn_rate", 2.0D, 0.0D, Double.MAX_VALUE);
         builder.pop();
     }
 

@@ -4,6 +4,7 @@ import net.favouriteless.trotting_wagons.TrottingWagons;
 import net.favouriteless.trotting_wagons.client.render.WagonItemRenderer;
 import net.favouriteless.trotting_wagons.client.render.entity.WagonRenderer;
 import net.favouriteless.trotting_wagons.client.screens.AnimalScreen;
+import net.favouriteless.trotting_wagons.client.screens.BarrelScreen;
 import net.favouriteless.trotting_wagons.client.screens.ArmoredScreen;
 import net.favouriteless.trotting_wagons.client.screens.ConestogaScreen;
 import net.favouriteless.trotting_wagons.client.screens.DebugScreen;
@@ -37,6 +38,7 @@ public class ClientSetupEvents {
         event.registerItem(wagonExtension(TWEntityTypes.DEBUG_WAGON.get()), TWItems.DEBUG_WAGON.get());
         event.registerItem(wagonExtension(TWEntityTypes.ANIMAL_WAGON.get()), TWItems.ANIMAL_WAGON.get());
         event.registerItem(wagonExtension(TWEntityTypes.LOG_WAGON.get()), TWItems.LOG_WAGON.get());
+        event.registerItem(wagonExtension(TWEntityTypes.BARREL_WAGON.get()), TWItems.BARREL_WAGON.get());
     }
 
     @SubscribeEvent
@@ -47,6 +49,7 @@ public class ClientSetupEvents {
         event.register(TWMenuTypes.DEBUG.get(), DebugScreen::new);
         event.register(TWMenuTypes.ANIMAL.get(), AnimalScreen::new);
         event.register(TWMenuTypes.LOG.get(), LogScreen::new);
+        event.register(TWMenuTypes.BARREL.get(), BarrelScreen::new);
     }
 
     @SubscribeEvent
@@ -62,6 +65,7 @@ public class ClientSetupEvents {
         event.registerEntityRenderer(TWEntityTypes.DEBUG_WAGON.get(), context -> new WagonRenderer<>(context, TrottingWagons.id("debug_wagon")));
         event.registerEntityRenderer(TWEntityTypes.ANIMAL_WAGON.get(), context -> new WagonRenderer<>(context, TrottingWagons.id("animal_wagon")));
         event.registerEntityRenderer(TWEntityTypes.LOG_WAGON.get(), context -> new WagonRenderer<>(context, TrottingWagons.id("log_wagon")));
+        event.registerEntityRenderer(TWEntityTypes.BARREL_WAGON.get(), context -> new WagonRenderer<>(context, TrottingWagons.id("barrel_wagon")));
     }
 
     public static IClientItemExtensions wagonExtension(EntityType<? extends AbstractWagon> entityType) {

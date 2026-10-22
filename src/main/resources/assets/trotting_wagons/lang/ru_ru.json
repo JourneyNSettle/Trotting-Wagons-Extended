@@ -5,6 +5,8 @@
   "entity.trotting_wagons.animal_wagon": "Повозка для животных",
   "item.trotting_wagons.log_wagon": "Повозка для леса",
   "entity.trotting_wagons.log_wagon": "Повозка для леса",
+  "item.trotting_wagons.barrel_wagon": "Повозка с бочками",
+  "entity.trotting_wagons.barrel_wagon": "Повозка с бочками",
   "itemGroup.trotting_wagons": "Повозки",
   "item.trotting_wagons.wide_wheel": "Широкое колесо",
   "item.trotting_wagons.reinforced_wheel": "Укреплённое колесо",

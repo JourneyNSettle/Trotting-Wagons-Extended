@@ -4,6 +4,8 @@ import net.favouriteless.trotting_wagons.common.entities.base.AbstractWagon;
 import net.favouriteless.trotting_wagons.common.init.TWItems;
 import net.favouriteless.trotting_wagons.common.menus.AnimalMenu;
 import net.favouriteless.trotting_wagons.common.menus.BannerSlot;
+import net.favouriteless.trotting_wagons.common.menus.BarrelMenu;
+import net.favouriteless.trotting_wagons.common.menus.BarrelSlot;
 import net.favouriteless.trotting_wagons.common.menus.DebugMenu;
 import net.favouriteless.trotting_wagons.common.menus.LogCargoSlot;
 import net.favouriteless.trotting_wagons.common.menus.LogMenu;
@@ -105,6 +107,8 @@ final class WagonGui {
             return new ItemStack(Items.LANTERN);
         if(slot instanceof LogCargoSlot)
             return new ItemStack(Items.OAK_LOG);
+        if(slot instanceof BarrelSlot)
+            return new ItemStack(Items.BARREL);
         if(slot instanceof RepairSlot repair) {
             AbstractWagon wagon = repairWagon(menu);
             if(wagon != null)
@@ -122,6 +126,8 @@ final class WagonGui {
             return animal.getWagon();
         if(menu instanceof LogMenu log)
             return log.getWagon();
+        if(menu instanceof BarrelMenu barrel)
+            return barrel.getWagon();
         return null;
     }
 
