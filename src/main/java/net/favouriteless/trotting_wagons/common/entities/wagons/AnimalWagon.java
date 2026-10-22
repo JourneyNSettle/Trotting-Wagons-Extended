@@ -6,12 +6,10 @@ import net.favouriteless.trotting_wagons.common.entities.base.WagonSeat;
 import net.favouriteless.trotting_wagons.common.init.TWItems;
 import net.favouriteless.trotting_wagons.common.items.WagonItem;
 import net.favouriteless.trotting_wagons.common.menus.AnimalMenu;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -58,13 +56,6 @@ public class AnimalWagon extends AbstractWagon implements MenuProvider {
     @Override
     protected float diagonalPitch() {
         return -8F;
-    }
-
-    @Override
-    protected double draftForward(Mob animal) {
-        if(animal.getType() == EntityType.CAMEL)
-            return -1.0D;
-        return BuiltInRegistries.ENTITY_TYPE.getKey(animal.getType()).getPath().endsWith("camel") ? -1.0D : 0.0D;
     }
 
     @Override

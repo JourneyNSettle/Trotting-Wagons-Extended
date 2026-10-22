@@ -2,6 +2,7 @@ package net.favouriteless.trotting_wagons.common.entities.base;
 
 import net.favouriteless.trotting_wagons.TrottingWagons;
 import net.favouriteless.trotting_wagons.common.entities.wagons.AnimalWagon;
+import net.favouriteless.trotting_wagons.common.entities.wagons.BarrelWagon;
 import net.favouriteless.trotting_wagons.common.entities.wagons.ArmoredWagon;
 import net.favouriteless.trotting_wagons.common.entities.wagons.ConestogaWagon;
 import net.favouriteless.trotting_wagons.common.entities.wagons.DebugWagon;
@@ -63,6 +64,12 @@ public final class WagonParts {
             wheel(2, 19.75D, 9.5D, 21),
             wheel(3, -19.75D, 9.5D, 21)
     );
+    private static final List<Part> BARREL = List.of(
+            wheel(0, 19.25D, 9.5D, -17),
+            wheel(1, -18.75D, 9.5D, -17),
+            wheel(2, 19.75D, 9.5D, 17),
+            wheel(3, -19.75D, 9.5D, 17)
+    );
 
     private WagonParts() {}
 
@@ -79,6 +86,8 @@ public final class WagonParts {
             return ANIMAL;
         if(wagon instanceof LogWagon)
             return LOG;
+        if(wagon instanceof BarrelWagon)
+            return BARREL;
         return List.of();
     }
 

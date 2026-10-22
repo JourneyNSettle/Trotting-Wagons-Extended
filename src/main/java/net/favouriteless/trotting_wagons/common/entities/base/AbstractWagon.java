@@ -9,6 +9,7 @@ import net.favouriteless.trotting_wagons.common.util.LevelUtils;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
@@ -1000,7 +1001,9 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
     }
 
     protected double draftForward(Mob animal) {
-        return 0;
+        if(animal.getType() == EntityType.CAMEL)
+            return -1.0D;
+        return BuiltInRegistries.ENTITY_TYPE.getKey(animal.getType()).getPath().endsWith("camel") ? -1.0D : 0.0D;
     }
 
     public float getShaftAngle() {
