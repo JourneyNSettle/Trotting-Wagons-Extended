@@ -5,6 +5,7 @@ import net.favouriteless.trotting_wagons.common.entities.wagons.AnimalWagon;
 import net.favouriteless.trotting_wagons.common.entities.wagons.ArmoredWagon;
 import net.favouriteless.trotting_wagons.common.entities.wagons.ConestogaWagon;
 import net.favouriteless.trotting_wagons.common.entities.wagons.DebugWagon;
+import net.favouriteless.trotting_wagons.common.entities.wagons.LogWagon;
 import net.favouriteless.trotting_wagons.common.entities.wagons.RoyalWagon;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
@@ -56,6 +57,12 @@ public final class WagonParts {
             wheel(2, 19.75D, 9.5D, 29),
             wheel(3, -19.75D, 9.5D, 29)
     );
+    private static final List<Part> LOG = List.of(
+            wheel(0, 19.25D, 9.5D, -17),
+            wheel(1, -18.75D, 9.5D, -17),
+            wheel(2, 19.75D, 9.5D, 21),
+            wheel(3, -19.75D, 9.5D, 21)
+    );
 
     private WagonParts() {}
 
@@ -70,6 +77,8 @@ public final class WagonParts {
             return ARMORED;
         if(wagon instanceof AnimalWagon)
             return ANIMAL;
+        if(wagon instanceof LogWagon)
+            return LOG;
         return List.of();
     }
 

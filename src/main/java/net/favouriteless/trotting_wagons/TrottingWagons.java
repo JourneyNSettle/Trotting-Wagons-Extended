@@ -30,6 +30,7 @@ public class TrottingWagons {
     public static final TagKey<EntityType<?>> CANNOT_MOUNT_WAGON = TagKey.create(Registries.ENTITY_TYPE, id("cannot_mount_wagon"));
     public static final TagKey<EntityType<?>> LARGE_WAGON_PASSENGER = TagKey.create(Registries.ENTITY_TYPE, id("large_wagon_passenger"));
     public static final TagKey<Item> WAGON_WHEELS = TagKey.create(Registries.ITEM, id("wagon_wheels"));
+    public static final TagKey<Item> LOG_WAGON_CARGO = TagKey.create(Registries.ITEM, id("log_wagon_cargo"));
 
     public static final Map<Item, DyeColor> DYE_ITEMS = Map.ofEntries(
         Map.entry(Items.WHITE_WOOL, DyeColor.WHITE),

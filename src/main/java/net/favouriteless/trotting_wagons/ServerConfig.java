@@ -41,6 +41,13 @@ public class ServerConfig {
     public final DoubleValue animalAcceleration;
     public final DoubleValue animalTurnRate;
 
+    public final IntValue logHealth;
+    public final DoubleValue logSpeedEmpty;
+    public final DoubleValue logSpeedPartial;
+    public final DoubleValue logSpeedFull;
+    public final DoubleValue logAcceleration;
+    public final DoubleValue logTurnRate;
+
     public ServerConfig(Builder builder) {
         this.allowedEntities = builder.comment("EntityTypes allowed to pull wagons").defineList("allowed_entities", List.of(
                 "minecraft:horse"
@@ -74,6 +81,14 @@ public class ServerConfig {
         this.animalSpeed = builder.comment("Speed coefficient, from 0 to 1.").defineInRange("animal_wagon_speed_coefficient", 0.9D, 0.0D, 1.0D);
         this.animalAcceleration = builder.comment("Unused. Acceleration is the speed coefficient, in blocks per second per second.").defineInRange("animal_wagon_acceleration", 3.0D, 0.0D, Double.MAX_VALUE);
         this.animalTurnRate = builder.comment("Turn rate").defineInRange("animal_wagon_turn_rate", 2.0D, 0.0D, Double.MAX_VALUE);
+        builder.pop();
+        builder.push("Log Wagon Options");
+        this.logHealth = builder.comment("Maximum health").defineInRange("log_wagon_health", 80, 0, Integer.MAX_VALUE);
+        this.logSpeedEmpty = builder.comment("Speed coefficient at 0 items, from 0 to 1.").defineInRange("log_wagon_speed_empty", 1.0D, 0.0D, 1.0D);
+        this.logSpeedPartial = builder.comment("Speed coefficient from 1 to 1000 items, from 0 to 1.").defineInRange("log_wagon_speed_partial", 0.9D, 0.0D, 1.0D);
+        this.logSpeedFull = builder.comment("Speed coefficient above 1000 items, from 0 to 1.").defineInRange("log_wagon_speed_full", 0.8D, 0.0D, 1.0D);
+        this.logAcceleration = builder.comment("Unused. Acceleration is the current speed coefficient, in blocks per second per second.").defineInRange("log_wagon_acceleration", 3.0D, 0.0D, Double.MAX_VALUE);
+        this.logTurnRate = builder.comment("Turn rate").defineInRange("log_wagon_turn_rate", 2.0D, 0.0D, Double.MAX_VALUE);
         builder.pop();
     }
 

@@ -1,0 +1,15 @@
+# Повозки
+
+Описание текущего кода ветки `dev`, Minecraft 1.21.1, NeoForge. Имена предметов, сущностей, ключей конфига и тегов даны как в исходниках. Числа сняты с кода, включая расхождения между ключом конфига и тем, что конструктор реально читает.
+
+Мод: `trotting_wagons`, отображаемое имя Trotting Wagons Extended, `mod_version` 2.0.0. Файл конфига: `config/trotting_wagons-server.toml`. Сторона в `neoforge.mods.toml` — `BOTH`: мод стоит и на сервере, и на каждом клиенте.
+
+| Файл | Содержание |
+| --- | --- |
+| [common.md](common.md) | Общие правила: посадка, меню, упряжь, скорость, передачи, колёса, просадка, Block Runner, прочность, починка, места, владелец, путь, замок, теги |
+| [conestoga.md](conestoga.md) | `conestoga_wagon` |
+| [royal.md](royal.md) | `royal_wagon` |
+| [armored.md](armored.md) | `armored_wagon` |
+| [debug.md](debug.md) | `debug_wagon` |
+| [animal.md](animal.md) | `animal_wagon` |
+| [log.md](log.md) | `log_wagon` |

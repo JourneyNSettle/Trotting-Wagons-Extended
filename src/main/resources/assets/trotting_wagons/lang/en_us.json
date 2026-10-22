@@ -9,6 +9,8 @@
   "entity.trotting_wagons.debug_wagon": "Debug Wagon",
   "item.trotting_wagons.animal_wagon": "Animal Wagon",
   "entity.trotting_wagons.animal_wagon": "Animal Wagon",
+  "item.trotting_wagons.log_wagon": "Log Wagon",
+  "entity.trotting_wagons.log_wagon": "Log Wagon",
   "item.trotting_wagons.horse_whip": "Horse Whip",
   "item.trotting_wagons.wheel": "Wheel",
   "item.trotting_wagons.wide_wheel": "Wide Wheel",
