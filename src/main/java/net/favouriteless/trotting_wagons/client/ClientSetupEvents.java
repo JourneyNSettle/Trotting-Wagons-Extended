@@ -11,6 +11,7 @@ import net.favouriteless.trotting_wagons.client.screens.DebugScreen;
 import net.favouriteless.trotting_wagons.client.screens.LogScreen;
 import net.favouriteless.trotting_wagons.client.screens.PassengerScreen;
 import net.favouriteless.trotting_wagons.client.screens.RoyalScreen;
+import net.favouriteless.trotting_wagons.client.screens.WareScreen;
 import net.favouriteless.trotting_wagons.common.entities.base.AbstractWagon;
 import net.favouriteless.trotting_wagons.common.init.TWEntityTypes;
 import net.favouriteless.trotting_wagons.common.init.TWItems;
@@ -41,6 +42,7 @@ public class ClientSetupEvents {
         event.registerItem(wagonExtension(TWEntityTypes.LOG_WAGON.get()), TWItems.LOG_WAGON.get());
         event.registerItem(wagonExtension(TWEntityTypes.BARREL_WAGON.get()), TWItems.BARREL_WAGON.get());
         event.registerItem(wagonExtension(TWEntityTypes.PASSENGER_WAGON.get()), TWItems.PASSENGER_WAGON.get());
+        event.registerItem(wagonExtension(TWEntityTypes.WARE_WAGON.get()), TWItems.WARE_WAGON.get());
     }
 
     @SubscribeEvent
@@ -53,6 +55,7 @@ public class ClientSetupEvents {
         event.register(TWMenuTypes.LOG.get(), LogScreen::new);
         event.register(TWMenuTypes.BARREL.get(), BarrelScreen::new);
         event.register(TWMenuTypes.PASSENGER.get(), PassengerScreen::new);
+        event.register(TWMenuTypes.WARE.get(), WareScreen::new);
     }
 
     @SubscribeEvent
@@ -70,6 +73,7 @@ public class ClientSetupEvents {
         event.registerEntityRenderer(TWEntityTypes.LOG_WAGON.get(), context -> new WagonRenderer<>(context, TrottingWagons.id("log_wagon")));
         event.registerEntityRenderer(TWEntityTypes.BARREL_WAGON.get(), context -> new WagonRenderer<>(context, TrottingWagons.id("barrel_wagon")));
         event.registerEntityRenderer(TWEntityTypes.PASSENGER_WAGON.get(), context -> new WagonRenderer<>(context, TrottingWagons.id("passenger_wagon")));
+        event.registerEntityRenderer(TWEntityTypes.WARE_WAGON.get(), context -> new WagonRenderer<>(context, TrottingWagons.id("ware_wagon")));
     }
 
     public static IClientItemExtensions wagonExtension(EntityType<? extends AbstractWagon> entityType) {

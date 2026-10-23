@@ -93,7 +93,7 @@ public abstract class AbstractWagonScreen<T extends AbstractWagonMenu> extends A
     @Override
     protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
         super.renderLabels(graphics, mouseX, mouseY);
-        WagonGui.drawStatus(graphics, font, menu.getWagon(), titleLabelX, titleLabelY, imageWidth);
+        WagonGui.drawHeader(graphics, font, menu.getWagon(), titleLabelY, imageWidth);
     }
 
     @Override

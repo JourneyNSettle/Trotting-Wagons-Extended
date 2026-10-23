@@ -9,6 +9,7 @@ import net.favouriteless.trotting_wagons.common.network.packets.HitchAnimalPaylo
 import net.favouriteless.trotting_wagons.common.network.packets.MoveAnimalPayload;
 import net.favouriteless.trotting_wagons.common.network.packets.OpenWagonMenuPayload;
 import net.favouriteless.trotting_wagons.common.network.packets.SelectSeatPayload;
+import net.favouriteless.trotting_wagons.common.network.packets.SelectWareTabPayload;
 import net.favouriteless.trotting_wagons.common.network.packets.SteeringPayload;
 import net.favouriteless.trotting_wagons.common.network.packets.SyncSeatsPayload;
 import net.favouriteless.trotting_wagons.common.network.packets.ToggleLadderPayload;
@@ -42,6 +43,7 @@ public class CommonSetupEvents {
         registrar.playToServer(HitchAnimalPayload.TYPE, HitchAnimalPayload.CODEC, HitchAnimalPayload::handle);
         registrar.playToServer(OpenWagonMenuPayload.TYPE, OpenWagonMenuPayload.CODEC, OpenWagonMenuPayload::handle);
         registrar.playToServer(SelectSeatPayload.TYPE, SelectSeatPayload.CODEC, SelectSeatPayload::handle);
+        registrar.playToServer(SelectWareTabPayload.TYPE, SelectWareTabPayload.CODEC, SelectWareTabPayload::handle);
         registrar.playToServer(EjectSeatPayload.TYPE, EjectSeatPayload.CODEC, EjectSeatPayload::handle);
         registrar.playToServer(MoveAnimalPayload.TYPE, MoveAnimalPayload.CODEC, MoveAnimalPayload::handle);
         registrar.playToServer(ToggleSeatLockPayload.TYPE, ToggleSeatLockPayload.CODEC, ToggleSeatLockPayload::handle);

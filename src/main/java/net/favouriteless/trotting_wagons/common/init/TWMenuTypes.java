@@ -9,6 +9,7 @@ import net.favouriteless.trotting_wagons.common.menus.DebugMenu;
 import net.favouriteless.trotting_wagons.common.menus.LogMenu;
 import net.favouriteless.trotting_wagons.common.menus.PassengerMenu;
 import net.favouriteless.trotting_wagons.common.menus.RoyalMenu;
+import net.favouriteless.trotting_wagons.common.menus.WareMenu;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.inventory.MenuType;
 import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
@@ -28,5 +29,6 @@ public class TWMenuTypes {
     public static final DeferredHolder<MenuType<?>, MenuType<LogMenu>> LOG = REGISTRY.register("log_wagon", () -> IMenuTypeExtension.create(LogMenu::new));
     public static final DeferredHolder<MenuType<?>, MenuType<BarrelMenu>> BARREL = REGISTRY.register("barrel_wagon", () -> IMenuTypeExtension.create(BarrelMenu::new));
     public static final DeferredHolder<MenuType<?>, MenuType<PassengerMenu>> PASSENGER = REGISTRY.register("passenger_wagon", () -> IMenuTypeExtension.create(PassengerMenu::new));
+    public static final DeferredHolder<MenuType<?>, MenuType<WareMenu>> WARE = REGISTRY.register("ware_wagon", () -> IMenuTypeExtension.create(WareMenu::new));
 
 }
