@@ -12,5 +12,6 @@ public class TWSoundEvents {
 
     public static final DeferredHolder<SoundEvent, SoundEvent> WAGON = REGISTRY.register("wagon", () -> SoundEvent.createVariableRangeEvent(TrottingWagons.id("wagon")));
     public static final DeferredHolder<SoundEvent, SoundEvent> WHIP = REGISTRY.register("whip", () -> SoundEvent.createVariableRangeEvent(TrottingWagons.id("whip")));
+    public static final DeferredHolder<SoundEvent, SoundEvent> PIG_TUNE = REGISTRY.register("pig_tune", () -> SoundEvent.createVariableRangeEvent(TrottingWagons.id("pig_tune")));
 
 }

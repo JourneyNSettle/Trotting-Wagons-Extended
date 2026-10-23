@@ -13,6 +13,8 @@
   "entity.trotting_wagons.log_wagon": "Log Wagon",
   "item.trotting_wagons.barrel_wagon": "Barrel Wagon",
   "entity.trotting_wagons.barrel_wagon": "Barrel Wagon",
+  "item.trotting_wagons.passenger_wagon": "Passenger Wagon",
+  "entity.trotting_wagons.passenger_wagon": "Passenger Wagon",
   "item.trotting_wagons.horse_whip": "Horse Whip",
   "item.trotting_wagons.wheel": "Wheel",
   "item.trotting_wagons.wide_wheel": "Wide Wheel",
@@ -64,5 +66,7 @@
   "gui.trotting_wagons.condition.critical": "Critical",
   "gui.trotting_wagons.unlock": "Unlock",
   "advancements.trotting_wagons.sinner.title": "Sinner",
-  "advancements.trotting_wagons.sinner.description": "Hitch two different kinds of animals to one wagon"
+  "advancements.trotting_wagons.sinner.description": "Hitch two different kinds of animals to one wagon",
+  "advancements.trotting_wagons.pig_ride.title": "Pig Passenger",
+  "advancements.trotting_wagons.pig_ride.description": "Sit in an animal wagon that is also carrying a pig"
 }

@@ -8,5 +8,13 @@
     "sounds": [
       "trotting_wagons:whip"
     ]
+  },
+  "pig_tune": {
+    "sounds": [
+      {
+        "name": "trotting_wagons:pig_tune",
+        "stream": true
+      }
+    ]
   }
 }

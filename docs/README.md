@@ -14,3 +14,4 @@
 | [animal.md](animal.md) | `animal_wagon` |
 | [log.md](log.md) | `log_wagon` |
 | [barrel.md](barrel.md) | `barrel_wagon` |
+| [passenger.md](passenger.md) | `passenger_wagon` |

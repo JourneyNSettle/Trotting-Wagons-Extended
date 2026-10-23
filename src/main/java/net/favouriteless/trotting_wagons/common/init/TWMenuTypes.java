@@ -7,6 +7,7 @@ import net.favouriteless.trotting_wagons.common.menus.ArmoredMenu;
 import net.favouriteless.trotting_wagons.common.menus.ConestogaMenu;
 import net.favouriteless.trotting_wagons.common.menus.DebugMenu;
 import net.favouriteless.trotting_wagons.common.menus.LogMenu;
+import net.favouriteless.trotting_wagons.common.menus.PassengerMenu;
 import net.favouriteless.trotting_wagons.common.menus.RoyalMenu;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.inventory.MenuType;
@@ -26,5 +27,6 @@ public class TWMenuTypes {
     public static final DeferredHolder<MenuType<?>, MenuType<AnimalMenu>> ANIMAL = REGISTRY.register("animal_wagon", () -> IMenuTypeExtension.create(AnimalMenu::new));
     public static final DeferredHolder<MenuType<?>, MenuType<LogMenu>> LOG = REGISTRY.register("log_wagon", () -> IMenuTypeExtension.create(LogMenu::new));
     public static final DeferredHolder<MenuType<?>, MenuType<BarrelMenu>> BARREL = REGISTRY.register("barrel_wagon", () -> IMenuTypeExtension.create(BarrelMenu::new));
+    public static final DeferredHolder<MenuType<?>, MenuType<PassengerMenu>> PASSENGER = REGISTRY.register("passenger_wagon", () -> IMenuTypeExtension.create(PassengerMenu::new));
 
 }

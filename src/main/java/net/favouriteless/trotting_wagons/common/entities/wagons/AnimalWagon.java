@@ -1,12 +1,17 @@
 package net.favouriteless.trotting_wagons.common.entities.wagons;
 
 import net.favouriteless.trotting_wagons.ServerConfig;
+import net.favouriteless.trotting_wagons.TrottingWagons;
 import net.favouriteless.trotting_wagons.common.entities.base.AbstractWagon;
 import net.favouriteless.trotting_wagons.common.entities.base.WagonSeat;
 import net.favouriteless.trotting_wagons.common.init.TWItems;
+import net.favouriteless.trotting_wagons.common.init.TWSoundEvents;
 import net.favouriteless.trotting_wagons.common.items.WagonItem;
 import net.favouriteless.trotting_wagons.common.menus.AnimalMenu;
+import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -104,6 +109,30 @@ public class AnimalWagon extends AbstractWagon implements MenuProvider {
                 return true;
         }
         return false;
+    }
+
+    @Override
+    protected void addPassenger(Entity passenger) {
+        super.addPassenger(passenger);
+        if(!level().isClientSide)
+            awardPigRide();
+    }
+
+    private void awardPigRide() {
+        boolean pig = false;
+        for(Entity passenger : getPassengers()) {
+            if(passenger.getType().is(TrottingWagons.PIGS))
+                pig = true;
+        }
+        if(!pig || level().getServer() == null)
+            return;
+        AdvancementHolder holder = level().getServer().getAdvancements().get(TrottingWagons.id("pig_ride"));
+        if(holder == null)
+            return;
+        for(Entity passenger : getPassengers()) {
+            if(passenger instanceof ServerPlayer player && player.getAdvancements().award(holder, "ride_with_pig"))
+                player.playNotifySound(TWSoundEvents.PIG_TUNE.get(), SoundSource.RECORDS, 1.0F, 1.0F);
+        }
     }
 
     @Override

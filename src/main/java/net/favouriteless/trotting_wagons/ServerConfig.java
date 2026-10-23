@@ -55,6 +55,11 @@ public class ServerConfig {
     public final DoubleValue barrelAcceleration;
     public final DoubleValue barrelTurnRate;
 
+    public final IntValue passengerHealth;
+    public final DoubleValue passengerSpeed;
+    public final DoubleValue passengerAcceleration;
+    public final DoubleValue passengerTurnRate;
+
     public ServerConfig(Builder builder) {
         this.allowedEntities = builder.comment("EntityTypes allowed to pull wagons").defineList("allowed_entities", List.of(
                 "minecraft:horse"
@@ -104,6 +109,12 @@ public class ServerConfig {
         this.barrelSpeedFull = builder.comment("Speed coefficient from 7 to 12 barrels, from 0 to 1.").defineInRange("barrel_wagon_speed_full", 0.8D, 0.0D, 1.0D);
         this.barrelAcceleration = builder.comment("Unused. Acceleration is the current speed coefficient, in blocks per second per second.").defineInRange("barrel_wagon_acceleration", 3.0D, 0.0D, Double.MAX_VALUE);
         this.barrelTurnRate = builder.comment("Turn rate").defineInRange("barrel_wagon_turn_rate", 2.0D, 0.0D, Double.MAX_VALUE);
+        builder.pop();
+        builder.push("Passenger Wagon Options");
+        this.passengerHealth = builder.comment("Maximum health").defineInRange("passenger_wagon_health", 100, 0, Integer.MAX_VALUE);
+        this.passengerSpeed = builder.comment("Speed coefficient, from 0 to 1.").defineInRange("passenger_wagon_speed_coefficient", 0.9D, 0.0D, 1.0D);
+        this.passengerAcceleration = builder.comment("Unused. Acceleration is the speed coefficient, in blocks per second per second.").defineInRange("passenger_wagon_acceleration", 3.0D, 0.0D, Double.MAX_VALUE);
+        this.passengerTurnRate = builder.comment("Turn rate").defineInRange("passenger_wagon_turn_rate", 2.0D, 0.0D, Double.MAX_VALUE);
         builder.pop();
     }
 
