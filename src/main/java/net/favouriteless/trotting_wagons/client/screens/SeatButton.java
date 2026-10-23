@@ -18,6 +18,8 @@ import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,6 +30,7 @@ public class SeatButton extends AbstractWidget {
 
     public static final int SIZE = 24;
     private static final long TOOLTIP_DELAY_MS = TooltipDelay.MILLIS;
+    private static final ItemStack BARRIER = new ItemStack(Items.BARRIER);
 
     private static final List<SeatButton> OPEN = new ArrayList<>();
     private static SeatButton dragSource;
@@ -210,48 +213,9 @@ public class SeatButton extends AbstractWidget {
         else if(carried || occupant.kind() == Kind.EMPTY_PLAYER || occupant.kind() == Kind.LOCKABLE)
             drawFitted(graphics, draftSide != null ? Component.translatable("gui.trotting_wagons.seat.draft") : typeLabel(wagon.getSeat(seat)), height - 6);
 
-        graphics.drawString(Minecraft.getInstance().font, getMessage(), getX() + 2, getY() + 2, 0xFFFFFF, true);
         if(locked || blocked)
-            drawProhibited(graphics);
-    }
-
-    private void drawProhibited(GuiGraphics graphics) {
-        int cx = getX() + width / 2;
-        int cy = getY() + height / 2;
-        int radius = Math.max(6, Math.min(width, height) / 2 - 5);
-        int color = 0xFFE53935;
-        drawRing(graphics, cx, cy, radius, color);
-        drawRing(graphics, cx, cy, radius - 1, color);
-        int reach = radius - 2;
-        for(int i = -reach; i <= reach; i++)
-            graphics.fill(cx + i, cy + i, cx + i + 2, cy + i + 2, color);
-    }
-
-    private static void drawRing(GuiGraphics graphics, int cx, int cy, int radius, int color) {
-        int x = radius;
-        int y = 0;
-        int decision = 1 - x;
-        while(y <= x) {
-            plot(graphics, cx, cy, x, y, color);
-            y++;
-            if(decision <= 0)
-                decision += 2 * y + 1;
-            else {
-                x--;
-                decision += 2 * (y - x) + 1;
-            }
-        }
-    }
-
-    private static void plot(GuiGraphics graphics, int cx, int cy, int x, int y, int color) {
-        graphics.fill(cx + x, cy + y, cx + x + 1, cy + y + 1, color);
-        graphics.fill(cx + y, cy + x, cx + y + 1, cy + x + 1, color);
-        graphics.fill(cx - x, cy + y, cx - x + 1, cy + y + 1, color);
-        graphics.fill(cx - y, cy + x, cx - y + 1, cy + x + 1, color);
-        graphics.fill(cx + x, cy - y, cx + x + 1, cy - y + 1, color);
-        graphics.fill(cx + y, cy - x, cx + y + 1, cy - x + 1, color);
-        graphics.fill(cx - x, cy - y, cx - x + 1, cy - y + 1, color);
-        graphics.fill(cx - y, cy - x, cx - y + 1, cy - x + 1, color);
+            graphics.renderItem(BARRIER, getX() + (width - 16) / 2, getY() + (height - 16) / 2);
+        graphics.drawString(Minecraft.getInstance().font, getMessage(), getX() + 2, getY() + 2, 0xFFFFFF, true);
     }
 
     private Component emptyAnimalTooltip() {

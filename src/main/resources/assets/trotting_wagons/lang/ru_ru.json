@@ -7,6 +7,8 @@
   "entity.trotting_wagons.log_wagon": "Повозка для леса",
   "item.trotting_wagons.barrel_wagon": "Повозка с бочками",
   "entity.trotting_wagons.barrel_wagon": "Повозка с бочками",
+  "item.trotting_wagons.passenger_wagon": "Пассажирская повозка",
+  "entity.trotting_wagons.passenger_wagon": "Пассажирская повозка",
   "itemGroup.trotting_wagons": "Повозки",
   "item.trotting_wagons.wide_wheel": "Широкое колесо",
   "item.trotting_wagons.reinforced_wheel": "Укреплённое колесо",
@@ -54,5 +56,7 @@
   "gui.trotting_wagons.condition.critical": "Критическая",
   "gui.trotting_wagons.unlock": "Разблокировать",
   "advancements.trotting_wagons.sinner.title": "Грешник",
-  "advancements.trotting_wagons.sinner.description": "Запрягите двух животных разных видов в одну повозку"
+  "advancements.trotting_wagons.sinner.description": "Запрягите двух животных разных видов в одну повозку",
+  "advancements.trotting_wagons.pig_ride.title": "Свинья-пассажир",
+  "advancements.trotting_wagons.pig_ride.description": "Сядьте в повозку для животных, в которой сидит свинья"
 }

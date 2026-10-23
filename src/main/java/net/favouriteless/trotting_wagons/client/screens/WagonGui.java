@@ -9,6 +9,7 @@ import net.favouriteless.trotting_wagons.common.menus.BarrelSlot;
 import net.favouriteless.trotting_wagons.common.menus.DebugMenu;
 import net.favouriteless.trotting_wagons.common.menus.LogCargoSlot;
 import net.favouriteless.trotting_wagons.common.menus.LogMenu;
+import net.favouriteless.trotting_wagons.common.menus.PassengerMenu;
 import net.favouriteless.trotting_wagons.common.menus.RepairSlot;
 import net.favouriteless.trotting_wagons.common.menus.LanternSlot;
 import net.favouriteless.trotting_wagons.common.menus.WheelSlot;
@@ -128,6 +129,8 @@ final class WagonGui {
             return log.getWagon();
         if(menu instanceof BarrelMenu barrel)
             return barrel.getWagon();
+        if(menu instanceof PassengerMenu passenger)
+            return passenger.getWagon();
         return null;
     }
 
