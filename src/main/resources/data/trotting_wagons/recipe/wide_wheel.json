@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "PSP",
+    "WIW",
+    "PSP"
+  ],
+  "key": {
+    "P": { "tag": "minecraft:planks" },
+    "S": { "item": "minecraft:stick" },
+    "W": { "item": "trotting_wagons:wheel" },
+    "I": { "item": "minecraft:iron_ingot" }
+  },
+  "result": { "id": "trotting_wagons:wide_wheel" }
+}

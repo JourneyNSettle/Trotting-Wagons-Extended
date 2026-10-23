@@ -32,3 +32,6 @@ license="${mod_license}"
     versionRange="*"
     ordering="NONE"
     side="BOTH"
+
+[[mixins]]
+    config="trotting_wagons.mixins.json"

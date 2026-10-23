@@ -18,6 +18,7 @@ import net.minecraft.world.Containers;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.Entity.RemovalReason;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -225,6 +226,11 @@ public class PassengerWagon extends AbstractWagon implements MenuProvider {
     @Override
     public ItemStack getPickResult() {
         return WagonItem.setupComponents(new ItemStack(TWItems.PASSENGER_WAGON.get()), getColor());
+    }
+
+    @Override
+    protected boolean dismountsBehind(LivingEntity passenger, int seat) {
+        return seat > 0;
     }
 
     @Override

@@ -18,6 +18,7 @@ import net.neoforged.neoforge.event.entity.EntityMountEvent;
 import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
 @EventBusSubscriber(modid = TrottingWagons.MOD_ID)
 public class CommonEvents {
@@ -77,6 +78,13 @@ public class CommonEvents {
             event.setCancellationResult(InteractionResult.sidedSuccess(level.isClientSide));
             event.setCanceled(true);
         }
+    }
+
+    @SubscribeEvent
+    public static void onPlayerTick(PlayerTickEvent.Post event) {
+        Player player = event.getEntity();
+        if(player.level().isClientSide && player.isLocalPlayer())
+            AbstractWagon.finishLadderClimb(player);
     }
 
     @SubscribeEvent

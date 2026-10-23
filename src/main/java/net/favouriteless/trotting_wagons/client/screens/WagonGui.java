@@ -6,10 +6,12 @@ import net.favouriteless.trotting_wagons.common.menus.AnimalMenu;
 import net.favouriteless.trotting_wagons.common.menus.BannerSlot;
 import net.favouriteless.trotting_wagons.common.menus.BarrelMenu;
 import net.favouriteless.trotting_wagons.common.menus.BarrelSlot;
+import net.favouriteless.trotting_wagons.common.menus.ChestSlot;
 import net.favouriteless.trotting_wagons.common.menus.DebugMenu;
 import net.favouriteless.trotting_wagons.common.menus.LogCargoSlot;
 import net.favouriteless.trotting_wagons.common.menus.LogMenu;
 import net.favouriteless.trotting_wagons.common.menus.PassengerMenu;
+import net.favouriteless.trotting_wagons.common.menus.WareMenu;
 import net.favouriteless.trotting_wagons.common.menus.RepairSlot;
 import net.favouriteless.trotting_wagons.common.menus.LanternSlot;
 import net.favouriteless.trotting_wagons.common.menus.WheelSlot;
@@ -74,14 +76,22 @@ final class WagonGui {
         graphics.drawString(font, state, center - font.width(state) / 2, y + 10, 4210752, false);
     }
 
-    static void drawStatus(GuiGraphics graphics, Font font, AbstractWagon wagon, int titleX, int titleY, int imageWidth) {
+    /** Title row: owner centered, distance on the right. The owner shifts left only to clear the distance. */
+    static void drawHeader(GuiGraphics graphics, Font font, AbstractWagon wagon, int y, int imageWidth) {
         if(wagon == null)
             return;
-        String name = wagon.getOwnerName();
-        if(!name.isEmpty())
-            graphics.drawString(font, Component.translatable("gui.trotting_wagons.owner", name), titleX, titleY + 10, 4210752, false);
         Component distance = Component.translatable("gui.trotting_wagons.distance", String.format(Locale.ROOT, "%.1f", wagon.getDistance() / 1000.0F));
-        graphics.drawString(font, distance, imageWidth - 8 - font.width(distance), 6, 4210752, false);
+        int distanceX = imageWidth - 8 - font.width(distance);
+        graphics.drawString(font, distance, distanceX, y, 4210752, false);
+        String name = wagon.getOwnerName();
+        if(name.isEmpty())
+            return;
+        Component owner = Component.translatable("gui.trotting_wagons.owner", name);
+        int ownerX = (imageWidth - font.width(owner)) / 2;
+        int limit = distanceX - 6;
+        if(ownerX + font.width(owner) > limit)
+            ownerX = limit - font.width(owner);
+        graphics.drawString(font, owner, ownerX, y, 4210752, false);
     }
 
     static void drawEmptySlotIcons(GuiGraphics graphics, int left, int top, AbstractContainerMenu menu) {
@@ -110,6 +120,8 @@ final class WagonGui {
             return new ItemStack(Items.OAK_LOG);
         if(slot instanceof BarrelSlot)
             return new ItemStack(Items.BARREL);
+        if(slot instanceof ChestSlot)
+            return new ItemStack(Items.CHEST);
         if(slot instanceof RepairSlot repair) {
             AbstractWagon wagon = repairWagon(menu);
             if(wagon != null)
@@ -131,6 +143,8 @@ final class WagonGui {
             return barrel.getWagon();
         if(menu instanceof PassengerMenu passenger)
             return passenger.getWagon();
+        if(menu instanceof WareMenu ware)
+            return ware.getWagon();
         return null;
     }
 

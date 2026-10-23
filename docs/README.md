@@ -15,3 +15,4 @@
 | [log.md](log.md) | `log_wagon` |
 | [barrel.md](barrel.md) | `barrel_wagon` |
 | [passenger.md](passenger.md) | `passenger_wagon` |
+| [ware.md](ware.md) | `ware_wagon` |

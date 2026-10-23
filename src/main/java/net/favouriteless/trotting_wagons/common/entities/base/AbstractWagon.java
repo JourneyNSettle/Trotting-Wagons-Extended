@@ -124,6 +124,7 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
     private final boolean[] seatLocked;
     private final Map<UUID, Integer> savedSeatByUuid = new HashMap<>();
     private int pendingSeat = -1;
+    private int dismountBehindId = Integer.MIN_VALUE;
 
     private final NonNullList<ItemStack> wheels = NonNullList.withSize(WHEEL_COUNT, ItemStack.EMPTY);
     private final ItemStackHandler wheelHandler = new ItemStackHandler(wheels) {
@@ -662,6 +663,11 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
 
     @Override
     public Vec3 getDismountLocationForPassenger(LivingEntity passenger) {
+        if(passenger.getId() == dismountBehindId) {
+            dismountBehindId = Integer.MIN_VALUE;
+            return dismountBehind(passenger);
+        }
+
         final double width = getBbWidth();
         double offset = Math.sqrt(width * width + width * width) / 2 + 0.05D;
 
@@ -691,6 +697,68 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
             return pos;
 
         return super.getDismountLocationForPassenger(passenger);
+    }
+
+    protected boolean dismountsBehind(LivingEntity passenger, int seat) {
+        return false;
+    }
+
+    protected double dismountRear() {
+        return getBbWidth() * 0.5D;
+    }
+
+    private Vec3 dismountBehind(LivingEntity passenger) {
+        double back = dismountRear() + passenger.getBbWidth() * 0.5D + 0.05D;
+        Vec3 first = null;
+        for(int step = 0; step < 4; step++) {
+            Vec3 pos = position().add(rotateY(new Vec3(0, 0, -(back + step * 0.5D)), getYRot()));
+            if(first == null)
+                first = pos;
+            if(dismountFree(passenger, pos))
+                return pos;
+        }
+        return first;
+    }
+
+    private boolean dismountFree(LivingEntity passenger, Vec3 pos) {
+        double width = passenger.getBbWidth() * 0.8D;
+        Vec3 eye = pos.add(0, passenger.getEyeHeight(), 0);
+        return LevelUtils.isEmpty(level(), AABB.ofSize(eye, width, 1.0E-6D, width));
+    }
+
+    public boolean touchesLadder(Player player) {
+        return false;
+    }
+
+    public boolean landFromLadder(Player player) {
+        return false;
+    }
+
+    public static boolean climbsWagon(Player player) {
+        if(player.isSpectator() || player.isPassenger() || player.getAbilities().flying || !player.isAlive())
+            return false;
+        AABB area = player.getBoundingBox().inflate(1.0D);
+        for(AbstractWagon wagon : player.level().getEntitiesOfClass(AbstractWagon.class, area, Entity::isAlive)) {
+            if(wagon.touchesLadder(player))
+                return true;
+        }
+        return false;
+    }
+
+    public static void finishLadderClimb(Player player) {
+        AABB area = player.getBoundingBox().inflate(1.0D);
+        for(AbstractWagon wagon : player.level().getEntitiesOfClass(AbstractWagon.class, area, Entity::isAlive)) {
+            if(wagon.landFromLadder(player))
+                return;
+        }
+    }
+
+    protected Vec3 yawLocal(Vec3 world) {
+        return rotateY(world.subtract(position()), -getYRot());
+    }
+
+    protected Vec3 yawWorld(Vec3 local) {
+        return position().add(rotateY(local, getYRot()));
     }
 
     @Override
@@ -1074,7 +1142,10 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
     }
 
     protected void setHealth(float health) {
-        entityData.set(DATA_ID_HEALTH, Mth.clamp(health, 0, maxHealth));
+        float clamped = Mth.clamp(health, 0, maxHealth);
+        if(maxHealth > 0 && Math.round(clamped) >= maxHealth)
+            clamped = maxHealth;
+        entityData.set(DATA_ID_HEALTH, clamped);
     }
 
     @Override
@@ -1296,9 +1367,10 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
     }
 
     public int repairSlots() {
-        float percent = getMaxHealth() <= 0 ? 100F : getHealth() / getMaxHealth() * 100F;
-        if(percent >= 100F)
+        int max = getMaxHealth();
+        if(max <= 0 || Math.round(getHealth()) >= max)
             return 0;
+        float percent = Math.round(getHealth()) / (float)max * 100F;
         if(percent >= 75F)
             return 1;
         if(percent >= 50F)
@@ -1665,8 +1737,12 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
 
     @Override
     protected void removePassenger(Entity passenger) {
+        int seat = seatIndexOf(passenger);
+        boolean behind = !level().isClientSide && passenger instanceof LivingEntity living && dismountsBehind(living, seat);
         super.removePassenger(passenger);
         clearSeat(passenger);
+        if(behind)
+            dismountBehindId = passenger.getId();
         if(!level().isClientSide) {
             if(passenger instanceof Mob)
                 setBoardCooldown(passenger);

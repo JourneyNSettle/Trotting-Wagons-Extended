@@ -15,6 +15,7 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -27,6 +28,8 @@ public class AnimalWagon extends AbstractWagon implements MenuProvider {
 
     private static final int FRONT_LARGE = 3;
     private static final int REAR_LARGE = 6;
+    // Mesh tail is about 2.78 from center. The collision square stays at the wheels; unload uses this instead.
+    private static final double BODY_REAR = 2.85D;
     private static final int[] FRONT_GROUP = {1, 2, 4, 5};
     private static final int[] REAR_GROUP = {4, 5, 7, 8};
 
@@ -61,6 +64,16 @@ public class AnimalWagon extends AbstractWagon implements MenuProvider {
     @Override
     protected float diagonalPitch() {
         return -8F;
+    }
+
+    @Override
+    protected boolean dismountsBehind(LivingEntity passenger, int seat) {
+        return seat > 0 && !(passenger instanceof Player);
+    }
+
+    @Override
+    protected double dismountRear() {
+        return BODY_REAR;
     }
 
     @Override

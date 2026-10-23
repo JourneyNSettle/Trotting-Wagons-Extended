@@ -67,8 +67,8 @@ public final class SeatButtons {
 
     public static void drawHealth(GuiGraphics graphics, Font font, AbstractWagon wagon, int x, int y, int width) {
         int max = Math.max(1, wagon.getMaxHealth());
-        int current = Math.round(wagon.getHealth());
-        int fill = (int)(width * Mth.clamp(wagon.getHealth() / max, 0F, 1F));
+        int current = Mth.clamp(Math.round(wagon.getHealth()), 0, max);
+        int fill = current >= max ? width : (int)(width * (current / (float)max));
         graphics.fill(x, y, x + width, y + 10, 0xFF2B2B2B);
         graphics.fill(x, y, x + fill, y + 10, 0xFF8B2E2E);
         String text = current + " / " + wagon.getMaxHealth();

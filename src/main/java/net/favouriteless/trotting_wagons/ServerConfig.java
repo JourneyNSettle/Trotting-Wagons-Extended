@@ -60,6 +60,12 @@ public class ServerConfig {
     public final DoubleValue passengerAcceleration;
     public final DoubleValue passengerTurnRate;
 
+    public final IntValue wareHealth;
+    public final DoubleValue wareSpeedEmpty;
+    public final DoubleValue wareSpeedPerChest;
+    public final DoubleValue wareAcceleration;
+    public final DoubleValue wareTurnRate;
+
     public ServerConfig(Builder builder) {
         this.allowedEntities = builder.comment("EntityTypes allowed to pull wagons").defineList("allowed_entities", List.of(
                 "minecraft:horse"
@@ -115,6 +121,13 @@ public class ServerConfig {
         this.passengerSpeed = builder.comment("Speed coefficient, from 0 to 1.").defineInRange("passenger_wagon_speed_coefficient", 0.9D, 0.0D, 1.0D);
         this.passengerAcceleration = builder.comment("Unused. Acceleration is the speed coefficient, in blocks per second per second.").defineInRange("passenger_wagon_acceleration", 3.0D, 0.0D, Double.MAX_VALUE);
         this.passengerTurnRate = builder.comment("Turn rate").defineInRange("passenger_wagon_turn_rate", 2.0D, 0.0D, Double.MAX_VALUE);
+        builder.pop();
+        builder.push("Ware Wagon Options");
+        this.wareHealth = builder.comment("Maximum health").defineInRange("ware_wagon_health", 100, 0, Integer.MAX_VALUE);
+        this.wareSpeedEmpty = builder.comment("Speed coefficient with no chests, from 0 to 1.").defineInRange("ware_wagon_speed_empty", 0.9D, 0.0D, 1.0D);
+        this.wareSpeedPerChest = builder.comment("Subtracted once for each placed chest. The result is never below 0.").defineInRange("ware_wagon_speed_per_chest", 0.1D, 0.0D, 1.0D);
+        this.wareAcceleration = builder.comment("Unused. Acceleration is the current speed coefficient, in blocks per second per second.").defineInRange("ware_wagon_acceleration", 3.0D, 0.0D, Double.MAX_VALUE);
+        this.wareTurnRate = builder.comment("Turn rate").defineInRange("ware_wagon_turn_rate", 2.0D, 0.0D, Double.MAX_VALUE);
         builder.pop();
     }
 
