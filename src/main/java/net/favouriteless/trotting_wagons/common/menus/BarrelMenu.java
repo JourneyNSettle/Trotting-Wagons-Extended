@@ -140,10 +140,7 @@ public class BarrelMenu extends AbstractContainerMenu {
 
     /** Places into every slot in the range that will take the stack. One call of {@code moveItemStackTo} fills only one empty slot. */
     private boolean fill(ItemStack stack, int start, int end) {
-        boolean moved = false;
-        while(moveItemStackTo(stack, start, end, false))
-            moved = true;
-        return moved;
+        return RepairShift.fill(stack, start, end, this::moveItemStackTo);
     }
 
     @Override

@@ -15,21 +15,46 @@ import net.minecraft.world.item.Items;
 public class WareMenu extends AbstractContainerMenu {
 
     public static final int IMAGE_WIDTH = 320;
-    public static final int IMAGE_HEIGHT = 250;
+    public static final int IMAGE_HEIGHT = 267;
+    /** Nine columns, three rows, lined up with the player inventory. */
+    public static final int GRID_COLUMNS = 9;
     public static final int GRID_X = 80;
-    public static final int GRID_Y = 54;
-    public static final int CHEST_X = 80;
-    public static final int CHEST_Y = 132;
-    public static final int LANTERN_X = 152;
-    public static final int LANTERN_Y = 132;
+    public static final int GRID_Y = 55;
+    /** Vertical 16×16 chest item slots, left of the grid. */
+    public static final int CHEST_X = 48;
+    public static final int CHEST_Y = 55;
+    public static final int CHEST_STEP = 18;
+    public static final int LANTERN_X = 279;
+    public static final int LANTERN_Y = 223;
     public static final int WHEEL_X = 17;
-    public static final int WHEEL_Y = 54;
+    public static final int WHEEL_Y = 183;
     public static final int REPAIR_X = 270;
-    public static final int REPAIR_Y = 78;
+    public static final int REPAIR_Y = 184;
     public static final int INV_X = 80;
-    public static final int INV_Y = 166;
-    public static final int TAB_X = 80;
-    public static final int TAB_Y = 28;
+    public static final int INV_Y = 183;
+    public static final int TAB_X = 102;
+    public static final int TAB_Y = 22;
+    public static final int TAB_STEP = 30;
+    /** Empty band under the chest column and the 27-slot grid, above the draft row. */
+    public static final int HEALTH_X = 13;
+    public static final int HEALTH_Y = 114;
+    public static final int HEALTH_W = 294;
+    public static final int DRAFT_X = 14;
+    public static final int DRAFT_Y = 132;
+    public static final int DRAFT_STEP = 26;
+    public static final int SEAT_X = 147;
+    public static final int SEAT_Y = 132;
+    public static final int LOCK_X = 20;
+    public static final int LOCK_Y = 231;
+    public static final int LOCK_SIZE = 26;
+
+    public static int gridX(int column) {
+        return GRID_X + column * 18;
+    }
+
+    public static int gridY(int row) {
+        return GRID_Y + row * 18;
+    }
 
     private final WareWagon wagon;
     private final int chestStart;
@@ -51,14 +76,12 @@ public class WareMenu extends AbstractContainerMenu {
 
         this.chestStart = slots.size();
         for(int i = 0; i < WareWagon.CHESTS; i++)
-            addSlot(new ChestSlot(wagon.getCargo(), i, CHEST_X + i * 18, CHEST_Y));
+            addSlot(new ChestSlot(wagon.getCargo(), i, CHEST_X, CHEST_Y + i * CHEST_STEP));
 
         this.cargoStart = slots.size();
-        for(int i = 0; i < WareWagon.CARGO; i++) {
-            int column = i % 9;
-            int row = i / 9;
-            addSlot(new WareCargoSlot(this, wagon.getCargo(), WareWagon.CHESTS + i, GRID_X + column * 18, GRID_Y + row * 18));
-        }
+        for(int i = 0; i < WareWagon.CARGO; i++)
+            addSlot(new WareCargoSlot(this, wagon.getCargo(), WareWagon.CHESTS + i,
+                    gridX(i % GRID_COLUMNS), gridY(i / GRID_COLUMNS)));
 
         this.contentStart = slots.size();
         for(int chest = 0; chest < WareWagon.CHESTS; chest++) {
@@ -169,10 +192,7 @@ public class WareMenu extends AbstractContainerMenu {
 
     /** Places into every slot in the range that will take the stack. One call of {@code moveItemStackTo} fills only one empty slot. */
     private boolean fill(ItemStack stack, int start, int end) {
-        boolean moved = false;
-        while(moveItemStackTo(stack, start, end, false))
-            moved = true;
-        return moved;
+        return RepairShift.fill(stack, start, end, this::moveItemStackTo);
     }
 
     @Override

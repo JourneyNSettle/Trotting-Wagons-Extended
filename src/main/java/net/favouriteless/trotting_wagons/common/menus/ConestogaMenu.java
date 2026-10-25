@@ -7,8 +7,12 @@ import net.minecraft.world.entity.player.Inventory;
 
 public class ConestogaMenu extends AbstractWagonMenu {
 
+    public static final int REPAIR_X = 270;
+    public static final int REPAIR_Y = 226;
+
     public ConestogaMenu(int id, Inventory inventory, AbstractInventoryWagon wagon) {
         super(TWMenuTypes.CONESTOGA.get(), id, inventory, wagon, 17, 8, 80, 185, 144);
+        addRepairSlots(REPAIR_X, REPAIR_Y);
     }
 
     public ConestogaMenu(int id, Inventory inventory, FriendlyByteBuf data) {

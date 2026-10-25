@@ -18,7 +18,7 @@ public class WareTabButton extends Button {
     private boolean selected;
 
     public WareTabButton(int x, int y, int tab, WareMenu menu) {
-        super(x, y, 20, 20, Component.empty(), button -> {
+        super(x, y, 26, 26, Component.empty(), button -> {
             menu.setTab(tab);
             PacketDistributor.sendToServer(new SelectWareTabPayload(menu.tab()));
         }, DEFAULT_NARRATION);
@@ -38,21 +38,18 @@ public class WareTabButton extends Button {
 
     @Override
     public void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        super.renderWidget(graphics, mouseX, mouseY, partialTick);
-        if(tab == 0) {
-            int x = getX() + 6;
-            int y = getY() + 6;
-            graphics.fill(x, y, x + 8, y + 8, 0xFF8B5A2B);
-            graphics.fill(x, y, x + 8, y + 2, 0xFFC4A574);
-        } else {
-            graphics.renderItem(CHEST, getX() + 2, getY() + 2);
-        }
+        if(tab != 0)
+            graphics.renderItem(CHEST, getX() + 5, getY() + 5);
+        if(!active)
+            graphics.fill(getX() + 2, getY() + 2, getX() + 24, getY() + 23, 0x88000000);
         if(!selected)
             return;
-        graphics.fill(getX(), getY(), getX() + width, getY() + 1, 0xFFFFFFA0);
-        graphics.fill(getX(), getY() + height - 1, getX() + width, getY() + height, 0xFFFFFFA0);
-        graphics.fill(getX(), getY(), getX() + 1, getY() + height, 0xFFFFFFA0);
-        graphics.fill(getX() + width - 1, getY(), getX() + width, getY() + height, 0xFFFFFFA0);
+        int x = getX();
+        int y = getY();
+        graphics.fill(x, y, x + width, y + 1, 0xFFFFFFA0);
+        graphics.fill(x, y + height - 1, x + width, y + height, 0xFFFFFFA0);
+        graphics.fill(x, y, x + 1, y + height, 0xFFFFFFA0);
+        graphics.fill(x + width - 1, y, x + width, y + height, 0xFFFFFFA0);
     }
 
 }

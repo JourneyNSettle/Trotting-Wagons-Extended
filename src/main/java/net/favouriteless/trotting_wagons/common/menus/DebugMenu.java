@@ -65,7 +65,9 @@ public class DebugMenu extends AbstractWagonMenu {
             ItemStack copy = item.copy();
             int start = fromRepair || accessory ? PLAYER_START : item.getItem() instanceof BannerItem ? bannerSlot : item.is(Items.LANTERN) ? lanternSlot : repairStart;
             int end = fromRepair || accessory ? bannerSlot : start == repairStart ? slots.size() : start + 1;
-            boolean moved = moveItemStackTo(item, start, end, false);
+            boolean moved = start == repairStart
+                    ? RepairShift.fill(item, start, end, this::moveItemStackTo)
+                    : moveItemStackTo(item, start, end, false);
             if(!moved)
                 return ItemStack.EMPTY;
             if(item.isEmpty())

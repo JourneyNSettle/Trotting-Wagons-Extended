@@ -99,6 +99,8 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
     public static final double ANIMAL_BOARD_RANGE = 1.0D;
     public static final double HITCH_RANGE = 1.5D;
     private static final String BOARD_COOLDOWN = "tw_board_cooldown";
+    /** Saves below this stored the driver's right-hand animal in {@code leftHorse}. */
+    private static final byte HITCH_SIDES = 1;
 
     private final double speedCoefficient;
     private final float turnRate;
@@ -799,10 +801,15 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         entityData.set(DATA_LOCKED, nbt.getBoolean("locked"));
         if(nbt.contains("speedLevel"))
             setSpeedLevel(nbt.getInt("speedLevel"));
-        if(nbt.contains("leftHorse"))
-            setHorseUUID(nbt.getUUID("leftHorse"), Side.LEFT);
-        if(nbt.contains("rightHorse"))
-            setHorseUUID(nbt.getUUID("rightHorse"), Side.RIGHT);
+        UUID left = nbt.hasUUID("leftHorse") ? nbt.getUUID("leftHorse") : null;
+        UUID right = nbt.hasUUID("rightHorse") ? nbt.getUUID("rightHorse") : null;
+        if(hitchSlots() > 1 && nbt.getByte("hitchSides") < HITCH_SIDES) {
+            UUID held = left;
+            left = right;
+            right = held;
+        }
+        setHorseUUID(left, Side.LEFT);
+        setHorseUUID(right, Side.RIGHT);
         savedSeatByUuid.clear();
         if(nbt.contains("seatLocks", Tag.TAG_BYTE_ARRAY)) {
             byte[] locks = nbt.getByteArray("seatLocks");
@@ -846,6 +853,7 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         nbt.putDouble("distancePart", kilometerPart);
         nbt.putBoolean("locked", isLocked());
         nbt.putInt("speedLevel", getSpeedLevel());
+        nbt.putByte("hitchSides", HITCH_SIDES);
         if(getHorseUUID(Side.LEFT) != null)
             nbt.putUUID("leftHorse", getHorseUUID(Side.LEFT));
         if(getHorseUUID(Side.RIGHT) != null)
@@ -1115,9 +1123,14 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
                 animal = getHorse(side);
             if(animal == null || !animal.isAlive())
                 continue;
-            lowest = Math.min(lowest, animal.getBbHeight() * 0.7D);
+            lowest = Math.min(lowest, hitchBackHeight(animal));
         }
         return lowest == Double.POSITIVE_INFINITY ? hitchedTongueTarget() : lowest;
+    }
+
+    /** Height the shaft aims at on this animal's back. */
+    protected double hitchBackHeight(Entity animal) {
+        return animal.getBbHeight() * 0.7D;
     }
 
     public DyeColor getColor() {
@@ -1252,6 +1265,16 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
     public boolean mountNearest(Entity entity) {
         int seat = findNearestSeat(entity);
         if(seat < 0)
+            return false;
+        pendingSeat = seat;
+        boolean mounted = entity.startRiding(this);
+        pendingSeat = -1;
+        return mounted;
+    }
+
+    /** Puts the rider in one seat. {@code startRiding} clears a sleep pose, so the caller restores it. */
+    public boolean mountSeat(Entity entity, int seat) {
+        if(seat < 0 || seat >= seats.length)
             return false;
         pendingSeat = seat;
         boolean mounted = entity.startRiding(this);
@@ -1884,8 +1907,9 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         return hitchSlots() < 2 || getHorse(Side.RIGHT) != null;
     }
 
+    /** Driver's left is +X when the wagon faces +Z. */
     protected Vec3 hitchOffset(Side side) {
-        return new Vec3(side == Side.LEFT ? -horseX : horseX, 0, horseY);
+        return new Vec3(side == Side.LEFT ? horseX : -horseX, 0, horseY);
     }
 
     private boolean hasFreeHitch() {

@@ -12,10 +12,14 @@ import net.minecraft.world.item.ItemStack;
 
 public class ArmoredMenu extends AbstractContainerMenu {
 
+    public static final int REPAIR_X = 270;
+    public static final int REPAIR_Y = 113;
+
     private static final int INV_X = 80;
     private static final int INV_Y = 77;
 
     private final AbstractWagon wagon;
+    private final int repairStart;
 
     public ArmoredMenu(int id, Inventory inventory, AbstractWagon wagon) {
         super(TWMenuTypes.ARMORED.get(), id);
@@ -31,6 +35,12 @@ public class ArmoredMenu extends AbstractContainerMenu {
             for(int x = 0; x < 9; x++)
                 addSlot(new Slot(inventory, 9 + x + y * 9, INV_X + x * 18, INV_Y + y * 18));
         }
+
+        this.repairStart = slots.size();
+        if(wagon != null && !wagon.level().isClientSide)
+            wagon.refreshRepairSlots();
+        for(int i = 0; i < AbstractWagon.REPAIR_SLOTS; i++)
+            addSlot(new RepairSlot(wagon, wagon.getRepair(), i, REPAIR_X + (i % 2) * 18, REPAIR_Y + (i / 2) * 18));
     }
 
     public ArmoredMenu(int id, Inventory inventory, FriendlyByteBuf data) {
@@ -49,17 +59,27 @@ public class ArmoredMenu extends AbstractContainerMenu {
         ItemStack item = slot.getItem();
         ItemStack copy = item.copy();
         int wheelEnd = AbstractWagon.WHEEL_COUNT;
-        if(index < wheelEnd) {
-            if(!moveItemStackTo(item, wheelEnd, slots.size(), false))
-                return ItemStack.EMPTY;
-        } else if(!item.is(TrottingWagons.WAGON_WHEELS) || !moveItemStackTo(item, 0, wheelEnd, false)) {
+        boolean fromWagon = index < wheelEnd || index >= repairStart;
+        boolean moved;
+        boolean repairHeld = false;
+        if(fromWagon) {
+            moved = moveItemStackTo(item, wheelEnd, repairStart, false);
+        } else if(item.is(TrottingWagons.WAGON_WHEELS)) {
+            moved = moveItemStackTo(item, 0, wheelEnd, false);
+        } else if(wagon != null && wagon.isRepairMaterial(item)
+                && RepairShift.fill(item, repairStart, slots.size(), this::moveItemStackTo)) {
+            moved = true;
+            repairHeld = true;
+        } else {
             return ItemStack.EMPTY;
         }
+        if(!moved)
+            return ItemStack.EMPTY;
         if(item.isEmpty())
             slot.setByPlayer(ItemStack.EMPTY);
         else
             slot.setChanged();
-        return copy;
+        return repairHeld ? ItemStack.EMPTY : copy;
     }
 
     @Override

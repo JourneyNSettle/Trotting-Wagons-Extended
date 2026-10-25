@@ -2,12 +2,15 @@ package net.favouriteless.trotting_wagons.client.screens;
 
 import net.favouriteless.trotting_wagons.common.entities.base.AbstractWagon;
 import net.favouriteless.trotting_wagons.common.init.TWItems;
+import net.favouriteless.trotting_wagons.common.menus.AbstractWagonMenu;
 import net.favouriteless.trotting_wagons.common.menus.AnimalMenu;
+import net.favouriteless.trotting_wagons.common.menus.ArmoredMenu;
 import net.favouriteless.trotting_wagons.common.menus.BannerSlot;
 import net.favouriteless.trotting_wagons.common.menus.BarrelMenu;
 import net.favouriteless.trotting_wagons.common.menus.BarrelSlot;
 import net.favouriteless.trotting_wagons.common.menus.ChestSlot;
 import net.favouriteless.trotting_wagons.common.menus.DebugMenu;
+import net.favouriteless.trotting_wagons.common.menus.KibitkaMenu;
 import net.favouriteless.trotting_wagons.common.menus.LogCargoSlot;
 import net.favouriteless.trotting_wagons.common.menus.LogMenu;
 import net.favouriteless.trotting_wagons.common.menus.PassengerMenu;
@@ -78,6 +81,11 @@ final class WagonGui {
 
     /** Title row: owner centered, distance on the right. The owner shifts left only to clear the distance. */
     static void drawHeader(GuiGraphics graphics, Font font, AbstractWagon wagon, int y, int imageWidth) {
+        drawHeader(graphics, font, wagon, y, imageWidth, 0);
+    }
+
+    /** {@code ownerLeft} is the first pixel the owner may use. Zero keeps the owner centered on the window. */
+    static void drawHeader(GuiGraphics graphics, Font font, AbstractWagon wagon, int y, int imageWidth, int ownerLeft) {
         if(wagon == null)
             return;
         Component distance = Component.translatable("gui.trotting_wagons.distance", String.format(Locale.ROOT, "%.1f", wagon.getDistance() / 1000.0F));
@@ -87,10 +95,15 @@ final class WagonGui {
         if(name.isEmpty())
             return;
         Component owner = Component.translatable("gui.trotting_wagons.owner", name);
-        int ownerX = (imageWidth - font.width(owner)) / 2;
+        int width = font.width(owner);
         int limit = distanceX - 6;
-        if(ownerX + font.width(owner) > limit)
-            ownerX = limit - font.width(owner);
+        int ownerX = (imageWidth - width) / 2;
+        if(ownerLeft > 0)
+            ownerX = ownerLeft + Math.max(0, limit - ownerLeft - width) / 2;
+        if(ownerX + width > limit)
+            ownerX = limit - width;
+        if(ownerLeft > 0 && ownerX < ownerLeft)
+            ownerX = ownerLeft;
         graphics.drawString(font, owner, ownerX, y, 4210752, false);
     }
 
@@ -145,7 +158,33 @@ final class WagonGui {
             return passenger.getWagon();
         if(menu instanceof WareMenu ware)
             return ware.getWagon();
+        if(menu instanceof KibitkaMenu kibitka)
+            return kibitka.getWagon();
+        if(menu instanceof AbstractWagonMenu inventoryWagon)
+            return inventoryWagon.getWagon();
+        if(menu instanceof ArmoredMenu armored)
+            return armored.getWagon();
         return null;
+    }
+
+    static void drawRepairCaption(GuiGraphics graphics, Font font, AbstractContainerMenu menu, AbstractWagon wagon) {
+        if(wagon == null)
+            return;
+        int minX = Integer.MAX_VALUE;
+        int minY = Integer.MAX_VALUE;
+        for(Slot slot : menu.slots) {
+            if(!(slot instanceof RepairSlot))
+                continue;
+            minX = Math.min(minX, slot.x);
+            minY = Math.min(minY, slot.y);
+        }
+        if(minX == Integer.MAX_VALUE)
+            return;
+        int center = minX + 17;
+        Component durability = Component.translatable("gui.trotting_wagons.durability");
+        graphics.drawString(font, durability, center - font.width(durability) / 2, minY - 22, 4210752, false);
+        Component condition = wagon.conditionName();
+        graphics.drawString(font, condition, center - font.width(condition) / 2, minY - 12, 4210752, false);
     }
 
 }

@@ -66,21 +66,17 @@ public class AnimalMenu extends AbstractContainerMenu {
         ItemStack item = slot.getItem();
         ItemStack copy = item.copy();
         boolean fromWagon = index < PLAYER_START || index >= repairStart;
-        int start;
-        int end;
+        boolean moved;
         if(fromWagon) {
-            start = PLAYER_START;
-            end = repairStart;
+            moved = moveItemStackTo(item, PLAYER_START, repairStart, false);
         } else if(item.is(TrottingWagons.WAGON_WHEELS)) {
-            start = 0;
-            end = PLAYER_START;
+            moved = moveItemStackTo(item, 0, PLAYER_START, false);
         } else if(wagon != null && wagon.isRepairMaterial(item)) {
-            start = repairStart;
-            end = slots.size();
+            moved = RepairShift.fill(item, repairStart, slots.size(), this::moveItemStackTo);
         } else {
             return ItemStack.EMPTY;
         }
-        if(!moveItemStackTo(item, start, end, false))
+        if(!moved)
             return ItemStack.EMPTY;
         if(item.isEmpty())
             slot.setByPlayer(ItemStack.EMPTY);

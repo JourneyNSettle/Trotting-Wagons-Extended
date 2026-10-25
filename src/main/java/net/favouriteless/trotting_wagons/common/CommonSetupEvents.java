@@ -12,6 +12,9 @@ import net.favouriteless.trotting_wagons.common.network.packets.SelectSeatPayloa
 import net.favouriteless.trotting_wagons.common.network.packets.SelectWareTabPayload;
 import net.favouriteless.trotting_wagons.common.network.packets.SteeringPayload;
 import net.favouriteless.trotting_wagons.common.network.packets.SyncSeatsPayload;
+import net.favouriteless.trotting_wagons.common.network.packets.KibitkaRespawnPayload;
+import net.favouriteless.trotting_wagons.common.network.packets.KibitkaSleepPayload;
+import net.favouriteless.trotting_wagons.common.network.packets.ToggleKibitkaCampPayload;
 import net.favouriteless.trotting_wagons.common.network.packets.ToggleLadderPayload;
 import net.favouriteless.trotting_wagons.common.network.packets.ToggleSeatLockPayload;
 import net.favouriteless.trotting_wagons.common.network.packets.ToggleWagonLockPayload;
@@ -49,6 +52,9 @@ public class CommonSetupEvents {
         registrar.playToServer(ToggleSeatLockPayload.TYPE, ToggleSeatLockPayload.CODEC, ToggleSeatLockPayload::handle);
         registrar.playToServer(ToggleWagonLockPayload.TYPE, ToggleWagonLockPayload.CODEC, ToggleWagonLockPayload::handle);
         registrar.playToServer(ToggleLadderPayload.TYPE, ToggleLadderPayload.CODEC, ToggleLadderPayload::handle);
+        registrar.playToServer(ToggleKibitkaCampPayload.TYPE, ToggleKibitkaCampPayload.CODEC, ToggleKibitkaCampPayload::handle);
+        registrar.playToServer(KibitkaSleepPayload.TYPE, KibitkaSleepPayload.CODEC, KibitkaSleepPayload::handle);
+        registrar.playToServer(KibitkaRespawnPayload.TYPE, KibitkaRespawnPayload.CODEC, KibitkaRespawnPayload::handle);
         registrar.playToServer(WhipLowerGearPayload.TYPE, WhipLowerGearPayload.CODEC, WhipLowerGearPayload::handle);
         registrar.playToClient(SyncSeatsPayload.TYPE, SyncSeatsPayload.CODEC, SyncSeatsPayload::handle);
     }

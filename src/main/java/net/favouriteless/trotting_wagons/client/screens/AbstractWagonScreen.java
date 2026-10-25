@@ -2,11 +2,13 @@ package net.favouriteless.trotting_wagons.client.screens;
 
 import net.favouriteless.trotting_wagons.common.entities.base.AbstractWagon;
 import net.favouriteless.trotting_wagons.common.menus.AbstractWagonMenu;
+import net.favouriteless.trotting_wagons.common.menus.RepairSlot;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.inventory.Slot;
 
 import java.util.List;
 
@@ -16,6 +18,7 @@ public abstract class AbstractWagonScreen<T extends AbstractWagonMenu> extends A
     private final int texWidth;
     private final int texHeight;
     private static final int SEAT_STRIP = 60;
+    private final TooltipDelay tooltips = new TooltipDelay();
     private List<SeatButton> seatButtons;
 
     public AbstractWagonScreen(T menu, Inventory inventory, Component title, ResourceLocation texture, int texWidth, int texHeight) {
@@ -94,6 +97,24 @@ public abstract class AbstractWagonScreen<T extends AbstractWagonMenu> extends A
     protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
         super.renderLabels(graphics, mouseX, mouseY);
         WagonGui.drawHeader(graphics, font, menu.getWagon(), titleLabelY, imageWidth);
+        WagonGui.drawRepairCaption(graphics, font, menu, menu.getWagon());
+    }
+
+    @Override
+    protected void renderTooltip(GuiGraphics graphics, int mouseX, int mouseY) {
+        if(hoveredSlot != null && hoveredSlot.hasItem()) {
+            tooltips.ready(null);
+            super.renderTooltip(graphics, mouseX, mouseY);
+            return;
+        }
+        if(!(hoveredSlot instanceof RepairSlot repair) || !tooltips.ready(hoveredSlot))
+            return;
+        AbstractWagon wagon = menu.getWagon();
+        if(wagon == null)
+            return;
+        Component tip = wagon.repairTooltip(repair.getSlotIndex());
+        if(tip != null)
+            graphics.renderTooltip(font, tip, mouseX, mouseY);
     }
 
     @Override
@@ -121,7 +142,15 @@ public abstract class AbstractWagonScreen<T extends AbstractWagonMenu> extends A
         if(rest > 0)
             graphics.blit(texture, artX, restTop, 0, inventoryArtY(), art, rest, texWidth, texHeight);
         WagonGui.drawWheelCaption(graphics, font, menu, menu.getWagon(), leftPos, topPos);
+        drawRepairSlots(graphics);
         WagonGui.drawEmptySlotIcons(graphics, leftPos, topPos, menu);
+    }
+
+    protected void drawRepairSlots(GuiGraphics graphics) {
+        for(Slot slot : menu.slots) {
+            if(slot instanceof RepairSlot && slot.isActive())
+                WagonGui.drawSlot(graphics, leftPos, topPos, slot);
+        }
     }
 
     protected void drawSeatStrip(GuiGraphics graphics, int frameX, int frameWidth) {
