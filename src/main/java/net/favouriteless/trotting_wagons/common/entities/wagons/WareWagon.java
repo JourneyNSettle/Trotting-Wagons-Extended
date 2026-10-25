@@ -36,9 +36,19 @@ import net.neoforged.neoforge.items.ItemStackHandler;
 public class WareWagon extends AbstractWagon implements MenuProvider {
 
     public static final int CHESTS = 3;
-    public static final int CARGO = 36;
+    /** Painted grid is 9 columns by 3 rows, shared by the wagon tab and each chest. */
+    public static final int CARGO = 27;
     public static final int CONTENTS = 27;
     public static final int SLOTS = CHESTS + CARGO + CHESTS * CONTENTS;
+    private static final int CARGO_VERSION = 3;
+    /** Version 2 stored a 10×3 grid: 30 cargo and 30 slots in each chest. */
+    private static final int WIDE_CARGO = 30;
+    private static final int WIDE_CONTENTS = 30;
+    private static final int WIDE_SLOTS = CHESTS + WIDE_CARGO + CHESTS * WIDE_CONTENTS;
+    /** Saves from before the grid shrank from 4×9 cargo and 27-slot chests. */
+    private static final int LEGACY_CARGO = 36;
+    private static final int LEGACY_CONTENTS = 27;
+    private static final int LEGACY_SLOTS = CHESTS + LEGACY_CARGO + CHESTS * LEGACY_CONTENTS;
 
     private static final int CHEST_MASK = (1 << CHESTS) - 1;
     private static final EntityDataAccessor<Integer> DATA_CHESTS = SynchedEntityData.defineId(WareWagon.class, EntityDataSerializers.INT);
@@ -203,7 +213,7 @@ public class WareWagon extends AbstractWagon implements MenuProvider {
         for(int i = 0; i < stacks.size(); i++)
             stacks.set(i, ItemStack.EMPTY);
         if(nbt.contains("Cargo", Tag.TAG_COMPOUND))
-            ContainerHelper.loadAllItems(nbt.getCompound("Cargo"), stacks, registryAccess());
+            readCargo(nbt);
         for(int i = 0; i < lantern.size(); i++)
             lantern.set(i, ItemStack.EMPTY);
         if(nbt.contains("Lantern", Tag.TAG_COMPOUND))
@@ -216,6 +226,7 @@ public class WareWagon extends AbstractWagon implements MenuProvider {
     @Override
     public void addAdditionalSaveData(CompoundTag nbt) {
         super.addAdditionalSaveData(nbt);
+        nbt.putInt("CargoVersion", CARGO_VERSION);
         CompoundTag cargoTag = new CompoundTag();
         ContainerHelper.saveAllItems(cargoTag, stacks, registryAccess());
         nbt.put("Cargo", cargoTag);
@@ -278,6 +289,68 @@ public class WareWagon extends AbstractWagon implements MenuProvider {
     @Override
     protected DyeColor getDefaultColor() {
         return null;
+    }
+
+    /**
+     * Version 3 is 111 slots: 3 chests, 27 cargo, then three blocks of 27.
+     * Version 2 was 123 slots: 3 chests, 30 cargo, then three blocks of 30. The last 3 cargo
+     * stacks and the last 3 of each chest drop beside the wagon.
+     * A missing version is the old 120-slot list: 3 chests, 36 cargo, then three blocks of 27.
+     * The first 27 cargo stacks stay. The last 9 drop. Each chest's 27 stacks move intact.
+     */
+    private void readCargo(CompoundTag nbt) {
+        CompoundTag cargoTag = nbt.getCompound("Cargo");
+        int version = nbt.getInt("CargoVersion");
+        if(version >= CARGO_VERSION) {
+            ContainerHelper.loadAllItems(cargoTag, stacks, registryAccess());
+            return;
+        }
+        if(version == 2) {
+            readWide(cargoTag);
+            return;
+        }
+        readLegacy(cargoTag);
+    }
+
+    private void readWide(CompoundTag cargoTag) {
+        NonNullList<ItemStack> wide = NonNullList.withSize(WIDE_SLOTS, ItemStack.EMPTY);
+        ContainerHelper.loadAllItems(cargoTag, wide, registryAccess());
+        for(int i = 0; i < CHESTS; i++)
+            stacks.set(i, wide.get(i));
+        for(int i = 0; i < CARGO; i++)
+            stacks.set(CHESTS + i, wide.get(CHESTS + i));
+        for(int i = CARGO; i < WIDE_CARGO; i++)
+            dropMigrated(wide.get(CHESTS + i));
+        for(int chest = 0; chest < CHESTS; chest++) {
+            int from = CHESTS + WIDE_CARGO + chest * WIDE_CONTENTS;
+            for(int offset = 0; offset < CONTENTS; offset++)
+                stacks.set(contentIndex(chest, offset), wide.get(from + offset));
+            for(int offset = CONTENTS; offset < WIDE_CONTENTS; offset++)
+                dropMigrated(wide.get(from + offset));
+        }
+    }
+
+    private void readLegacy(CompoundTag cargoTag) {
+        NonNullList<ItemStack> legacy = NonNullList.withSize(LEGACY_SLOTS, ItemStack.EMPTY);
+        ContainerHelper.loadAllItems(cargoTag, legacy, registryAccess());
+        for(int i = 0; i < CHESTS; i++)
+            stacks.set(i, legacy.get(i));
+        for(int i = 0; i < CARGO; i++)
+            stacks.set(CHESTS + i, legacy.get(CHESTS + i));
+        for(int i = CARGO; i < LEGACY_CARGO; i++)
+            dropMigrated(legacy.get(CHESTS + i));
+        for(int chest = 0; chest < CHESTS; chest++) {
+            for(int offset = 0; offset < LEGACY_CONTENTS; offset++) {
+                int from = CHESTS + LEGACY_CARGO + chest * LEGACY_CONTENTS + offset;
+                stacks.set(contentIndex(chest, offset), legacy.get(from));
+            }
+        }
+    }
+
+    private void dropMigrated(ItemStack stack) {
+        if(stack.isEmpty() || level() == null || level().isClientSide)
+            return;
+        spawnAtLocation(stack);
     }
 
     private void offerChest(Player player, InteractionHand hand) {

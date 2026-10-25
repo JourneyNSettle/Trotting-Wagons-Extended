@@ -6,6 +6,7 @@ import net.favouriteless.trotting_wagons.common.menus.BarrelMenu;
 import net.favouriteless.trotting_wagons.common.menus.ArmoredMenu;
 import net.favouriteless.trotting_wagons.common.menus.ConestogaMenu;
 import net.favouriteless.trotting_wagons.common.menus.DebugMenu;
+import net.favouriteless.trotting_wagons.common.menus.KibitkaMenu;
 import net.favouriteless.trotting_wagons.common.menus.LogMenu;
 import net.favouriteless.trotting_wagons.common.menus.PassengerMenu;
 import net.favouriteless.trotting_wagons.common.menus.RoyalMenu;
@@ -30,5 +31,6 @@ public class TWMenuTypes {
     public static final DeferredHolder<MenuType<?>, MenuType<BarrelMenu>> BARREL = REGISTRY.register("barrel_wagon", () -> IMenuTypeExtension.create(BarrelMenu::new));
     public static final DeferredHolder<MenuType<?>, MenuType<PassengerMenu>> PASSENGER = REGISTRY.register("passenger_wagon", () -> IMenuTypeExtension.create(PassengerMenu::new));
     public static final DeferredHolder<MenuType<?>, MenuType<WareMenu>> WARE = REGISTRY.register("ware_wagon", () -> IMenuTypeExtension.create(WareMenu::new));
+    public static final DeferredHolder<MenuType<?>, MenuType<KibitkaMenu>> KIBITKA = REGISTRY.register("kibitka_wagon", () -> IMenuTypeExtension.create(KibitkaMenu::new));
 
 }

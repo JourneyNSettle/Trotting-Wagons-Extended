@@ -6,11 +6,13 @@ import net.favouriteless.trotting_wagons.common.entities.wagons.AnimalWagon;
 import net.favouriteless.trotting_wagons.common.entities.wagons.BarrelWagon;
 import net.favouriteless.trotting_wagons.common.entities.wagons.ConestogaWagon;
 import net.favouriteless.trotting_wagons.common.entities.wagons.DebugWagon;
+import net.favouriteless.trotting_wagons.common.entities.wagons.KibitkaWagon;
 import net.favouriteless.trotting_wagons.common.entities.wagons.LogWagon;
 import net.favouriteless.trotting_wagons.common.entities.wagons.PassengerWagon;
 import net.favouriteless.trotting_wagons.common.entities.wagons.RoyalWagon;
 import net.favouriteless.trotting_wagons.common.entities.wagons.WareWagon;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth;
 import net.minecraft.world.item.DyeColor;
 import software.bernie.geckolib.animation.AnimationProcessor;
 import software.bernie.geckolib.animation.AnimationState;
@@ -28,7 +30,7 @@ public class WagonModel<T extends AbstractWagon> extends DefaultedEntityGeoModel
 
     @Override
     public ResourceLocation getTextureResource(T wagon) {
-        if(wagon instanceof DebugWagon || wagon instanceof AnimalWagon || wagon instanceof LogWagon || wagon instanceof BarrelWagon || wagon instanceof PassengerWagon || wagon instanceof WareWagon)
+        if(wagon instanceof DebugWagon || wagon instanceof AnimalWagon || wagon instanceof LogWagon || wagon instanceof BarrelWagon || wagon instanceof PassengerWagon || wagon instanceof WareWagon || wagon instanceof KibitkaWagon)
             return TrottingWagons.id(texturePathPrefix + "none.png");
         DyeColor color = wagon.getColor();
         return TrottingWagons.id(texturePathPrefix + (color != null ? color.getName() : "none") + ".png");
@@ -48,7 +50,7 @@ public class WagonModel<T extends AbstractWagon> extends DefaultedEntityGeoModel
         spinAxle(processor, "RearWheels_Wide", -rot);
         spinAxle(processor, "FrontWheels_Iron", -rot);
         spinAxle(processor, "RearWheels_Iron", -rot);
-        if(wagon instanceof DebugWagon || wagon instanceof AnimalWagon || wagon instanceof LogWagon || wagon instanceof BarrelWagon || wagon instanceof PassengerWagon || wagon instanceof WareWagon)
+        if(wagon instanceof DebugWagon || wagon instanceof AnimalWagon || wagon instanceof LogWagon || wagon instanceof BarrelWagon || wagon instanceof PassengerWagon || wagon instanceof WareWagon || wagon instanceof KibitkaWagon)
             hideDebugWheels(processor, wagon);
         else
             hideMissingWheels(processor, wagon);
@@ -64,6 +66,8 @@ public class WagonModel<T extends AbstractWagon> extends DefaultedEntityGeoModel
         }
         if(wagon instanceof WareWagon wareWagon)
             hideWare(processor, wareWagon);
+        if(wagon instanceof KibitkaWagon kibitka)
+            poseKibitka(processor, kibitka, partialTick);
 
         AbstractWagon.WheelSag sag = wagon.wheelSag();
         float bodyPitch = wagon.getXRot(partialTick) + sag.pitch();
@@ -170,6 +174,30 @@ public class WagonModel<T extends AbstractWagon> extends DefaultedEntityGeoModel
         GeoBone bone = processor.getBone(name);
         if(bone != null)
             bone.setHidden(hidden);
+    }
+
+    private static void poseKibitka(AnimationProcessor<?> processor, KibitkaWagon wagon, float partialTick) {
+        hideAxles(processor, wagon);
+        hideBone(processor, "Lamp", !wagon.hasLantern());
+        float linear = Mth.clamp(wagon.campRender(partialTick) / KibitkaWagon.CAMP_TICKS, 0, 1);
+        float t = linear * linear * (3 - 2 * linear);
+        if(KibitkaWagon.DOOR_OPENS) {
+            GeoBone door = processor.getBone("Door");
+            if(door != null)
+                door.setRotY(t * KibitkaWagon.DOOR_OPEN);
+        }
+        poseTent(processor, "Tent_CLOSED", 1 - t);
+        poseTent(processor, "Tent_OPEN", t);
+    }
+
+    /** Crossfade. A scale under 0.02 is hidden and reset so the closed tent does not leave a speck. */
+    private static void poseTent(AnimationProcessor<?> processor, String name, float scale) {
+        GeoBone bone = processor.getBone(name);
+        if(bone == null)
+            return;
+        boolean hide = scale < 0.02F;
+        bone.setHidden(hide);
+        bone.updateScale(hide ? 1 : scale, hide ? 1 : scale, hide ? 1 : scale);
     }
 
     private static void hideWare(AnimationProcessor<?> processor, WareWagon wagon) {

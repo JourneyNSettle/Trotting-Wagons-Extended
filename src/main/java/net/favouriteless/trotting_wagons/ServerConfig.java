@@ -66,6 +66,11 @@ public class ServerConfig {
     public final DoubleValue wareAcceleration;
     public final DoubleValue wareTurnRate;
 
+    public final IntValue kibitkaHealth;
+    public final DoubleValue kibitkaSpeed;
+    public final DoubleValue kibitkaAcceleration;
+    public final DoubleValue kibitkaTurnRate;
+
     public ServerConfig(Builder builder) {
         this.allowedEntities = builder.comment("EntityTypes allowed to pull wagons").defineList("allowed_entities", List.of(
                 "minecraft:horse"
@@ -128,6 +133,12 @@ public class ServerConfig {
         this.wareSpeedPerChest = builder.comment("Subtracted once for each placed chest. The result is never below 0.").defineInRange("ware_wagon_speed_per_chest", 0.1D, 0.0D, 1.0D);
         this.wareAcceleration = builder.comment("Unused. Acceleration is the current speed coefficient, in blocks per second per second.").defineInRange("ware_wagon_acceleration", 3.0D, 0.0D, Double.MAX_VALUE);
         this.wareTurnRate = builder.comment("Turn rate").defineInRange("ware_wagon_turn_rate", 2.0D, 0.0D, Double.MAX_VALUE);
+        builder.pop();
+        builder.push("Kibitka Wagon Options");
+        this.kibitkaHealth = builder.comment("Maximum health").defineInRange("kibitka_wagon_health", 60, 0, Integer.MAX_VALUE);
+        this.kibitkaSpeed = builder.comment("Speed coefficient, from 0 to 1.").defineInRange("kibitka_wagon_speed_coefficient", 0.9D, 0.0D, 1.0D);
+        this.kibitkaAcceleration = builder.comment("Unused. Acceleration is the speed coefficient, in blocks per second per second.").defineInRange("kibitka_wagon_acceleration", 3.0D, 0.0D, Double.MAX_VALUE);
+        this.kibitkaTurnRate = builder.comment("Turn rate").defineInRange("kibitka_wagon_turn_rate", 2.0D, 0.0D, Double.MAX_VALUE);
         builder.pop();
     }
 

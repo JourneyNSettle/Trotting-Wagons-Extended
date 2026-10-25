@@ -2,6 +2,7 @@ package net.favouriteless.trotting_wagons.common;
 
 import net.favouriteless.trotting_wagons.TrottingWagons;
 import net.favouriteless.trotting_wagons.common.entities.base.AbstractWagon;
+import net.favouriteless.trotting_wagons.common.entities.wagons.KibitkaWagon;
 import net.favouriteless.trotting_wagons.common.items.HorseWhipItem;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -10,18 +11,34 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.player.Player.BedSleepingProblem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.EntityMountEvent;
 import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
+import net.neoforged.neoforge.event.entity.player.CanContinueSleepingEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
 @EventBusSubscriber(modid = TrottingWagons.MOD_ID)
 public class CommonEvents {
+
+    @SubscribeEvent
+    public static void onContinueSleep(CanContinueSleepingEvent event) {
+        if(event.getProblem() != BedSleepingProblem.NOT_POSSIBLE_HERE)
+            return;
+        if(event.getEntity().getVehicle() instanceof KibitkaWagon wagon && wagon.isCamped())
+            event.setContinueSleeping(true);
+    }
+
+    @SubscribeEvent
+    public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
+        if(event.getEntity() instanceof ServerPlayer player)
+            KibitkaSpawnMemory.onLogin(player);
+    }
 
     @SubscribeEvent
     public static void onStartTracking(PlayerEvent.StartTracking event) {

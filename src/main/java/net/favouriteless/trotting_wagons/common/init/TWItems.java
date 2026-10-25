@@ -26,6 +26,7 @@ public class TWItems {
     public static final DeferredHolder<Item, WagonItem> BARREL_WAGON = REGISTRY.register("barrel_wagon", () -> new WagonItem(TWEntityTypes.BARREL_WAGON::get, wagonProps()));
     public static final DeferredHolder<Item, WagonItem> PASSENGER_WAGON = REGISTRY.register("passenger_wagon", () -> new WagonItem(TWEntityTypes.PASSENGER_WAGON::get, wagonProps()));
     public static final DeferredHolder<Item, WagonItem> WARE_WAGON = REGISTRY.register("ware_wagon", () -> new WagonItem(TWEntityTypes.WARE_WAGON::get, wagonProps()));
+    public static final DeferredHolder<Item, WagonItem> KIBITKA_WAGON = REGISTRY.register("kibitka_wagon", () -> new WagonItem(TWEntityTypes.KIBITKA_WAGON::get, wagonProps()));
 
     public static final DeferredHolder<Item, HorseWhipItem> HORSE_WHIP = REGISTRY.register("horse_whip", () -> new HorseWhipItem(new Properties().stacksTo(1)));
     public static final DeferredHolder<Item, WheelItem> WHEEL = REGISTRY.register("wheel", () -> new WheelItem(new Properties().durability(100)));

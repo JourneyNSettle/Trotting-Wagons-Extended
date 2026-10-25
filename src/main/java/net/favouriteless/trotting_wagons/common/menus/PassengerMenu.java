@@ -14,15 +14,28 @@ import net.minecraft.world.item.Items;
 
 public class PassengerMenu extends AbstractContainerMenu {
 
+    public static final int IMAGE_WIDTH = 320;
+    public static final int IMAGE_HEIGHT = 172;
+    public static final int HEALTH_X = 13;
+    public static final int HEALTH_Y = 20;
+    public static final int HEALTH_W = 294;
+    public static final int DRAFT_X = 9;
+    public static final int DRAFT_STRIDE = 26;
+    public static final int SEAT_X = 68;
+    public static final int SEAT_Y = 37;
+    public static final int SEAT_STEP = 26;
     public static final int INV_X = 80;
-    public static final int INV_Y = 112;
+    public static final int INV_Y = 88;
     public static final int WHEEL_X = 17;
-    public static final int WHEEL_Y = 58;
-    public static final int LANTERN_X = 142;
-    public static final int LANTERN_Y = 76;
+    public static final int WHEEL_Y = 88;
+    public static final int LANTERN_X = 270;
+    public static final int LANTERN_Y = 128;
     public static final int REPAIR_X = 270;
-    public static final int REPAIR_Y = 58;
-    public static final int IMAGE_HEIGHT = 196;
+    public static final int REPAIR_Y = 64;
+    public static final int CUSTOM_Y = 106;
+    public static final int LOCK_X = 20;
+    public static final int LOCK_Y = 136;
+    public static final int LOCK_SIZE = 26;
 
     private static final int WHEEL_END = AbstractWagon.WHEEL_COUNT;
     private static final int LANTERN_END = WHEEL_END + PassengerWagon.LANTERNS;
@@ -70,24 +83,19 @@ public class PassengerMenu extends AbstractContainerMenu {
         ItemStack item = slot.getItem();
         ItemStack copy = item.copy();
         boolean fromWagon = index < LANTERN_END || index >= repairStart;
-        int start;
-        int end;
+        boolean moved;
         if(fromWagon) {
-            start = LANTERN_END;
-            end = repairStart;
+            moved = moveItemStackTo(item, LANTERN_END, repairStart, false);
         } else if(item.is(TrottingWagons.WAGON_WHEELS)) {
-            start = 0;
-            end = WHEEL_END;
+            moved = moveItemStackTo(item, 0, WHEEL_END, false);
         } else if(item.is(Items.LANTERN)) {
-            start = WHEEL_END;
-            end = LANTERN_END;
+            moved = moveItemStackTo(item, WHEEL_END, LANTERN_END, false);
         } else if(wagon != null && wagon.isRepairMaterial(item)) {
-            start = repairStart;
-            end = slots.size();
+            moved = RepairShift.fill(item, repairStart, slots.size(), this::moveItemStackTo);
         } else {
             return ItemStack.EMPTY;
         }
-        if(!moveItemStackTo(item, start, end, false))
+        if(!moved)
             return ItemStack.EMPTY;
         if(item.isEmpty())
             slot.setByPlayer(ItemStack.EMPTY);

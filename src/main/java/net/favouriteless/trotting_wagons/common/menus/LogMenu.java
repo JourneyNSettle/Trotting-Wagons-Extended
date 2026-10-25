@@ -79,16 +79,17 @@ public class LogMenu extends AbstractContainerMenu {
         ItemStack item = slot.getItem();
         ItemStack copy = item.copy();
         boolean moved;
+        boolean repairHeld = false;
         if(index < wheelStart || index >= repairStart || (index >= wheelStart && index < playerStart)) {
             moved = moveItemStackTo(item, playerStart, repairStart, false);
         } else if(item.is(TrottingWagons.WAGON_WHEELS)) {
             moved = moveItemStackTo(item, wheelStart, playerStart, false);
+        } else if(wagon != null && wagon.isRepairMaterial(item)
+                && RepairShift.fill(item, repairStart, slots.size(), this::moveItemStackTo)) {
+            moved = true;
+            repairHeld = true;
         } else if(LogWagon.acceptsCargo(item)) {
             moved = moveItemStackTo(item, 0, wheelStart, false);
-            if(!item.isEmpty() && wagon != null && wagon.isRepairMaterial(item))
-                moved = moveItemStackTo(item, repairStart, slots.size(), false) || moved;
-        } else if(wagon != null && wagon.isRepairMaterial(item)) {
-            moved = moveItemStackTo(item, repairStart, slots.size(), false);
         } else {
             return ItemStack.EMPTY;
         }
@@ -98,7 +99,7 @@ public class LogMenu extends AbstractContainerMenu {
             slot.setByPlayer(ItemStack.EMPTY);
         else
             slot.setChanged();
-        return copy;
+        return repairHeld ? ItemStack.EMPTY : copy;
     }
 
     @Override

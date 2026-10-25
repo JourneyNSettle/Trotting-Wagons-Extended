@@ -17,6 +17,7 @@ public abstract class AbstractWagonMenu extends AbstractContainerMenu {
     private final AbstractInventoryWagon wagon;
     private final int cargoSlots;
     private final int wheelStart;
+    private int repairStart = -1;
 
     public AbstractWagonMenu(MenuType<? extends AbstractWagonMenu> type, int id, Inventory inventory, AbstractInventoryWagon wagon,
                              int perRow, int xSlots, int xInv, int yInv, int wheelTop) {
@@ -55,8 +56,48 @@ public abstract class AbstractWagonMenu extends AbstractContainerMenu {
         }
     }
 
+    protected final void addRepairSlots(int x, int y) {
+        if(!wagon.level().isClientSide)
+            wagon.refreshRepairSlots();
+        this.repairStart = slots.size();
+        for(int i = 0; i < AbstractWagon.REPAIR_SLOTS; i++)
+            addSlot(new RepairSlot(wagon, wagon.getRepair(), i, x + (i % 2) * 18, y + (i / 2) * 18));
+    }
+
     @Override
     public ItemStack quickMoveStack(Player player, int index) {
+        if(repairStart < 0)
+            return quickMoveCargo(player, index);
+        Slot slot = slots.get(index);
+        if(!slot.hasItem())
+            return ItemStack.EMPTY;
+        ItemStack item = slot.getItem();
+        ItemStack copy = item.copy();
+        int wheelEnd = wheelStart + AbstractWagon.WHEEL_COUNT;
+        boolean fromWagon = index < wheelEnd || index >= repairStart;
+        boolean moved;
+        boolean repairHeld = false;
+        if(fromWagon) {
+            moved = moveItemStackTo(item, wheelEnd, repairStart, false);
+        } else if(item.is(TrottingWagons.WAGON_WHEELS)) {
+            moved = moveItemStackTo(item, wheelStart, wheelEnd, false);
+        } else if(wagon != null && wagon.isRepairMaterial(item)
+                && RepairShift.fill(item, repairStart, slots.size(), this::moveItemStackTo)) {
+            moved = true;
+            repairHeld = true;
+        } else {
+            moved = moveItemStackTo(item, 0, wheelStart, false);
+        }
+        if(!moved)
+            return ItemStack.EMPTY;
+        if(item.isEmpty())
+            slot.setByPlayer(ItemStack.EMPTY);
+        else
+            slot.setChanged();
+        return repairHeld ? ItemStack.EMPTY : copy;
+    }
+
+    private ItemStack quickMoveCargo(Player player, int index) {
         ItemStack copy = ItemStack.EMPTY;
         Slot slot = slots.get(index);
 

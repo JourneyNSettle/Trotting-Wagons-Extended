@@ -6,6 +6,7 @@ import net.favouriteless.trotting_wagons.common.entities.wagons.BarrelWagon;
 import net.favouriteless.trotting_wagons.common.entities.wagons.ArmoredWagon;
 import net.favouriteless.trotting_wagons.common.entities.wagons.ConestogaWagon;
 import net.favouriteless.trotting_wagons.common.entities.wagons.DebugWagon;
+import net.favouriteless.trotting_wagons.common.entities.wagons.KibitkaWagon;
 import net.favouriteless.trotting_wagons.common.entities.wagons.LogWagon;
 import net.favouriteless.trotting_wagons.common.entities.wagons.PassengerWagon;
 import net.favouriteless.trotting_wagons.common.entities.wagons.RoyalWagon;
@@ -46,5 +47,8 @@ public class TWEntityTypes {
 
     public static final DeferredHolder<EntityType<?>, EntityType<WareWagon>> WARE_WAGON = REGISTRY.register("ware_wagon", () ->
             EntityType.Builder.of(WareWagon::new, MobCategory.MISC).sized(3.5F, 2.75F).build("ware_wagon"));
+
+    public static final DeferredHolder<EntityType<?>, EntityType<KibitkaWagon>> KIBITKA_WAGON = REGISTRY.register("kibitka_wagon", () ->
+            EntityType.Builder.of(KibitkaWagon::new, MobCategory.MISC).sized(3.5F, 3.85F).build("kibitka_wagon"));
 
 }
