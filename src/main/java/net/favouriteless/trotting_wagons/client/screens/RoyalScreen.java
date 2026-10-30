@@ -26,6 +26,7 @@ public class RoyalScreen extends AbstractWagonScreen<RoyalMenu> {
 
     @Override
     protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
+        placeRepair();
         WagonGui.drawFrame(graphics, leftPos, topPos, imageWidth, imageHeight);
         graphics.blit(TEXTURE, leftPos + 79, topPos + 17, 7, 17, 162, 108, 256, 256);
         drawSeatStrip(graphics, leftPos, imageWidth);

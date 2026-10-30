@@ -41,6 +41,8 @@ public class DebugWagon extends AbstractInventoryWagon {
     private static final EntityDataAccessor<Integer> DATA_PUMPKINS = SynchedEntityData.defineId(DebugWagon.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<ItemStack> DATA_BANNER = SynchedEntityData.defineId(DebugWagon.class, EntityDataSerializers.ITEM_STACK);
     private static final EntityDataAccessor<Boolean> DATA_LANTERN = SynchedEntityData.defineId(DebugWagon.class, EntityDataSerializers.BOOLEAN);
+    /** 0 none, 1 tongue (TongueSingle), 2 shafts (Tongue). */
+    private static final EntityDataAccessor<Integer> DATA_HARNESS = SynchedEntityData.defineId(DebugWagon.class, EntityDataSerializers.INT);
     private static final Vec3 LAMP_POS = pivot(-28, 21, 6);
 
     private final NonNullList<ItemStack> banner = NonNullList.withSize(1, ItemStack.EMPTY);
@@ -79,6 +81,24 @@ public class DebugWagon extends AbstractInventoryWagon {
         }
     };
 
+    private final NonNullList<ItemStack> harness = NonNullList.withSize(1, ItemStack.EMPTY);
+    private final ItemStackHandler harnessItems = new ItemStackHandler(harness) {
+        @Override
+        public boolean isItemValid(int slot, ItemStack stack) {
+            return TWItems.isHarness(stack);
+        }
+
+        @Override
+        public int getSlotLimit(int slot) {
+            return 1;
+        }
+
+        @Override
+        protected void onContentsChanged(int slot) {
+            syncHarness();
+        }
+    };
+
     private BlockPos lanternLight;
     private float ladderFrom;
     private float ladderTo;
@@ -98,7 +118,8 @@ public class DebugWagon extends AbstractInventoryWagon {
 
     @Override
     public int hitchSlots() {
-        return 1;
+        int slots = entityData.get(DATA_HARNESS);
+        return slots < 0 ? 0 : Math.min(slots, 2);
     }
 
     @Override
@@ -108,7 +129,10 @@ public class DebugWagon extends AbstractInventoryWagon {
 
     @Override
     protected Vec3 hitchOffset(Side side) {
-        return new Vec3(1D / 16D, 0, 76.88461D / 16D);
+        double z = 76.88461D / 16D;
+        if(hitchSlots() < 2)
+            return new Vec3(1D / 16D, 0, z);
+        return new Vec3(side == Side.LEFT ? 0.6D : -0.6D, 0, z);
     }
 
     private static Vec3 pivot(double x, double y, double z) {
@@ -158,6 +182,7 @@ public class DebugWagon extends AbstractInventoryWagon {
         builder.define(DATA_PUMPKINS, 0);
         builder.define(DATA_BANNER, ItemStack.EMPTY);
         builder.define(DATA_LANTERN, false);
+        builder.define(DATA_HARNESS, 0);
     }
 
     @Override
@@ -238,6 +263,11 @@ public class DebugWagon extends AbstractInventoryWagon {
             ContainerHelper.loadAllItems(nbt.getCompound("Lantern"), lantern, registryAccess());
         }
         syncLantern();
+        if(nbt.contains("Harness", net.minecraft.nbt.Tag.TAG_COMPOUND)) {
+            harness.set(0, ItemStack.EMPTY);
+            ContainerHelper.loadAllItems(nbt.getCompound("Harness"), harness, registryAccess());
+        }
+        syncHarness();
         entityData.set(DATA_LADDER_OPEN, nbt.getBoolean("ladderOpen"));
         entityData.set(DATA_LADDER, Mth.clamp(nbt.getFloat("ladderProgress"), 0.0F, 1.0F));
     }
@@ -253,6 +283,19 @@ public class DebugWagon extends AbstractInventoryWagon {
         CompoundTag lanternTag = new CompoundTag();
         ContainerHelper.saveAllItems(lanternTag, lantern, registryAccess());
         nbt.put("Lantern", lanternTag);
+        CompoundTag harnessTag = new CompoundTag();
+        ContainerHelper.saveAllItems(harnessTag, harness, registryAccess());
+        nbt.put("Harness", harnessTag);
+    }
+
+    public ItemStackHandler getHarnessItems() {
+        return harnessItems;
+    }
+
+    private void syncHarness() {
+        ItemStack stack = harness.get(0);
+        int slots = stack.is(TWItems.SHAFTS.get()) ? 2 : stack.is(TWItems.TONGUE.get()) ? 1 : 0;
+        entityData.set(DATA_HARNESS, slots);
     }
 
     public ItemStackHandler getBannerItems() {

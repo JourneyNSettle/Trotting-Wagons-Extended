@@ -62,10 +62,10 @@ public class KibitkaWagon extends AbstractInventoryWagon {
     public static final float DOOR_OPEN = (float)Math.toRadians(-90.0D);
     /** Bow cube center is y=14 and the shaft aim is y=8.5, so the bow sits this far above the shaft. */
     private static final double BOW_ABOVE_SHAFT = (14D - 8.5D) / 16D;
-    /** Chair1 cushion. The passenger sits on Chair2; this chair is only the bed. */
-    private static final double BED_X = 7.5D / 16D;
-    private static final double BED_Y = 22D / 16D;
-    private static final double BED_Z = -16D / 16D;
+    /** Top centre of the Bed mattress. Sleep does not use the seat hip adjustment. */
+    private static final double BED_X = 6.8D / 16D;
+    private static final double BED_Y = 19D / 16D;
+    private static final double BED_Z = -7.9D / 16D;
 
     private static final EntityDataAccessor<Integer> DATA_CAMP = SynchedEntityData.defineId(KibitkaWagon.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> DATA_CAMP_TARGET = SynchedEntityData.defineId(KibitkaWagon.class, EntityDataSerializers.INT);

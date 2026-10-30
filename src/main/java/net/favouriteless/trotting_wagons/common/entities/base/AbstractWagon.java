@@ -9,7 +9,6 @@ import net.favouriteless.trotting_wagons.common.util.LevelUtils;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
@@ -258,6 +257,11 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
     }
 
     private void validate(Side side) {
+        if(hitchSlots() < 1 || (side == Side.RIGHT && hitchSlots() < 2)) {
+            if(getHorse(side) != null)
+                setHorse(null, side);
+            return;
+        }
         Mob horse = getHorse(side);
         if(horse == null)
             return;
@@ -486,7 +490,14 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
 
         Vec3 desired = isTilted() ? shaftWorld(side, getYRot() + angle) : hitchWorld(side, getYRot() + angle);
         Vec3 displacement = new Vec3(desired.x - horse.getX(), 0, desired.z - horse.getZ());
-        Vec3 collidedDisplacement = horse.collide(displacement);
+        // The wagon box must not eat the hitch step. Camels stand close enough that a turn used to stop.
+        hitchMoving = true;
+        Vec3 collidedDisplacement;
+        try {
+            collidedDisplacement = horse.collide(displacement);
+        } finally {
+            hitchMoving = false;
+        }
 
         if(!displacement.equals(collidedDisplacement.multiply(1, 0, 1)))
             return Vec3.ZERO;
@@ -532,6 +543,8 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
                 return InteractionResult.sidedSuccess(isClientSide);
             }
 
+            if(player.getVehicle() != this && WagonParts.take(this, player))
+                return InteractionResult.sidedSuccess(isClientSide);
         }
         else if(player.getVehicle() != this) {
             if(WagonParts.use(this, player, hand))
@@ -647,6 +660,13 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
 
         ejectPassengers();
         Containers.dropContents(level(), blockPosition(), wheels);
+        ItemStackHandler gear = getHarnessItems();
+        if(gear != null) {
+            NonNullList<ItemStack> held = NonNullList.withSize(gear.getSlots(), ItemStack.EMPTY);
+            for(int i = 0; i < gear.getSlots(); i++)
+                held.set(i, gear.getStackInSlot(i).copy());
+            Containers.dropContents(level(), blockPosition(), held);
+        }
         discard();
 
         if(!level().getGameRules().getBoolean(GameRules.RULE_DOENTITYDROPS))
@@ -1076,10 +1096,9 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         return new Vec3(local.x, y, local.z);
     }
 
+    /** Camels used to stand one block closer. That put their box into the wagon and stopped the turn. */
     protected double draftForward(Mob animal) {
-        if(animal.getType() == EntityType.CAMEL)
-            return -1.0D;
-        return BuiltInRegistries.ENTITY_TYPE.getKey(animal.getType()).getPath().endsWith("camel") ? -1.0D : 0.0D;
+        return 0.0D;
     }
 
     public float getShaftAngle() {
@@ -1304,8 +1323,13 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         return 2;
     }
 
+    /** Null until that wagon's screen has a harness cell. */
+    public ItemStackHandler getHarnessItems() {
+        return null;
+    }
+
     public boolean canPlaceDraft(Entity animal, Side side) {
-        if(side == Side.RIGHT && hitchSlots() < 2)
+        if(hitchSlots() < 1 || (side == Side.RIGHT && hitchSlots() < 2))
             return false;
         if(!(animal instanceof Mob) || animal instanceof Player || !isAllowedPuller(animal))
             return false;
@@ -1902,7 +1926,7 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
     }
 
     private boolean hasPullers() {
-        if(getHorse(Side.LEFT) == null)
+        if(hitchSlots() < 1 || getHorse(Side.LEFT) == null)
             return false;
         return hitchSlots() < 2 || getHorse(Side.RIGHT) != null;
     }
@@ -1912,7 +1936,17 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         return new Vec3(side == Side.LEFT ? horseX : -horseX, 0, horseY);
     }
 
+    public boolean hasDraftAnimal() {
+        for(Side side : Side.values()) {
+            if(getHitchEntityId(side) >= 0 || horseUuids[side.ordinal()] != null)
+                return true;
+        }
+        return false;
+    }
+
     private boolean hasFreeHitch() {
+        if(hitchSlots() < 1)
+            return false;
         if(getHorse(Side.LEFT) == null)
             return true;
         return hitchSlots() > 1 && getHorse(Side.RIGHT) == null;

@@ -1,6 +1,7 @@
 package net.favouriteless.trotting_wagons.common.entities.base;
 
 import net.favouriteless.trotting_wagons.TrottingWagons;
+import net.favouriteless.trotting_wagons.common.init.TWItems;
 import net.favouriteless.trotting_wagons.common.entities.wagons.AnimalWagon;
 import net.favouriteless.trotting_wagons.common.entities.wagons.BarrelWagon;
 import net.favouriteless.trotting_wagons.common.entities.wagons.ArmoredWagon;
@@ -19,6 +20,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.items.ItemStackHandler;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,7 +29,7 @@ import java.util.Optional;
 public final class WagonParts {
 
     public enum Kind {
-        WHEEL, PUMPKIN, BANNER, LANTERN
+        WHEEL, PUMPKIN, BANNER, LANTERN, HARNESS
     }
 
     public record Part(Kind kind, int index, List<AABB> local) {}
@@ -55,12 +57,7 @@ public final class WagonParts {
             wheel(3, -16, 8.5D, 17)
     );
     private static final List<Part> DEBUG = debugParts();
-    private static final List<Part> ANIMAL = List.of(
-            wheel(0, 19.25D, 9.5D, -17),
-            wheel(1, -18.75D, 9.5D, -17),
-            wheel(2, 19.75D, 9.5D, 29),
-            wheel(3, -19.75D, 9.5D, 29)
-    );
+    private static final List<Part> ANIMAL = animalParts();
     private static final List<Part> LOG = List.of(
             wheel(0, 19.25D, 9.5D, -17),
             wheel(1, -18.75D, 9.5D, -17),
@@ -135,6 +132,7 @@ public final class WagonParts {
             case WHEEL -> (wagon.getWheelMask() & (1 << part.index())) != 0;
             case PUMPKIN -> wagon instanceof DebugWagon debug && debug.getPumpkinCount() > part.index();
             case BANNER -> wagon instanceof DebugWagon debug && !debug.getBannerStack().isEmpty();
+            case HARNESS -> harnessOf(wagon) != null && !harnessOf(wagon).getStackInSlot(0).isEmpty();
             case LANTERN -> wagon instanceof DebugWagon debug ? debug.hasLantern()
                     : wagon instanceof PassengerWagon passenger ? passenger.hasLantern(part.index())
                     : wagon instanceof WareWagon ware ? ware.hasLantern()
@@ -144,20 +142,21 @@ public final class WagonParts {
 
     public static boolean use(AbstractWagon wagon, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
-        if(canInsert(wagon, stack)) {
-            if(!wagon.level().isClientSide)
-                insert(wagon, player, stack, aimPoint(wagon, player));
-            return true;
-        }
-        if(!stack.isEmpty())
+        if(!canInsert(wagon, stack))
             return false;
+        if(!wagon.level().isClientSide)
+            insert(wagon, player, stack, aimPoint(wagon, player));
+        return true;
+    }
+
+    /** Shift-right-click. Removes the part under the cursor. */
+    public static boolean take(AbstractWagon wagon, Player player) {
         Part part = pick(wagon, player);
-        if(part != null) {
-            if(!wagon.level().isClientSide)
-                take(wagon, player, part);
-            return true;
-        }
-        return false;
+        if(part == null)
+            return false;
+        if(!wagon.level().isClientSide)
+            remove(wagon, player, part);
+        return true;
     }
 
     public static Vec3 worldCenter(AbstractWagon wagon, Part part) {
@@ -220,6 +219,9 @@ public final class WagonParts {
             if(wagon instanceof KibitkaWagon kibitka && !kibitka.hasLantern())
                 return true;
         }
+        ItemStackHandler harness = harnessOf(wagon);
+        if(harness != null && TWItems.isHarness(stack) && harness.getStackInSlot(0).isEmpty() && !wagon.hasDraftAnimal())
+            return true;
         if(!(wagon instanceof DebugWagon debug))
             return false;
         if(stack.is(Items.PUMPKIN)) {
@@ -314,6 +316,11 @@ public final class WagonParts {
                 return;
             }
         }
+        ItemStackHandler harness = harnessOf(wagon);
+        if(harness != null && TWItems.isHarness(stack) && harness.getStackInSlot(0).isEmpty() && !wagon.hasDraftAnimal()) {
+            harness.setStackInSlot(0, one(player, stack));
+            return;
+        }
         if(!(wagon instanceof DebugWagon debug))
             return;
         ItemStack one = one(player, stack);
@@ -333,11 +340,17 @@ public final class WagonParts {
         return player.getAbilities().instabuild ? stack.copyWithCount(1) : stack.split(1);
     }
 
-    private static void take(AbstractWagon wagon, Player player, Part part) {
+    private static void remove(AbstractWagon wagon, Player player, Part part) {
         ItemStack stack = switch(part.kind()) {
             case WHEEL -> takeWheel(wagon, part.index());
             case PUMPKIN -> wagon instanceof DebugWagon debug ? takeLast(debug.getItems(), DebugWagon.PUMPKIN_SLOTS) : ItemStack.EMPTY;
             case BANNER -> wagon instanceof DebugWagon debug ? takeSlot(debug.getBannerItems(), 0) : ItemStack.EMPTY;
+            case HARNESS -> {
+                ItemStackHandler gear = harnessOf(wagon);
+                if(gear != null && !wagon.hasDraftAnimal())
+                    yield takeSlot(gear, 0);
+                yield ItemStack.EMPTY;
+            }
             case LANTERN -> {
                 if(wagon instanceof DebugWagon debug)
                     yield takeSlot(debug.getLanternItems(), 0);
@@ -352,6 +365,10 @@ public final class WagonParts {
         };
         if(!stack.isEmpty())
             give(player, stack);
+    }
+
+    private static ItemStackHandler harnessOf(AbstractWagon wagon) {
+        return wagon.getHarnessItems();
     }
 
     private static ItemStack takeWheel(AbstractWagon wagon, int index) {
@@ -396,6 +413,16 @@ public final class WagonParts {
                 center.x + WHEEL_X, center.y + WHEEL_R, center.z + WHEEL_R)));
     }
 
+    private static List<Part> animalParts() {
+        List<Part> parts = new ArrayList<>();
+        parts.add(wheel(0, 19.25D, 9.5D, -17));
+        parts.add(wheel(1, -18.75D, 9.5D, -17));
+        parts.add(wheel(2, 19.75D, 9.5D, 29));
+        parts.add(wheel(3, -19.75D, 9.5D, 29));
+        parts.add(new Part(Kind.HARNESS, 0, List.of(plainBox(-16, 7.5D, -85, 32, 8, 57))));
+        return List.copyOf(parts);
+    }
+
     private static List<Part> debugParts() {
         List<Part> parts = new ArrayList<>();
         parts.add(wheel(0, 24.25D, 9.5D, -21));
@@ -412,6 +439,7 @@ public final class WagonParts {
                 turnedBox(7.5D, 71, 25.8D, 20, 2, 2, 21.5D, 29, 25.8D, -90)
         )));
         parts.add(new Part(Kind.LANTERN, 0, List.of(plainBox(-31, 17.1D, 2.9D, 6, 13, 6.4D))));
+        parts.add(new Part(Kind.HARNESS, 0, List.of(plainBox(-16, 7.5D, -82, 32, 8, 54))));
         return List.copyOf(parts);
     }
 
@@ -423,6 +451,7 @@ public final class WagonParts {
         parts.add(wheel(3, -19.75D, 9.5D, 29));
         parts.add(new Part(Kind.LANTERN, 0, List.of(plainBox(-3, 36.1D, -33, 6, 9.25D, 6))));
         parts.add(new Part(Kind.LANTERN, 1, List.of(plainBox(-3, 34.35D, 47, 6, 11, 6))));
+        parts.add(new Part(Kind.HARNESS, 0, List.of(plainBox(-16, 7.5D, -85, 32, 8, 57))));
         return List.copyOf(parts);
     }
 
@@ -432,7 +461,8 @@ public final class WagonParts {
         parts.add(wheel(1, -18.75D, 9.5D, -17));
         parts.add(wheel(2, 19.75D, 9.5D, 21));
         parts.add(wheel(3, -19.75D, 9.5D, 21));
-        parts.add(new Part(Kind.LANTERN, 0, List.of(plainBox(17, 24.1D, -9.35D, 6, 9, 6))));
+        parts.add(new Part(Kind.LANTERN, 0, List.of(plainBox(11.53D, 38.7D, -25.68D, 6, 9, 6))));
+        parts.add(new Part(Kind.HARNESS, 0, List.of(plainBox(-16, 7.5D, -85, 32, 8, 57))));
         return List.copyOf(parts);
     }
 

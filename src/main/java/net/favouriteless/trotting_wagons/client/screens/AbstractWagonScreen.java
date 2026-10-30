@@ -119,6 +119,7 @@ public abstract class AbstractWagonScreen<T extends AbstractWagonMenu> extends A
 
     @Override
     protected void containerTick() {
+        placeRepair();
         super.containerTick();
         if(seatButtons != null && menu.getWagon() != null)
             SeatButtons.refresh(seatButtons);
@@ -126,6 +127,7 @@ public abstract class AbstractWagonScreen<T extends AbstractWagonMenu> extends A
 
     @Override
     protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
+        placeRepair();
         int bar = seatBarY();
         if(bar < 0) {
             graphics.blit(texture, leftPos, topPos, 0, 0, imageWidth, imageHeight, texWidth, texHeight);
@@ -144,6 +146,13 @@ public abstract class AbstractWagonScreen<T extends AbstractWagonMenu> extends A
         WagonGui.drawWheelCaption(graphics, font, menu, menu.getWagon(), leftPos, topPos);
         drawRepairSlots(graphics);
         WagonGui.drawEmptySlotIcons(graphics, leftPos, topPos, menu);
+    }
+
+    protected void placeRepair() {
+        int bar = seatBarY();
+        if(bar < 0)
+            return;
+        RepairLayout.place(menu.slots, menu.getWagon(), 287, bar + 18);
     }
 
     protected void drawRepairSlots(GuiGraphics graphics) {

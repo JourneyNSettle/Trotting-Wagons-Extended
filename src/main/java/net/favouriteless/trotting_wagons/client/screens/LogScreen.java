@@ -98,6 +98,7 @@ public class LogScreen extends AbstractContainerScreen<LogMenu> {
                 repair++;
             }
         }
+        RepairLayout.place(menu.slots, wagon, 287, labelY);
         if(lockButton != null) {
             lockButton.setX(leftPos + 6);
             lockButton.setY(topPos + imageHeight - 20);

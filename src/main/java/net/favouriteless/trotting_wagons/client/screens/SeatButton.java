@@ -187,7 +187,9 @@ public class SeatButton extends AbstractWidget {
             hoverStart = -1L;
         }
 
-        boolean locked = draftSide == null && wagon.isSeatLocked(seat);
+        Occupant occupant = occupant();
+        boolean locked = draftSide == null && wagon.isSeatLocked(seat)
+                && !(occupant.entity() instanceof Player && wagon.getSeat(seat).kind() == WagonSeat.Kind.UNIVERSAL);
         boolean blocked = draftSide == null && wagon.seatBlockHint(seat) != null;
         int color = active ? 0xFF8B8B8B : 0xFF5A5A5A;
         int x = getX();
@@ -202,7 +204,6 @@ public class SeatButton extends AbstractWidget {
         if(dragSource != null && dragSource != this && accepts(dragSource))
             graphics.fill(x + 1, y + 1, x + width - 1, y + height - 1, 0x8800C853);
 
-        Occupant occupant = occupant();
         boolean carried = dragSource == this;
         if(occupant.entity() instanceof Player player)
             drawPlayer(graphics, player);

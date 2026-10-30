@@ -19,6 +19,9 @@ import java.util.List;
 
 public class KibitkaScreen extends AbstractContainerScreen<KibitkaMenu> {
 
+    /** Top edge of the passenger buttons. */
+    private static final int SEAT_TOP = 99;
+
     private static final ResourceLocation TEXTURE = TrottingWagons.id("textures/gui/kibitka_wagon.png");
 
     private List<SeatButton> seatButtons;
@@ -58,8 +61,8 @@ public class KibitkaScreen extends AbstractContainerScreen<KibitkaMenu> {
         if(wagon == null)
             return;
         int slotsCenter = KibitkaMenu.REPAIR_X + 17;
-        drawCentered(graphics, Component.translatable("gui.trotting_wagons.durability"), slotsCenter, KibitkaMenu.REPAIR_Y - 22);
-        drawCentered(graphics, wagon.conditionName(), slotsCenter, KibitkaMenu.REPAIR_Y - 12);
+        drawCentered(graphics, Component.translatable("gui.trotting_wagons.durability"), slotsCenter, SEAT_TOP);
+        drawCentered(graphics, wagon.conditionName(), slotsCenter, SEAT_TOP + 10);
         drawCentered(graphics, Component.translatable("gui.trotting_wagons.custom_items"), slotsCenter, KibitkaMenu.CUSTOM_Y);
         drawCentered(graphics, Component.translatable("gui.trotting_wagons.custom_items.line2"), slotsCenter, KibitkaMenu.CUSTOM_Y + 10);
     }
@@ -70,6 +73,7 @@ public class KibitkaScreen extends AbstractContainerScreen<KibitkaMenu> {
 
     @Override
     protected void containerTick() {
+        RepairLayout.place(menu.slots, menu.getWagon(), KibitkaMenu.REPAIR_X + 17, SEAT_TOP);
         super.containerTick();
         if(seatButtons != null && menu.getWagon() != null)
             SeatButtons.refresh(seatButtons);
@@ -77,6 +81,7 @@ public class KibitkaScreen extends AbstractContainerScreen<KibitkaMenu> {
 
     @Override
     protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
+        RepairLayout.place(menu.slots, menu.getWagon(), KibitkaMenu.REPAIR_X + 17, SEAT_TOP);
         graphics.blit(TEXTURE, leftPos, topPos, 0, 0, imageWidth, imageHeight, KibitkaMenu.IMAGE_WIDTH, KibitkaMenu.IMAGE_HEIGHT);
         AbstractWagon wagon = menu.getWagon();
         if(wagon != null)

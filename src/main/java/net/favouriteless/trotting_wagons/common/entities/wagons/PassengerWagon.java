@@ -28,14 +28,23 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.LightBlock;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.items.ItemStackHandler;
 
 public class PassengerWagon extends AbstractWagon implements MenuProvider {
 
     public static final int LANTERNS = 2;
+    /** Sides are a quarter block inside the previous 3.5-wide square. */
+    private static final double BODY_HALF_X = 1.5D;
+    /** Local +Z stays at the old front. Local −Z, the rear, is half a block longer. */
+    private static final double BODY_FRONT = 1.75D;
+    private static final double BODY_REAR = 2.75D;
+    private static final double BODY_HEIGHT = 3.5D;
     private static final int LANTERN_MASK = (1 << LANTERNS) - 1;
     private static final EntityDataAccessor<Integer> DATA_LANTERNS = SynchedEntityData.defineId(PassengerWagon.class, EntityDataSerializers.INT);
+    /** 0 none, 1 the tongue item (TongueSingle), 2 the shafts item (Tongue). */
+    private static final EntityDataAccessor<Integer> DATA_HARNESS = SynchedEntityData.defineId(PassengerWagon.class, EntityDataSerializers.INT);
     private static final Vec3[] LAMP_POS = {
             pivot(0, 39.6D, -30),
             pivot(0, 37.85D, 50)
@@ -51,6 +60,23 @@ public class PassengerWagon extends AbstractWagon implements MenuProvider {
             new WagonSeat(seat(-8.5D, 24, 31), WagonSeat.Kind.PLAYER)
     };
 
+    private final NonNullList<ItemStack> harness = NonNullList.withSize(1, ItemStack.EMPTY);
+    private final ItemStackHandler harnessItems = new ItemStackHandler(harness) {
+        @Override
+        public boolean isItemValid(int slot, ItemStack stack) {
+            return TWItems.isHarness(stack);
+        }
+
+        @Override
+        public int getSlotLimit(int slot) {
+            return 1;
+        }
+
+        @Override
+        protected void onContentsChanged(int slot) {
+            syncHarness();
+        }
+    };
     private final NonNullList<ItemStack> lantern = NonNullList.withSize(LANTERNS, ItemStack.EMPTY);
     private final BlockPos[] lanternLight = new BlockPos[LANTERNS];
     private final ItemStackHandler lanternItems = new ItemStackHandler(lantern) {
@@ -80,13 +106,56 @@ public class PassengerWagon extends AbstractWagon implements MenuProvider {
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         super.defineSynchedData(builder);
         builder.define(DATA_LANTERNS, 0);
+        builder.define(DATA_HARNESS, 0);
+    }
+
+    @Override
+    public int hitchSlots() {
+        int slots = entityData.get(DATA_HARNESS);
+        return slots < 0 ? 0 : Math.min(slots, 2);
+    }
+
+    @Override
+    protected Vec3 hitchOffset(Side side) {
+        if(hitchSlots() >= 2)
+            return super.hitchOffset(side);
+        return new Vec3(0, 0, 77.88461D / 16D);
+    }
+
+    @Override
+    public ItemStackHandler getHarnessItems() {
+        return harnessItems;
     }
 
     @Override
     public void tick() {
         super.tick();
+        setBoundingBox(makeBoundingBox());
         if(!level().isClientSide && tickCount % 10 == 0)
             updateLanternLight();
+    }
+
+    @Override
+    protected AABB makeBoundingBox() {
+        float yaw = getYRot();
+        double minX = Double.POSITIVE_INFINITY;
+        double minZ = Double.POSITIVE_INFINITY;
+        double maxX = Double.NEGATIVE_INFINITY;
+        double maxZ = Double.NEGATIVE_INFINITY;
+        double[][] corners = {
+                {BODY_HALF_X, BODY_FRONT},
+                {-BODY_HALF_X, BODY_FRONT},
+                {BODY_HALF_X, -BODY_REAR},
+                {-BODY_HALF_X, -BODY_REAR}
+        };
+        for(double[] corner : corners) {
+            Vec3 turned = rotateY(corner[0], 0, corner[1], yaw);
+            minX = Math.min(minX, turned.x);
+            maxX = Math.max(maxX, turned.x);
+            minZ = Math.min(minZ, turned.z);
+            maxZ = Math.max(maxZ, turned.z);
+        }
+        return new AABB(getX() + minX, getY(), getZ() + minZ, getX() + maxX, getY() + BODY_HEIGHT, getZ() + maxZ);
     }
 
     @Override
@@ -105,6 +174,11 @@ public class PassengerWagon extends AbstractWagon implements MenuProvider {
             ContainerHelper.loadAllItems(nbt.getCompound("Lantern"), lantern, registryAccess());
         }
         syncLanterns();
+        if(nbt.contains("Harness", Tag.TAG_COMPOUND)) {
+            harness.set(0, ItemStack.EMPTY);
+            ContainerHelper.loadAllItems(nbt.getCompound("Harness"), harness, registryAccess());
+        }
+        syncHarness();
     }
 
     @Override
@@ -113,6 +187,15 @@ public class PassengerWagon extends AbstractWagon implements MenuProvider {
         CompoundTag lanternTag = new CompoundTag();
         ContainerHelper.saveAllItems(lanternTag, lantern, registryAccess());
         nbt.put("Lantern", lanternTag);
+        CompoundTag harnessTag = new CompoundTag();
+        ContainerHelper.saveAllItems(harnessTag, harness, registryAccess());
+        nbt.put("Harness", harnessTag);
+    }
+
+    private void syncHarness() {
+        ItemStack stack = harness.get(0);
+        int slots = stack.is(TWItems.SHAFTS.get()) ? 2 : stack.is(TWItems.TONGUE.get()) ? 1 : 0;
+        entityData.set(DATA_HARNESS, slots);
     }
 
     @Override
@@ -230,7 +313,12 @@ public class PassengerWagon extends AbstractWagon implements MenuProvider {
 
     @Override
     protected boolean dismountsBehind(LivingEntity passenger, int seat) {
-        return seat > 0;
+        return true;
+    }
+
+    @Override
+    protected double dismountRear() {
+        return BODY_REAR;
     }
 
     @Override

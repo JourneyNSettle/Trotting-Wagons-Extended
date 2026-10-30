@@ -3,6 +3,7 @@ package net.favouriteless.trotting_wagons.client.screens;
 import net.favouriteless.trotting_wagons.TrottingWagons;
 import net.favouriteless.trotting_wagons.common.entities.base.AbstractWagon;
 import net.favouriteless.trotting_wagons.common.menus.AnimalMenu;
+import net.favouriteless.trotting_wagons.common.menus.HarnessSlot;
 import net.favouriteless.trotting_wagons.common.menus.RepairSlot;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -17,10 +18,14 @@ import java.util.List;
 
 public class AnimalScreen extends AbstractContainerScreen<AnimalMenu> {
 
+    /** Top edge of the highest passenger button. */
+    private static final int SEAT_TOP = 38;
     private static final ResourceLocation TEXTURE = TrottingWagons.id("textures/gui/animal_wagon.png");
+    private static final ResourceLocation BIG_SLOT = TrottingWagons.id("textures/gui/icons/big_slot.png");
 
     private final TooltipDelay tooltips = new TooltipDelay();
     private List<SeatButton> seatButtons;
+    private int shownHitch = -1;
 
     public AnimalScreen(AnimalMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
@@ -36,32 +41,42 @@ public class AnimalScreen extends AbstractContainerScreen<AnimalMenu> {
         AbstractWagon wagon = menu.getWagon();
         if(wagon == null)
             return;
-        seatButtons = placeSeats(wagon);
-        for(SeatButton button : seatButtons)
-            addRenderableWidget(button);
-        if(minecraft != null && minecraft.player != null && wagon.isOwnedBy(minecraft.player))
-            addRenderableWidget(new WagonLockButton(leftPos + 20, topPos + 160, 26, wagon));
+        layoutSeats();
     }
 
-    private List<SeatButton> placeSeats(AbstractWagon wagon) {
+    private void layoutSeats() {
+        AbstractWagon wagon = menu.getWagon();
+        if(wagon == null)
+            return;
+        if(seatButtons != null) {
+            for(SeatButton button : seatButtons)
+                removeWidget(button);
+        }
         // Front is on the left, next to the driver. Top row is the wagon's left, bottom row its right, and the two inset cells are the large seats on the centerline.
-        int[] seats = {0, 1, 2, 3, 4, 5, 6, 7, 8};
-        int[] xs = {81, 107, 107, 133, 159, 159, 185, 211, 211};
-        int[] ys = {50, 37, 63, 50, 37, 63, 50, 37, 63};
-        List<SeatButton> buttons = new ArrayList<>(seats.length + 2);
-        for(int i = 0; i < seats.length; i++) {
-            SeatButton button = SeatButton.placed(wagon, seats[i], leftPos + xs[i], topPos + ys[i], 26);
+        int[] xs = {82, 108, 108, 134, 160, 160, 186, 212, 212};
+        int[] ys = {51, 38, 64, 51, 38, 64, 51, 38, 64};
+        List<SeatButton> buttons = new ArrayList<>(xs.length + 2);
+        for(int i = 0; i < xs.length && i < wagon.getSeatCount(); i++) {
+            SeatButton button = SeatButton.placed(wagon, i, leftPos + xs[i], topPos + ys[i], 26);
             button.refresh();
             buttons.add(button);
         }
-        SeatButton left = SeatButton.placedDraft(wagon, AbstractWagon.Side.LEFT, leftPos + 8, topPos + 50, 26);
-        left.refresh();
-        buttons.add(left);
-        SeatButton right = SeatButton.placedDraft(wagon, AbstractWagon.Side.RIGHT, leftPos + 34, topPos + 50, 26);
-        right.refresh();
-        buttons.add(right);
+        int slots = wagon.hitchSlots();
+        if(slots > 0) {
+            SeatButton left = SeatButton.placedDraft(wagon, AbstractWagon.Side.LEFT, leftPos + AnimalMenu.draftX(slots, 0), topPos + AnimalMenu.DRAFT_Y, 26);
+            left.refresh();
+            buttons.add(left);
+        }
+        if(slots > 1) {
+            SeatButton right = SeatButton.placedDraft(wagon, AbstractWagon.Side.RIGHT, leftPos + AnimalMenu.draftX(slots, 1), topPos + AnimalMenu.DRAFT_Y, 26);
+            right.refresh();
+            buttons.add(right);
+        }
         SeatButton.bind(buttons);
-        return buttons;
+        seatButtons = buttons;
+        shownHitch = slots;
+        for(SeatButton button : buttons)
+            addRenderableWidget(button);
     }
 
     @Override
@@ -82,12 +97,21 @@ public class AnimalScreen extends AbstractContainerScreen<AnimalMenu> {
                 ownerX = limit - font.width(owner);
             graphics.drawString(font, owner, ownerX, titleLabelY, 4210752, false);
         }
+        drawCentered(graphics, Component.translatable(harnessKey(wagon.hitchSlots())), AnimalMenu.HARNESS_X + 8, 96);
         int wheelCenter = AnimalMenu.WHEEL_X + 17;
-        drawCentered(graphics, Component.translatable("gui.trotting_wagons.wheels"), wheelCenter, 78);
-        drawCentered(graphics, wagon.wheelSet().label(), wheelCenter, 88);
+        drawCentered(graphics, Component.translatable("gui.trotting_wagons.wheels"), wheelCenter, 134);
+        drawCentered(graphics, wagon.wheelSet().label(), wheelCenter, 144);
         int slotsCenter = AnimalMenu.REPAIR_X + 17;
-        drawCentered(graphics, Component.translatable("gui.trotting_wagons.durability"), slotsCenter, 60);
-        drawCentered(graphics, wagon.conditionName(), slotsCenter, 70);
+        drawCentered(graphics, Component.translatable("gui.trotting_wagons.repair"), slotsCenter, SEAT_TOP);
+        drawCentered(graphics, wagon.conditionName(), slotsCenter, SEAT_TOP + 10);
+    }
+
+    private static String harnessKey(int slots) {
+        if(slots > 1)
+            return "gui.trotting_wagons.harness.shafts";
+        if(slots == 1)
+            return "gui.trotting_wagons.harness.tongue";
+        return "gui.trotting_wagons.harness.none";
     }
 
     private void drawCentered(GuiGraphics graphics, Component text, int centerX, int y) {
@@ -110,10 +134,12 @@ public class AnimalScreen extends AbstractContainerScreen<AnimalMenu> {
 
     private boolean isWagonSlot(Slot slot) {
         int index = menu.slots.indexOf(slot);
-        return index >= 0 && (index < AbstractWagon.WHEEL_COUNT || index >= menu.slots.size() - AbstractWagon.REPAIR_SLOTS);
+        return index >= 0 && index < AbstractWagon.WHEEL_COUNT || slot instanceof HarnessSlot || slot instanceof RepairSlot;
     }
 
     private Component emptySlotTip(Slot slot) {
+        if(slot instanceof HarnessSlot)
+            return Component.translatable("gui.trotting_wagons.harness.slot");
         if(slot instanceof RepairSlot repair && menu.getWagon() != null)
             return menu.getWagon().repairTooltip(repair.getSlotIndex());
         ItemStack icon = WagonGui.ghostIcon(menu, slot);
@@ -122,16 +148,26 @@ public class AnimalScreen extends AbstractContainerScreen<AnimalMenu> {
 
     @Override
     protected void containerTick() {
+        RepairLayout.place(menu.slots, menu.getWagon(), AnimalMenu.REPAIR_X + 17, SEAT_TOP);
         super.containerTick();
-        if(seatButtons != null && menu.getWagon() != null)
+        AbstractWagon wagon = menu.getWagon();
+        if(wagon != null && wagon.hitchSlots() != shownHitch)
+            layoutSeats();
+        if(seatButtons != null && wagon != null)
             SeatButtons.refresh(seatButtons);
     }
 
     @Override
     protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
-        graphics.blit(TEXTURE, leftPos, topPos, 0, 0, imageWidth, imageHeight, 320, 196);
-        if(menu.getWagon() != null)
-            SeatButtons.drawHealth(graphics, font, menu.getWagon(), leftPos + AnimalMenu.HEALTH_X, topPos + AnimalMenu.HEALTH_Y, AnimalMenu.HEALTH_W);
+        RepairLayout.place(menu.slots, menu.getWagon(), AnimalMenu.REPAIR_X + 17, SEAT_TOP);
+        graphics.blit(TEXTURE, leftPos, topPos, 0, 0, imageWidth, imageHeight, 320, AnimalMenu.IMAGE_HEIGHT);
+        AbstractWagon wagon = menu.getWagon();
+        if(wagon != null) {
+            int slots = wagon.hitchSlots();
+            for(int i = 0; i < slots; i++)
+                graphics.blit(BIG_SLOT, leftPos + AnimalMenu.draftX(slots, i), topPos + AnimalMenu.DRAFT_Y, 0, 0, 26, 26, 26, 26);
+            SeatButtons.drawHealth(graphics, font, wagon, leftPos + AnimalMenu.HEALTH_X, topPos + AnimalMenu.HEALTH_Y, AnimalMenu.HEALTH_W);
+        }
         for(var slot : menu.slots) {
             if(slot instanceof RepairSlot && slot.isActive())
                 WagonGui.drawSlot(graphics, leftPos, topPos, slot);

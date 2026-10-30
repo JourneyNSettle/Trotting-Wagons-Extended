@@ -10,6 +10,7 @@ import net.favouriteless.trotting_wagons.common.menus.BarrelMenu;
 import net.favouriteless.trotting_wagons.common.menus.BarrelSlot;
 import net.favouriteless.trotting_wagons.common.menus.ChestSlot;
 import net.favouriteless.trotting_wagons.common.menus.DebugMenu;
+import net.favouriteless.trotting_wagons.common.menus.HarnessSlot;
 import net.favouriteless.trotting_wagons.common.menus.KibitkaMenu;
 import net.favouriteless.trotting_wagons.common.menus.LogCargoSlot;
 import net.favouriteless.trotting_wagons.common.menus.LogMenu;
@@ -123,6 +124,8 @@ final class WagonGui {
     }
 
     private static ItemStack emptyIcon(AbstractContainerMenu menu, Slot slot) {
+        if(slot instanceof HarnessSlot)
+            return new ItemStack(TWItems.SHAFTS.get());
         if(slot instanceof WheelSlot)
             return new ItemStack(TWItems.WHEEL.get());
         if(slot instanceof BannerSlot)
@@ -171,16 +174,18 @@ final class WagonGui {
         if(wagon == null)
             return;
         int minX = Integer.MAX_VALUE;
+        int maxX = Integer.MIN_VALUE;
         int minY = Integer.MAX_VALUE;
         for(Slot slot : menu.slots) {
-            if(!(slot instanceof RepairSlot))
+            if(!(slot instanceof RepairSlot) || slot.y < 0)
                 continue;
             minX = Math.min(minX, slot.x);
+            maxX = Math.max(maxX, slot.x);
             minY = Math.min(minY, slot.y);
         }
         if(minX == Integer.MAX_VALUE)
             return;
-        int center = minX + 17;
+        int center = (minX + maxX) / 2 + 8;
         Component durability = Component.translatable("gui.trotting_wagons.durability");
         graphics.drawString(font, durability, center - font.width(durability) / 2, minY - 22, 4210752, false);
         Component condition = wagon.conditionName();
