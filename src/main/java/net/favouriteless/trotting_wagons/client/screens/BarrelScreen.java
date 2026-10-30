@@ -21,9 +21,11 @@ import java.util.Locale;
 public class BarrelScreen extends AbstractContainerScreen<BarrelMenu> {
 
     private static final ResourceLocation TEXTURE = TrottingWagons.id("textures/gui/barrel_wagon.png");
+    private static final ResourceLocation BIG_SLOT = TrottingWagons.id("textures/gui/icons/big_slot.png");
 
     private final TooltipDelay tooltips = new TooltipDelay();
     private List<SeatButton> seatButtons;
+    private int shownHitch = -1;
 
     public BarrelScreen(BarrelMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
@@ -37,17 +39,27 @@ public class BarrelScreen extends AbstractContainerScreen<BarrelMenu> {
     @Override
     protected void init() {
         super.init();
-        BarrelWagon wagon = menu.getWagon();
-        if(wagon != null) {
-            int[] seats = new int[wagon.getSeatCount()];
-            for(int i = 0; i < seats.length; i++)
-                seats[i] = leftPos + BarrelMenu.SEAT_X;
-            seatButtons = SeatButtons.place(wagon, seats, topPos + BarrelMenu.SEAT_Y,
-                    leftPos + BarrelMenu.DRAFT_X, topPos + BarrelMenu.DRAFT_Y, 24, BarrelMenu.DRAFT_STRIDE);
-            for(SeatButton button : seatButtons)
-                addRenderableWidget(button);
-        }
+        layoutSeats();
         layoutSlots();
+    }
+
+    private void layoutSeats() {
+        BarrelWagon wagon = menu.getWagon();
+        if(wagon == null)
+            return;
+        if(seatButtons != null) {
+            for(SeatButton button : seatButtons)
+                removeWidget(button);
+        }
+        int slots = wagon.hitchSlots();
+        int[] seats = new int[wagon.getSeatCount()];
+        for(int i = 0; i < seats.length; i++)
+            seats[i] = leftPos + BarrelMenu.SEAT_X;
+        seatButtons = SeatButtons.place(wagon, seats, topPos + BarrelMenu.SEAT_Y,
+                leftPos + BarrelMenu.draftX(slots, 0), topPos + BarrelMenu.DRAFT_Y, 26, BarrelMenu.DRAFT_STRIDE);
+        shownHitch = slots;
+        for(SeatButton button : seatButtons)
+            addRenderableWidget(button);
     }
 
     @Override
@@ -55,7 +67,10 @@ public class BarrelScreen extends AbstractContainerScreen<BarrelMenu> {
         RepairLayout.place(menu.slots, menu.getWagon(), BarrelMenu.REPAIR_X + 17, BarrelMenu.SEAT_Y);
         super.containerTick();
         layoutSlots();
-        if(seatButtons != null && menu.getWagon() != null)
+        BarrelWagon wagon = menu.getWagon();
+        if(wagon != null && wagon.hitchSlots() != shownHitch)
+            layoutSeats();
+        if(seatButtons != null && wagon != null)
             SeatButtons.refresh(seatButtons);
     }
 
@@ -72,14 +87,23 @@ public class BarrelScreen extends AbstractContainerScreen<BarrelMenu> {
         String ownerName = wagon.getOwnerName();
         if(!ownerName.isEmpty()) {
             Component owner = Component.translatable("gui.trotting_wagons.owner", ownerName);
-            graphics.drawString(font, owner, BarrelMenu.TITLE_X, BarrelMenu.TITLE_Y + 10, 4210752, false);
+            graphics.drawString(font, owner, BarrelMenu.TITLE_X, BarrelMenu.TITLE_Y + 12, 4210752, false);
         }
-        int slotsCenter = BarrelMenu.REPAIR_X + 17;
-        drawCentered(graphics, Component.translatable("gui.trotting_wagons.durability"), slotsCenter, BarrelMenu.DURABILITY_Y);
-        drawCentered(graphics, wagon.conditionName(), slotsCenter, BarrelMenu.DURABILITY_Y + 10);
+        drawCentered(graphics, Component.translatable(harnessKey(wagon.hitchSlots())), BarrelMenu.HARNESS_X + 8, 146);
         int wheelCenter = BarrelMenu.WHEEL_X + 17;
-        drawCentered(graphics, Component.translatable("gui.trotting_wagons.wheels"), wheelCenter, BarrelMenu.WHEEL_Y - 22);
-        drawCentered(graphics, wagon.wheelSet().label(), wheelCenter, BarrelMenu.WHEEL_Y - 12);
+        drawCentered(graphics, Component.translatable("gui.trotting_wagons.wheels"), wheelCenter, 184);
+        drawCentered(graphics, wagon.wheelSet().label(), wheelCenter, 194);
+        int slotsCenter = BarrelMenu.REPAIR_X + 17;
+        drawCentered(graphics, Component.translatable("gui.trotting_wagons.repair"), slotsCenter, BarrelMenu.SEAT_Y);
+        drawCentered(graphics, wagon.conditionName(), slotsCenter, BarrelMenu.SEAT_Y + 10);
+    }
+
+    private static String harnessKey(int slots) {
+        if(slots > 1)
+            return "gui.trotting_wagons.harness.shafts";
+        if(slots == 1)
+            return "gui.trotting_wagons.harness.tongue";
+        return "gui.trotting_wagons.harness.none";
     }
 
     private void drawCentered(GuiGraphics graphics, Component text, int centerX, int y) {
@@ -91,9 +115,14 @@ public class BarrelScreen extends AbstractContainerScreen<BarrelMenu> {
         RepairLayout.place(menu.slots, menu.getWagon(), BarrelMenu.REPAIR_X + 17, BarrelMenu.SEAT_Y);
         layoutSlots();
         graphics.blit(TEXTURE, leftPos, topPos, 0, 0, imageWidth, imageHeight, BarrelMenu.IMAGE_WIDTH, BarrelMenu.IMAGE_HEIGHT);
-        if(menu.getWagon() != null)
-            SeatButtons.drawHealth(graphics, font, menu.getWagon(),
+        BarrelWagon drawn = menu.getWagon();
+        if(drawn != null) {
+            int hitch = drawn.hitchSlots();
+            for(int i = 0; i < hitch; i++)
+                graphics.blit(BIG_SLOT, leftPos + BarrelMenu.draftX(hitch, i), topPos + BarrelMenu.DRAFT_Y, 0, 0, 26, 26, 26, 26);
+            SeatButtons.drawHealth(graphics, font, drawn,
                     leftPos + BarrelMenu.HEALTH_X, topPos + BarrelMenu.HEALTH_Y, BarrelMenu.HEALTH_W);
+        }
         for(Slot slot : menu.slots) {
             if(slot.x < 0 || slot.y < 0)
                 continue;
@@ -170,7 +199,7 @@ public class BarrelScreen extends AbstractContainerScreen<BarrelMenu> {
             int offset = shown % BarrelWagon.CONTENTS;
             shown++;
             if(wagon != null && wagon.barrelFilled(barrel))
-                moveSlot(slot, BarrelMenu.contentX(barrel, offset), BarrelMenu.barrelY(barrel));
+                moveSlot(slot, BarrelMenu.contentX(barrel, offset), BarrelMenu.contentY(barrel, offset));
             else
                 moveSlot(slot, -2000, -2000);
         }

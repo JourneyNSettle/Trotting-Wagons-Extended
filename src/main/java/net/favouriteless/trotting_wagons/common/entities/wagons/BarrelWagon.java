@@ -30,18 +30,40 @@ import net.neoforged.neoforge.items.ItemStackHandler;
 public class BarrelWagon extends AbstractWagon implements MenuProvider {
 
     public static final int BARRELS = 12;
-    public static final int CONTENTS = 6;
+    public static final int CONTENTS = 4;
     public static final int SLOTS = BARRELS + BARRELS * CONTENTS;
+    private static final int CARGO_VERSION = 2;
+    private static final int OLD_CONTENTS = 6;
+    private static final int OLD_SLOTS = BARRELS + BARRELS * OLD_CONTENTS;
     public static final int PARTIAL_LIMIT = 6;
 
     private static final int BARREL_MASK = (1 << BARRELS) - 1;
     private static final EntityDataAccessor<Integer> DATA_BARRELS = SynchedEntityData.defineId(BarrelWagon.class, EntityDataSerializers.INT);
+    /** 0 none, 1 the tongue item (TongueSingle), 2 the shafts item (Tongue). */
+    private static final EntityDataAccessor<Integer> DATA_HARNESS = SynchedEntityData.defineId(BarrelWagon.class, EntityDataSerializers.INT);
 
     public static final WagonSeat[] SEATS = new WagonSeat[] {
             new WagonSeat(seat(0, 14, -32.25D), WagonSeat.Kind.DRIVER)
     };
 
     private final NonNullList<ItemStack> stacks = NonNullList.withSize(SLOTS, ItemStack.EMPTY);
+    private final NonNullList<ItemStack> harness = NonNullList.withSize(1, ItemStack.EMPTY);
+    private final ItemStackHandler harnessItems = new ItemStackHandler(harness) {
+        @Override
+        public boolean isItemValid(int slot, ItemStack stack) {
+            return TWItems.isHarness(stack);
+        }
+
+        @Override
+        public int getSlotLimit(int slot) {
+            return 1;
+        }
+
+        @Override
+        protected void onContentsChanged(int slot) {
+            syncHarness();
+        }
+    };
     private final int[] sagKinds = new int[WHEEL_COUNT];
     private int sagKey = Integer.MIN_VALUE;
     private WheelSag sagPose = WheelSag.NONE;
@@ -84,6 +106,24 @@ public class BarrelWagon extends AbstractWagon implements MenuProvider {
         super(type, level, 19.5D / 16D, 17D / 16D, SEATS, ServerConfig.INSTANCE.barrelSpeedEmpty.get(),
                 ServerConfig.INSTANCE.barrelTurnRate.get(), ServerConfig.INSTANCE.barrelHealth.get(),
                 9.5D / 16D, 77.88461D / 16D, 13);
+    }
+
+    @Override
+    public int hitchSlots() {
+        int slots = entityData.get(DATA_HARNESS);
+        return slots < 0 ? 0 : Math.min(slots, 2);
+    }
+
+    @Override
+    protected Vec3 hitchOffset(Side side) {
+        if(hitchSlots() >= 2)
+            return super.hitchOffset(side);
+        return new Vec3(0, 0, 77.88461D / 16D);
+    }
+
+    @Override
+    public ItemStackHandler getHarnessItems() {
+        return harnessItems;
     }
 
     public static boolean isBarrel(ItemStack stack) {
@@ -236,14 +276,19 @@ public class BarrelWagon extends AbstractWagon implements MenuProvider {
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         super.defineSynchedData(builder);
         builder.define(DATA_BARRELS, 0);
+        builder.define(DATA_HARNESS, 0);
     }
 
     @Override
     public void addAdditionalSaveData(CompoundTag nbt) {
         super.addAdditionalSaveData(nbt);
+        nbt.putInt("CargoVersion", CARGO_VERSION);
         CompoundTag cargoTag = new CompoundTag();
         ContainerHelper.saveAllItems(cargoTag, stacks, registryAccess());
         nbt.put("Cargo", cargoTag);
+        CompoundTag harnessTag = new CompoundTag();
+        ContainerHelper.saveAllItems(harnessTag, harness, registryAccess());
+        nbt.put("Harness", harnessTag);
     }
 
     @Override
@@ -253,9 +298,45 @@ public class BarrelWagon extends AbstractWagon implements MenuProvider {
         for(int i = 0; i < stacks.size(); i++)
             stacks.set(i, ItemStack.EMPTY);
         if(nbt.contains("Cargo", Tag.TAG_COMPOUND))
-            ContainerHelper.loadAllItems(nbt.getCompound("Cargo"), stacks, registryAccess());
+            readCargo(nbt);
+        if(nbt.contains("Harness", Tag.TAG_COMPOUND)) {
+            harness.set(0, ItemStack.EMPTY);
+            ContainerHelper.loadAllItems(nbt.getCompound("Harness"), harness, registryAccess());
+        }
         loading = false;
         syncBarrels();
+        syncHarness();
+    }
+
+    /** Version 2 stores four item slots per barrel. Older saves stored six; the last two of each barrel drop. */
+    private void readCargo(CompoundTag nbt) {
+        CompoundTag cargoTag = nbt.getCompound("Cargo");
+        if(nbt.getInt("CargoVersion") >= CARGO_VERSION) {
+            ContainerHelper.loadAllItems(cargoTag, stacks, registryAccess());
+            return;
+        }
+        NonNullList<ItemStack> old = NonNullList.withSize(OLD_SLOTS, ItemStack.EMPTY);
+        ContainerHelper.loadAllItems(cargoTag, old, registryAccess());
+        for(int i = 0; i < BARRELS; i++)
+            stacks.set(i, old.get(i));
+        for(int barrel = 0; barrel < BARRELS; barrel++) {
+            int from = BARRELS + barrel * OLD_CONTENTS;
+            for(int offset = 0; offset < CONTENTS; offset++)
+                stacks.set(contentIndex(barrel, offset), old.get(from + offset));
+            for(int offset = CONTENTS; offset < OLD_CONTENTS; offset++)
+                dropMigrated(old.get(from + offset));
+        }
+    }
+
+    private void dropMigrated(ItemStack stack) {
+        if(!stack.isEmpty() && level() != null && !level().isClientSide)
+            spawnAtLocation(stack);
+    }
+
+    private void syncHarness() {
+        ItemStack stack = harness.get(0);
+        int slots = stack.is(TWItems.SHAFTS.get()) ? 2 : stack.is(TWItems.TONGUE.get()) ? 1 : 0;
+        entityData.set(DATA_HARNESS, slots);
     }
 
     @Override
