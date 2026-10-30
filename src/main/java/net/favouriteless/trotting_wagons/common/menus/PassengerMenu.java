@@ -3,6 +3,7 @@ package net.favouriteless.trotting_wagons.common.menus;
 import net.favouriteless.trotting_wagons.TrottingWagons;
 import net.favouriteless.trotting_wagons.common.entities.base.AbstractWagon;
 import net.favouriteless.trotting_wagons.common.entities.wagons.PassengerWagon;
+import net.favouriteless.trotting_wagons.common.init.TWItems;
 import net.favouriteless.trotting_wagons.common.init.TWMenuTypes;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Inventory;
@@ -15,33 +16,41 @@ import net.minecraft.world.item.Items;
 public class PassengerMenu extends AbstractContainerMenu {
 
     public static final int IMAGE_WIDTH = 320;
-    public static final int IMAGE_HEIGHT = 172;
+    public static final int IMAGE_HEIGHT = 174;
     public static final int HEALTH_X = 13;
     public static final int HEALTH_Y = 20;
     public static final int HEALTH_W = 294;
-    public static final int DRAFT_X = 9;
+    public static final int DRAFT_Y = 38;
+    public static final int DRAFT_SINGLE_X = 21;
+    public static final int DRAFT_PAIR_X = 8;
     public static final int DRAFT_STRIDE = 26;
-    public static final int SEAT_X = 68;
-    public static final int SEAT_Y = 37;
+    public static final int SEAT_X = 69;
+    public static final int SEAT_Y = 38;
     public static final int SEAT_STEP = 26;
     public static final int INV_X = 80;
-    public static final int INV_Y = 88;
+    public static final int INV_Y = 90;
     public static final int WHEEL_X = 17;
-    public static final int WHEEL_Y = 88;
-    public static final int LANTERN_X = 270;
-    public static final int LANTERN_Y = 128;
-    public static final int REPAIR_X = 270;
-    public static final int REPAIR_Y = 64;
-    public static final int CUSTOM_Y = 106;
-    public static final int LOCK_X = 20;
-    public static final int LOCK_Y = 136;
-    public static final int LOCK_SIZE = 26;
+    public static final int WHEEL_Y = 130;
+    public static final int HARNESS_X = 26;
+    public static final int HARNESS_Y = 82;
+    public static final int LANTERN_X = 269;
+    public static final int LANTERN_Y = 130;
+    public static final int REPAIR_X = 269;
+    public static final int REPAIR_Y = 54;
+    public static final int CUSTOM_Y = 108;
 
     private static final int WHEEL_END = AbstractWagon.WHEEL_COUNT;
     private static final int LANTERN_END = WHEEL_END + PassengerWagon.LANTERNS;
 
     private final PassengerWagon wagon;
+    private final int harnessSlot;
     private final int repairStart;
+
+    public static int draftX(int slots, int index) {
+        if(slots < 2)
+            return DRAFT_SINGLE_X;
+        return DRAFT_PAIR_X + index * DRAFT_STRIDE;
+    }
 
     public PassengerMenu(int id, Inventory inventory, PassengerWagon wagon) {
         super(TWMenuTypes.PASSENGER.get(), id);
@@ -62,6 +71,8 @@ public class PassengerMenu extends AbstractContainerMenu {
                 addSlot(new Slot(inventory, 9 + x + y * 9, INV_X + x * 18, INV_Y + y * 18));
         }
 
+        this.harnessSlot = slots.size();
+        addSlot(new HarnessSlot(wagon, wagon.getHarnessItems(), 0, HARNESS_X, HARNESS_Y));
         this.repairStart = slots.size();
         for(int i = 0; i < AbstractWagon.REPAIR_SLOTS; i++)
             addSlot(new RepairSlot(wagon, wagon.getRepair(), i, REPAIR_X + (i % 2) * 18, REPAIR_Y + (i / 2) * 18));
@@ -78,18 +89,22 @@ public class PassengerMenu extends AbstractContainerMenu {
     @Override
     public ItemStack quickMoveStack(Player player, int index) {
         Slot slot = slots.get(index);
-        if(!slot.hasItem())
+        if(!slot.hasItem() || !slot.mayPickup(player))
             return ItemStack.EMPTY;
         ItemStack item = slot.getItem();
         ItemStack copy = item.copy();
-        boolean fromWagon = index < LANTERN_END || index >= repairStart;
+        boolean fromPlayer = index >= LANTERN_END && index < harnessSlot;
         boolean moved;
-        if(fromWagon) {
-            moved = moveItemStackTo(item, LANTERN_END, repairStart, false);
+        if(index < LANTERN_END || index == harnessSlot || index >= repairStart) {
+            moved = moveItemStackTo(item, LANTERN_END, harnessSlot, false);
+        } else if(!fromPlayer) {
+            return ItemStack.EMPTY;
         } else if(item.is(TrottingWagons.WAGON_WHEELS)) {
             moved = moveItemStackTo(item, 0, WHEEL_END, false);
         } else if(item.is(Items.LANTERN)) {
             moved = moveItemStackTo(item, WHEEL_END, LANTERN_END, false);
+        } else if(TWItems.isHarness(item)) {
+            moved = moveItemStackTo(item, harnessSlot, harnessSlot + 1, false);
         } else if(wagon != null && wagon.isRepairMaterial(item)) {
             moved = RepairShift.fill(item, repairStart, slots.size(), this::moveItemStackTo);
         } else {

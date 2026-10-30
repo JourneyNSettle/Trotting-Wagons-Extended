@@ -29,6 +29,8 @@ public class TWCreativeTabs {
                 output.accept(WagonItem.setupComponents(new ItemStack(TWItems.CONESTOGA_WAGON.get()), DyeColor.WHITE));
                 output.accept(WagonItem.setupComponents(new ItemStack(TWItems.ROYAL_WAGON.get()), DyeColor.WHITE));
                 output.accept(TWItems.HORSE_WHIP.get());
+                output.accept(TWItems.TONGUE.get());
+                output.accept(TWItems.SHAFTS.get());
                 output.accept(TWItems.WHEEL.get());
                 output.accept(TWItems.WIDE_WHEEL.get());
                 output.accept(TWItems.REINFORCED_WHEEL.get());

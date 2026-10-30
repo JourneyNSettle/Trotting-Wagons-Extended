@@ -43,7 +43,7 @@ public class TWEntityTypes {
             EntityType.Builder.of(BarrelWagon::new, MobCategory.MISC).sized(4.5F, 3.25F).build("barrel_wagon"));
 
     public static final DeferredHolder<EntityType<?>, EntityType<PassengerWagon>> PASSENGER_WAGON = REGISTRY.register("passenger_wagon", () ->
-            EntityType.Builder.of(PassengerWagon::new, MobCategory.MISC).sized(5.0F, 3.5F).build("passenger_wagon"));
+            EntityType.Builder.of(PassengerWagon::new, MobCategory.MISC).sized(3.0F, 3.5F).build("passenger_wagon"));
 
     public static final DeferredHolder<EntityType<?>, EntityType<WareWagon>> WARE_WAGON = REGISTRY.register("ware_wagon", () ->
             EntityType.Builder.of(WareWagon::new, MobCategory.MISC).sized(3.5F, 2.75F).build("ware_wagon"));

@@ -3,6 +3,7 @@ package net.favouriteless.trotting_wagons.common.menus;
 import net.favouriteless.trotting_wagons.TrottingWagons;
 import net.favouriteless.trotting_wagons.common.entities.base.AbstractWagon;
 import net.favouriteless.trotting_wagons.common.entities.wagons.WareWagon;
+import net.favouriteless.trotting_wagons.common.init.TWItems;
 import net.favouriteless.trotting_wagons.common.init.TWMenuTypes;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Inventory;
@@ -15,38 +16,41 @@ import net.minecraft.world.item.Items;
 public class WareMenu extends AbstractContainerMenu {
 
     public static final int IMAGE_WIDTH = 320;
-    public static final int IMAGE_HEIGHT = 267;
+    public static final int IMAGE_HEIGHT = 250;
     /** Nine columns, three rows, lined up with the player inventory. */
     public static final int GRID_COLUMNS = 9;
-    public static final int GRID_X = 80;
-    public static final int GRID_Y = 55;
-    /** Vertical 16×16 chest item slots, left of the grid. */
-    public static final int CHEST_X = 48;
-    public static final int CHEST_Y = 55;
-    public static final int CHEST_STEP = 18;
-    public static final int LANTERN_X = 279;
-    public static final int LANTERN_Y = 223;
+    public static final int GRID_X = 93;
+    public static final int GRID_Y = 39;
+    /** Four chest slots in a 2×2, left of the grid. */
+    public static final int CHEST_X = 49;
+    public static final int CHEST_Y = 48;
+    public static final int LANTERN_X = 278;
+    public static final int LANTERN_Y = 206;
     public static final int WHEEL_X = 17;
-    public static final int WHEEL_Y = 183;
-    public static final int REPAIR_X = 270;
-    public static final int REPAIR_Y = 184;
+    public static final int WHEEL_Y = 206;
+    public static final int HARNESS_X = 26;
+    public static final int HARNESS_Y = 158;
+    public static final int REPAIR_X = 269;
+    public static final int REPAIR_Y = 130;
     public static final int INV_X = 80;
-    public static final int INV_Y = 183;
-    public static final int TAB_X = 102;
-    public static final int TAB_Y = 22;
-    public static final int TAB_STEP = 30;
-    /** Empty band under the chest column and the 27-slot grid, above the draft row. */
+    public static final int INV_Y = 166;
+    public static final int TAB_X = 96;
+    public static final int TAB_Y = 7;
+    public static final int TAB_STEP = 32;
     public static final int HEALTH_X = 13;
-    public static final int HEALTH_Y = 114;
+    public static final int HEALTH_Y = 96;
     public static final int HEALTH_W = 294;
-    public static final int DRAFT_X = 14;
-    public static final int DRAFT_Y = 132;
+    public static final int TITLE_X = 101;
+    public static final int TITLE_Y = 116;
+    public static final int DISTANCE_GAP = 27;
+    public static final int DURABILITY_Y = 108;
+    public static final int DRAFT_Y = 114;
+    public static final int DRAFT_SINGLE_X = 21;
+    public static final int DRAFT_PAIR_X = 8;
     public static final int DRAFT_STEP = 26;
-    public static final int SEAT_X = 147;
-    public static final int SEAT_Y = 132;
-    public static final int LOCK_X = 20;
-    public static final int LOCK_Y = 231;
-    public static final int LOCK_SIZE = 26;
+    public static final int SEAT_X = 69;
+    public static final int SEAT_Y = 114;
+    public static final int CUSTOM_Y = 184;
 
     public static int gridX(int column) {
         return GRID_X + column * 18;
@@ -56,12 +60,27 @@ public class WareMenu extends AbstractContainerMenu {
         return GRID_Y + row * 18;
     }
 
+    public static int chestX(int index) {
+        return CHEST_X + (index % 2) * 18;
+    }
+
+    public static int chestY(int index) {
+        return CHEST_Y + (index / 2) * 18;
+    }
+
+    public static int draftX(int slots, int index) {
+        if(slots < 2)
+            return DRAFT_SINGLE_X;
+        return DRAFT_PAIR_X + index * DRAFT_STEP;
+    }
+
     private final WareWagon wagon;
     private final int chestStart;
     private final int cargoStart;
     private final int contentStart;
     private final int playerStart;
     private final int repairStart;
+    private final int harnessSlot;
     private int tab;
 
     public WareMenu(int id, Inventory inventory, WareWagon wagon) {
@@ -76,7 +95,7 @@ public class WareMenu extends AbstractContainerMenu {
 
         this.chestStart = slots.size();
         for(int i = 0; i < WareWagon.CHESTS; i++)
-            addSlot(new ChestSlot(wagon.getCargo(), i, CHEST_X, CHEST_Y + i * CHEST_STEP));
+            addSlot(new ChestSlot(wagon.getCargo(), i, chestX(i), chestY(i)));
 
         this.cargoStart = slots.size();
         for(int i = 0; i < WareWagon.CARGO; i++)
@@ -97,6 +116,8 @@ public class WareMenu extends AbstractContainerMenu {
                 addSlot(new Slot(inventory, 9 + x + y * 9, INV_X + x * 18, INV_Y + y * 18));
         }
 
+        this.harnessSlot = slots.size();
+        addSlot(new HarnessSlot(wagon, wagon.getHarnessItems(), 0, HARNESS_X, HARNESS_Y));
         this.repairStart = slots.size();
         for(int i = 0; i < AbstractWagon.REPAIR_SLOTS; i++)
             addSlot(new RepairSlot(wagon, wagon.getRepair(), i, REPAIR_X + (i % 2) * 18, REPAIR_Y + (i / 2) * 18));
@@ -155,8 +176,13 @@ public class WareMenu extends AbstractContainerMenu {
         ItemStack copy = item.copy();
         boolean moved;
         boolean specific = false;
-        if(index < playerStart || index >= repairStart) {
-            moved = moveItemStackTo(item, playerStart, repairStart, false);
+        if(index == harnessSlot) {
+            moved = moveItemStackTo(item, playerStart, harnessSlot, false);
+        } else if(index < playerStart || index >= repairStart) {
+            moved = moveItemStackTo(item, playerStart, harnessSlot, false);
+        } else if(TWItems.isHarness(item)) {
+            moved = fill(item, harnessSlot, harnessSlot + 1);
+            specific = true;
         } else if(item.is(TrottingWagons.WAGON_WHEELS)) {
             moved = fill(item, 0, AbstractWagon.WHEEL_COUNT);
             specific = true;

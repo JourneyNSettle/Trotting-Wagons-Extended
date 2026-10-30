@@ -9,6 +9,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Item.Properties;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Rarity;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -29,9 +30,17 @@ public class TWItems {
     public static final DeferredHolder<Item, WagonItem> KIBITKA_WAGON = REGISTRY.register("kibitka_wagon", () -> new WagonItem(TWEntityTypes.KIBITKA_WAGON::get, wagonProps()));
 
     public static final DeferredHolder<Item, HorseWhipItem> HORSE_WHIP = REGISTRY.register("horse_whip", () -> new HorseWhipItem(new Properties().stacksTo(1)));
+    /** One animal. The model bone is TongueSingle. */
+    public static final DeferredHolder<Item, Item> TONGUE = REGISTRY.register("tongue", () -> new Item(new Properties().stacksTo(1)));
+    /** Two animals. The model bone is Tongue. */
+    public static final DeferredHolder<Item, Item> SHAFTS = REGISTRY.register("shafts", () -> new Item(new Properties().stacksTo(1)));
     public static final DeferredHolder<Item, WheelItem> WHEEL = REGISTRY.register("wheel", () -> new WheelItem(new Properties().durability(100)));
     public static final DeferredHolder<Item, WheelItem> WIDE_WHEEL = REGISTRY.register("wide_wheel", () -> new WheelItem(new Properties().durability(100)));
     public static final DeferredHolder<Item, WheelItem> REINFORCED_WHEEL = REGISTRY.register("reinforced_wheel", () -> new WheelItem(new Properties().durability(300)));
+
+    public static boolean isHarness(ItemStack stack) {
+        return stack.is(TONGUE.get()) || stack.is(SHAFTS.get());
+    }
 
     private static Properties wagonProps() {
         return new Properties()

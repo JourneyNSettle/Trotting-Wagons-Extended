@@ -14,12 +14,37 @@ import net.minecraft.world.item.ItemStack;
 public class BarrelMenu extends AbstractContainerMenu {
 
     public static final int IMAGE_WIDTH = 320;
-    public static final int BARREL_Y = 20;
-    public static final int LEFT_BARREL_X = 13;
-    /** Barrel slot of the second column, centered on the 320-wide screen. */
-    public static final int CENTER_BARREL_X = 151;
+    public static final int IMAGE_HEIGHT = 270;
+    public static final int BARREL_Y = 6;
+    public static final int LEFT_BARREL_X = 14;
+    public static final int CENTER_BARREL_X = 169;
+    /** Background between a barrel frame and the frame of its first item slot. */
+    public static final int CONTENT_GAP = 8;
     public static final int HEALTH_X = 13;
+    public static final int HEALTH_Y = 117;
     public static final int HEALTH_W = 294;
+    /** Kibitka gap: 8 pixels under the 10-pixel bar, then the condition 10 pixels lower. */
+    public static final int DURABILITY_Y = HEALTH_Y + 18;
+    public static final int DRAFT_X = 14;
+    public static final int DRAFT_Y = 135;
+    public static final int DRAFT_STRIDE = 26;
+    public static final int SEAT_X = 80;
+    public static final int SEAT_Y = 135;
+    /** First pixel of the wagon name, to the right of the driver well. */
+    public static final int TITLE_X = 112;
+    public static final int TITLE_Y = 137;
+    /** Pixels of background between the wagon name and the distance counter. */
+    public static final int DISTANCE_GAP = 27;
+    public static final int WHEEL_X = 17;
+    public static final int WHEEL_Y = 186;
+    public static final int INV_X = 80;
+    public static final int INV_Y = 186;
+    public static final int REPAIR_X = 270;
+    public static final int REPAIR_Y = 186;
+    /** Painted lock. No widget until the button is wired. */
+    public static final int LOCK_X = 20;
+    public static final int LOCK_Y = 234;
+    public static final int LOCK_SIZE = 26;
 
     private final BarrelWagon wagon;
     private final int contentStart;
@@ -46,19 +71,19 @@ public class BarrelMenu extends AbstractContainerMenu {
 
         this.wheelStart = slots.size();
         for(int i = 0; i < AbstractWagon.WHEEL_COUNT; i++)
-            addSlot(new WheelSlot(wagon.getWheels(), i, 17, 80 + (i / 2) * 18));
+            addSlot(new WheelSlot(wagon.getWheels(), i, WHEEL_X + (i % 2) * 18, WHEEL_Y + (i / 2) * 18));
 
         this.playerStart = slots.size();
         for(int x = 0; x < 9; x++)
-            addSlot(new Slot(inventory, x, 80 + x * 18, 80 + 58));
+            addSlot(new Slot(inventory, x, INV_X + x * 18, INV_Y + 58));
         for(int y = 0; y < 3; y++) {
             for(int x = 0; x < 9; x++)
-                addSlot(new Slot(inventory, 9 + x + y * 9, 80 + x * 18, 80 + y * 18));
+                addSlot(new Slot(inventory, 9 + x + y * 9, INV_X + x * 18, INV_Y + y * 18));
         }
 
         this.repairStart = slots.size();
         for(int i = 0; i < AbstractWagon.REPAIR_SLOTS; i++)
-            addSlot(new RepairSlot(wagon, wagon.getRepair(), i, 270, 80 + (i / 2) * 18));
+            addSlot(new RepairSlot(wagon, wagon.getRepair(), i, REPAIR_X + (i % 2) * 18, REPAIR_Y + (i / 2) * 18));
     }
 
     public BarrelMenu(int id, Inventory inventory, FriendlyByteBuf data) {
@@ -74,7 +99,7 @@ public class BarrelMenu extends AbstractContainerMenu {
     }
 
     public static int contentX(int barrel, int offset) {
-        return barrelX(barrel) + 18 + offset * 18;
+        return barrelX(barrel) + 16 + 1 + CONTENT_GAP + 1 + offset * 18;
     }
 
     public BarrelWagon getWagon() {

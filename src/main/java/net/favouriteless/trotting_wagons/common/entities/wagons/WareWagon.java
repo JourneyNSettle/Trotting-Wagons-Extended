@@ -35,32 +35,54 @@ import net.neoforged.neoforge.items.ItemStackHandler;
 
 public class WareWagon extends AbstractWagon implements MenuProvider {
 
-    public static final int CHESTS = 3;
+    public static final int CHESTS = 4;
+    /** Saves through cargo version 3 stored three chest items. */
+    private static final int STORED_CHESTS = 3;
     /** Painted grid is 9 columns by 3 rows, shared by the wagon tab and each chest. */
     public static final int CARGO = 27;
     public static final int CONTENTS = 27;
     public static final int SLOTS = CHESTS + CARGO + CHESTS * CONTENTS;
-    private static final int CARGO_VERSION = 3;
+    private static final int CARGO_VERSION = 4;
     /** Version 2 stored a 10×3 grid: 30 cargo and 30 slots in each chest. */
     private static final int WIDE_CARGO = 30;
     private static final int WIDE_CONTENTS = 30;
-    private static final int WIDE_SLOTS = CHESTS + WIDE_CARGO + CHESTS * WIDE_CONTENTS;
+    private static final int WIDE_SLOTS = STORED_CHESTS + WIDE_CARGO + STORED_CHESTS * WIDE_CONTENTS;
     /** Saves from before the grid shrank from 4×9 cargo and 27-slot chests. */
     private static final int LEGACY_CARGO = 36;
     private static final int LEGACY_CONTENTS = 27;
-    private static final int LEGACY_SLOTS = CHESTS + LEGACY_CARGO + CHESTS * LEGACY_CONTENTS;
+    private static final int LEGACY_SLOTS = STORED_CHESTS + LEGACY_CARGO + STORED_CHESTS * LEGACY_CONTENTS;
+    private static final int VERSION3_SLOTS = STORED_CHESTS + CARGO + STORED_CHESTS * CONTENTS;
 
     private static final int CHEST_MASK = (1 << CHESTS) - 1;
     private static final EntityDataAccessor<Integer> DATA_CHESTS = SynchedEntityData.defineId(WareWagon.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Boolean> DATA_LANTERN = SynchedEntityData.defineId(WareWagon.class, EntityDataSerializers.BOOLEAN);
-    /** Glass centre of the single lamp, in model pixels. */
-    private static final Vec3 LAMP_POS = pivot(20, 27.6D, -6.35D);
+    /** 0 none, 1 the tongue item (TongueSingle), 2 the shafts item (Tongue). */
+    private static final EntityDataAccessor<Integer> DATA_HARNESS = SynchedEntityData.defineId(WareWagon.class, EntityDataSerializers.INT);
+    /** Glass centre after the Lamp bone's 90° yaw, in model pixels. */
+    private static final Vec3 LAMP_POS = pivot(14.53D, 42.2D, -22.68D);
 
     public static final WagonSeat[] SEATS = new WagonSeat[] {
             new WagonSeat(seat(0, 24, -27.75D), WagonSeat.Kind.DRIVER)
     };
 
     private final NonNullList<ItemStack> stacks = NonNullList.withSize(SLOTS, ItemStack.EMPTY);
+    private final NonNullList<ItemStack> harness = NonNullList.withSize(1, ItemStack.EMPTY);
+    private final ItemStackHandler harnessItems = new ItemStackHandler(harness) {
+        @Override
+        public boolean isItemValid(int slot, ItemStack stack) {
+            return TWItems.isHarness(stack);
+        }
+
+        @Override
+        public int getSlotLimit(int slot) {
+            return 1;
+        }
+
+        @Override
+        protected void onContentsChanged(int slot) {
+            syncHarness();
+        }
+    };
     private final NonNullList<ItemStack> lantern = NonNullList.withSize(1, ItemStack.EMPTY);
     private BlockPos lanternLight;
     private boolean loading;
@@ -178,6 +200,25 @@ public class WareWagon extends AbstractWagon implements MenuProvider {
         super.defineSynchedData(builder);
         builder.define(DATA_CHESTS, 0);
         builder.define(DATA_LANTERN, false);
+        builder.define(DATA_HARNESS, 0);
+    }
+
+    @Override
+    public int hitchSlots() {
+        int slots = entityData.get(DATA_HARNESS);
+        return slots < 0 ? 0 : Math.min(slots, 2);
+    }
+
+    @Override
+    protected Vec3 hitchOffset(Side side) {
+        if(hitchSlots() >= 2)
+            return super.hitchOffset(side);
+        return new Vec3(0, 0, 77.88461D / 16D);
+    }
+
+    @Override
+    public ItemStackHandler getHarnessItems() {
+        return harnessItems;
     }
 
     @Override
@@ -221,6 +262,11 @@ public class WareWagon extends AbstractWagon implements MenuProvider {
         loading = false;
         syncChests();
         syncLantern();
+        if(nbt.contains("Harness", Tag.TAG_COMPOUND)) {
+            harness.set(0, ItemStack.EMPTY);
+            ContainerHelper.loadAllItems(nbt.getCompound("Harness"), harness, registryAccess());
+        }
+        syncHarness();
     }
 
     @Override
@@ -233,6 +279,15 @@ public class WareWagon extends AbstractWagon implements MenuProvider {
         CompoundTag lanternTag = new CompoundTag();
         ContainerHelper.saveAllItems(lanternTag, lantern, registryAccess());
         nbt.put("Lantern", lanternTag);
+        CompoundTag harnessTag = new CompoundTag();
+        ContainerHelper.saveAllItems(harnessTag, harness, registryAccess());
+        nbt.put("Harness", harnessTag);
+    }
+
+    private void syncHarness() {
+        ItemStack stack = harness.get(0);
+        int slots = stack.is(TWItems.SHAFTS.get()) ? 2 : stack.is(TWItems.TONGUE.get()) ? 1 : 0;
+        entityData.set(DATA_HARNESS, slots);
     }
 
     @Override
@@ -292,7 +347,8 @@ public class WareWagon extends AbstractWagon implements MenuProvider {
     }
 
     /**
-     * Version 3 is 111 slots: 3 chests, 27 cargo, then three blocks of 27.
+     * Version 4 is 139 slots: 4 chests, 27 cargo, then four blocks of 27.
+     * Version 3 is 111 slots: 3 chests, 27 cargo, then three blocks of 27. The fourth chest stays empty.
      * Version 2 was 123 slots: 3 chests, 30 cargo, then three blocks of 30. The last 3 cargo
      * stacks and the last 3 of each chest drop beside the wagon.
      * A missing version is the old 120-slot list: 3 chests, 36 cargo, then three blocks of 27.
@@ -305,6 +361,10 @@ public class WareWagon extends AbstractWagon implements MenuProvider {
             ContainerHelper.loadAllItems(cargoTag, stacks, registryAccess());
             return;
         }
+        if(version == 3) {
+            readThree(cargoTag);
+            return;
+        }
         if(version == 2) {
             readWide(cargoTag);
             return;
@@ -312,17 +372,31 @@ public class WareWagon extends AbstractWagon implements MenuProvider {
         readLegacy(cargoTag);
     }
 
+    private void readThree(CompoundTag cargoTag) {
+        NonNullList<ItemStack> old = NonNullList.withSize(VERSION3_SLOTS, ItemStack.EMPTY);
+        ContainerHelper.loadAllItems(cargoTag, old, registryAccess());
+        for(int i = 0; i < STORED_CHESTS; i++)
+            stacks.set(i, old.get(i));
+        for(int i = 0; i < CARGO; i++)
+            stacks.set(CHESTS + i, old.get(STORED_CHESTS + i));
+        for(int chest = 0; chest < STORED_CHESTS; chest++) {
+            int from = STORED_CHESTS + CARGO + chest * CONTENTS;
+            for(int offset = 0; offset < CONTENTS; offset++)
+                stacks.set(contentIndex(chest, offset), old.get(from + offset));
+        }
+    }
+
     private void readWide(CompoundTag cargoTag) {
         NonNullList<ItemStack> wide = NonNullList.withSize(WIDE_SLOTS, ItemStack.EMPTY);
         ContainerHelper.loadAllItems(cargoTag, wide, registryAccess());
-        for(int i = 0; i < CHESTS; i++)
+        for(int i = 0; i < STORED_CHESTS; i++)
             stacks.set(i, wide.get(i));
         for(int i = 0; i < CARGO; i++)
-            stacks.set(CHESTS + i, wide.get(CHESTS + i));
+            stacks.set(CHESTS + i, wide.get(STORED_CHESTS + i));
         for(int i = CARGO; i < WIDE_CARGO; i++)
-            dropMigrated(wide.get(CHESTS + i));
-        for(int chest = 0; chest < CHESTS; chest++) {
-            int from = CHESTS + WIDE_CARGO + chest * WIDE_CONTENTS;
+            dropMigrated(wide.get(STORED_CHESTS + i));
+        for(int chest = 0; chest < STORED_CHESTS; chest++) {
+            int from = STORED_CHESTS + WIDE_CARGO + chest * WIDE_CONTENTS;
             for(int offset = 0; offset < CONTENTS; offset++)
                 stacks.set(contentIndex(chest, offset), wide.get(from + offset));
             for(int offset = CONTENTS; offset < WIDE_CONTENTS; offset++)
@@ -333,15 +407,15 @@ public class WareWagon extends AbstractWagon implements MenuProvider {
     private void readLegacy(CompoundTag cargoTag) {
         NonNullList<ItemStack> legacy = NonNullList.withSize(LEGACY_SLOTS, ItemStack.EMPTY);
         ContainerHelper.loadAllItems(cargoTag, legacy, registryAccess());
-        for(int i = 0; i < CHESTS; i++)
+        for(int i = 0; i < STORED_CHESTS; i++)
             stacks.set(i, legacy.get(i));
         for(int i = 0; i < CARGO; i++)
-            stacks.set(CHESTS + i, legacy.get(CHESTS + i));
+            stacks.set(CHESTS + i, legacy.get(STORED_CHESTS + i));
         for(int i = CARGO; i < LEGACY_CARGO; i++)
-            dropMigrated(legacy.get(CHESTS + i));
-        for(int chest = 0; chest < CHESTS; chest++) {
+            dropMigrated(legacy.get(STORED_CHESTS + i));
+        for(int chest = 0; chest < STORED_CHESTS; chest++) {
             for(int offset = 0; offset < LEGACY_CONTENTS; offset++) {
-                int from = CHESTS + LEGACY_CARGO + chest * LEGACY_CONTENTS + offset;
+                int from = STORED_CHESTS + LEGACY_CARGO + chest * LEGACY_CONTENTS + offset;
                 stacks.set(contentIndex(chest, offset), legacy.get(from));
             }
         }

@@ -262,8 +262,11 @@ public abstract class AbstractGeckolibVehicle extends Entity implements GeoEntit
 
     @Override
     public boolean canBeCollidedWith() {
-        return true;
+        return !hitchMoving;
     }
+
+    /** True while a hitched animal is stepped onto the new shaft point. */
+    boolean hitchMoving;
 
     @Override
     protected void playStepSound(BlockPos pos, BlockState state) {}

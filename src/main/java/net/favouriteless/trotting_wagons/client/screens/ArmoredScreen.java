@@ -64,6 +64,7 @@ public class ArmoredScreen extends AbstractContainerScreen<ArmoredMenu> {
 
     @Override
     protected void containerTick() {
+        RepairLayout.place(menu.slots, menu.getWagon(), ArmoredMenu.REPAIR_X + 17, 28);
         super.containerTick();
         if(seatButtons != null && menu.getWagon() != null)
             SeatButtons.refresh(seatButtons);
@@ -71,6 +72,7 @@ public class ArmoredScreen extends AbstractContainerScreen<ArmoredMenu> {
 
     @Override
     protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
+        RepairLayout.place(menu.slots, menu.getWagon(), ArmoredMenu.REPAIR_X + 17, 28);
         WagonGui.drawFrame(graphics, leftPos, topPos, imageWidth, imageHeight);
         if(menu.getWagon() != null)
             SeatButtons.drawHealth(graphics, font, menu.getWagon(), leftPos + 16, topPos + 14, imageWidth - 32);

@@ -28,7 +28,8 @@ public final class SeatButtons {
             button.refresh();
             buttons.add(button);
         }
-        buttons.add(draftButton(wagon, AbstractWagon.Side.LEFT, left, draftY));
+        if(wagon.hitchSlots() > 0)
+            buttons.add(draftButton(wagon, AbstractWagon.Side.LEFT, left, draftY));
         if(wagon.hitchSlots() > 1)
             buttons.add(draftButton(wagon, AbstractWagon.Side.RIGHT, left, draftY));
         SeatButton.bind(buttons);
@@ -46,9 +47,11 @@ public final class SeatButtons {
             button.refresh();
             buttons.add(button);
         }
-        SeatButton left = SeatButton.placedDraft(wagon, AbstractWagon.Side.LEFT, draftX, draftY, size);
-        left.refresh();
-        buttons.add(left);
+        if(wagon.hitchSlots() > 0) {
+            SeatButton left = SeatButton.placedDraft(wagon, AbstractWagon.Side.LEFT, draftX, draftY, size);
+            left.refresh();
+            buttons.add(left);
+        }
         if(wagon.hitchSlots() > 1) {
             SeatButton right = SeatButton.placedDraft(wagon, AbstractWagon.Side.RIGHT, draftX + draftStride, draftY, size);
             right.refresh();
