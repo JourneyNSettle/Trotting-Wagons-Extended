@@ -64,12 +64,7 @@ public final class WagonParts {
             wheel(2, 19.75D, 9.5D, 21),
             wheel(3, -19.75D, 9.5D, 21)
     );
-    private static final List<Part> BARREL = List.of(
-            wheel(0, 19.25D, 9.5D, -17),
-            wheel(1, -18.75D, 9.5D, -17),
-            wheel(2, 19.75D, 9.5D, 17),
-            wheel(3, -19.75D, 9.5D, 17)
-    );
+    private static final List<Part> BARREL = barrelParts();
     private static final List<Part> PASSENGER = passengerParts();
     private static final List<Part> WARE = wareParts();
     private static final List<Part> KIBITKA = kibitkaParts();
@@ -473,6 +468,17 @@ public final class WagonParts {
         parts.add(wheel(2, 19.75D, 9.5D, 17));
         parts.add(wheel(3, -19.75D, 9.5D, 17));
         parts.add(new Part(Kind.LANTERN, 0, List.of(plainBox(-3, 36.1D, -39, 6, 7, 6))));
+        parts.add(new Part(Kind.HARNESS, 0, List.of(plainBox(-16, 7.5D, -85, 32, 8, 57))));
+        return List.copyOf(parts);
+    }
+
+    private static List<Part> barrelParts() {
+        List<Part> parts = new ArrayList<>();
+        parts.add(wheel(0, 19.25D, 9.5D, -17));
+        parts.add(wheel(1, -18.75D, 9.5D, -17));
+        parts.add(wheel(2, 19.75D, 9.5D, 17));
+        parts.add(wheel(3, -19.75D, 9.5D, 17));
+        parts.add(new Part(Kind.HARNESS, 0, List.of(plainBox(-16, 7.5D, -85, 32, 8, 57))));
         return List.copyOf(parts);
     }
 

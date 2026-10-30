@@ -70,6 +70,8 @@ public class KibitkaWagon extends AbstractInventoryWagon {
     private static final EntityDataAccessor<Integer> DATA_CAMP = SynchedEntityData.defineId(KibitkaWagon.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> DATA_CAMP_TARGET = SynchedEntityData.defineId(KibitkaWagon.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Boolean> DATA_LANTERN = SynchedEntityData.defineId(KibitkaWagon.class, EntityDataSerializers.BOOLEAN);
+    /** 0 none, 1 the tongue item (TongueSingle), 2 the shafts item (Tongue). */
+    private static final EntityDataAccessor<Integer> DATA_HARNESS = SynchedEntityData.defineId(KibitkaWagon.class, EntityDataSerializers.INT);
     private static final Vec3 LAMP_POS = pivot(0, 39.6D, -36);
 
     public static final WagonSeat[] SEATS = new WagonSeat[] {
@@ -77,6 +79,23 @@ public class KibitkaWagon extends AbstractInventoryWagon {
             new WagonSeat(seat(-8.39723D, 22, -11.50666D), WagonSeat.Kind.PLAYER)
     };
 
+    private final NonNullList<ItemStack> harness = NonNullList.withSize(1, ItemStack.EMPTY);
+    private final ItemStackHandler harnessItems = new ItemStackHandler(harness) {
+        @Override
+        public boolean isItemValid(int slot, ItemStack stack) {
+            return TWItems.isHarness(stack);
+        }
+
+        @Override
+        public int getSlotLimit(int slot) {
+            return 1;
+        }
+
+        @Override
+        protected void onContentsChanged(int slot) {
+            syncHarness();
+        }
+    };
     private final NonNullList<ItemStack> lantern = NonNullList.withSize(1, ItemStack.EMPTY);
     private final ItemStackHandler lanternItems = new ItemStackHandler(lantern) {
         @Override
@@ -116,7 +135,21 @@ public class KibitkaWagon extends AbstractInventoryWagon {
 
     @Override
     public int hitchSlots() {
-        return 1;
+        int slots = entityData.get(DATA_HARNESS);
+        return slots < 0 ? 0 : Math.min(slots, 2);
+    }
+
+    @Override
+    protected Vec3 hitchOffset(Side side) {
+        double z = 76.88461D / 16D;
+        if(hitchSlots() < 2)
+            return new Vec3(0, 0, z);
+        return new Vec3(side == Side.LEFT ? 0.6D : -0.6D, 0, z);
+    }
+
+    @Override
+    public ItemStackHandler getHarnessItems() {
+        return harnessItems;
     }
 
     @Override
@@ -177,6 +210,7 @@ public class KibitkaWagon extends AbstractInventoryWagon {
         builder.define(DATA_CAMP, 0);
         builder.define(DATA_CAMP_TARGET, 0);
         builder.define(DATA_LANTERN, false);
+        builder.define(DATA_HARNESS, 0);
     }
 
     @Override
@@ -359,6 +393,11 @@ public class KibitkaWagon extends AbstractInventoryWagon {
             ContainerHelper.loadAllItems(nbt.getCompound("Lantern"), lantern, registryAccess());
         }
         syncLantern();
+        if(nbt.contains("Harness", Tag.TAG_COMPOUND)) {
+            harness.set(0, ItemStack.EMPTY);
+            ContainerHelper.loadAllItems(nbt.getCompound("Harness"), harness, registryAccess());
+        }
+        syncHarness();
         if(nbt.contains("Camp", Tag.TAG_INT))
             applyCamp(nbt.getInt("Camp"), nbt.getInt("CampTarget"));
         readSpawn(nbt);
@@ -372,9 +411,18 @@ public class KibitkaWagon extends AbstractInventoryWagon {
         CompoundTag lanternTag = new CompoundTag();
         ContainerHelper.saveAllItems(lanternTag, lantern, registryAccess());
         nbt.put("Lantern", lanternTag);
+        CompoundTag harnessTag = new CompoundTag();
+        ContainerHelper.saveAllItems(harnessTag, harness, registryAccess());
+        nbt.put("Harness", harnessTag);
         nbt.putInt("Camp", camp);
         nbt.putInt("CampTarget", campTarget);
         writeSpawn(nbt);
+    }
+
+    private void syncHarness() {
+        ItemStack stack = harness.get(0);
+        int slots = stack.is(TWItems.SHAFTS.get()) ? 2 : stack.is(TWItems.TONGUE.get()) ? 1 : 0;
+        entityData.set(DATA_HARNESS, slots);
     }
 
     @Override

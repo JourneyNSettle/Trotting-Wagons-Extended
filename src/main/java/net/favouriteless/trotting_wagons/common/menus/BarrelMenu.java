@@ -3,6 +3,7 @@ package net.favouriteless.trotting_wagons.common.menus;
 import net.favouriteless.trotting_wagons.TrottingWagons;
 import net.favouriteless.trotting_wagons.common.entities.base.AbstractWagon;
 import net.favouriteless.trotting_wagons.common.entities.wagons.BarrelWagon;
+import net.favouriteless.trotting_wagons.common.init.TWItems;
 import net.favouriteless.trotting_wagons.common.init.TWMenuTypes;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Inventory;
@@ -14,43 +15,41 @@ import net.minecraft.world.item.ItemStack;
 public class BarrelMenu extends AbstractContainerMenu {
 
     public static final int IMAGE_WIDTH = 320;
-    public static final int IMAGE_HEIGHT = 270;
-    public static final int BARREL_Y = 6;
-    public static final int LEFT_BARREL_X = 14;
-    public static final int CENTER_BARREL_X = 169;
-    /** Background between a barrel frame and the frame of its first item slot. */
-    public static final int CONTENT_GAP = 8;
+    public static final int IMAGE_HEIGHT = 250;
+    /** Three columns by four rows, barrel items only. */
+    public static final int BARREL_COLUMNS = 3;
+    public static final int BARREL_X = 20;
+    public static final int BARREL_Y = 15;
+    /** Twelve columns by four rows. Each barrel opens the four wells in its column group. */
+    public static final int CONTENT_COLUMNS = 12;
+    public static final int CONTENT_X = 86;
+    public static final int CONTENT_Y = 15;
     public static final int HEALTH_X = 13;
-    public static final int HEALTH_Y = 117;
+    public static final int HEALTH_Y = 96;
     public static final int HEALTH_W = 294;
-    /** Kibitka gap: 8 pixels under the 10-pixel bar, then the condition 10 pixels lower. */
-    public static final int DURABILITY_Y = HEALTH_Y + 18;
-    public static final int DRAFT_X = 14;
-    public static final int DRAFT_Y = 135;
+    public static final int DRAFT_Y = 114;
+    public static final int DRAFT_SINGLE_X = 21;
+    public static final int DRAFT_PAIR_X = 8;
     public static final int DRAFT_STRIDE = 26;
-    public static final int SEAT_X = 80;
-    public static final int SEAT_Y = 135;
-    /** First pixel of the wagon name, to the right of the driver well. */
-    public static final int TITLE_X = 112;
-    public static final int TITLE_Y = 137;
-    /** Pixels of background between the wagon name and the distance counter. */
+    public static final int SEAT_X = 69;
+    public static final int SEAT_Y = 114;
+    public static final int TITLE_X = 101;
+    public static final int TITLE_Y = 116;
     public static final int DISTANCE_GAP = 27;
+    public static final int HARNESS_X = 26;
+    public static final int HARNESS_Y = 158;
     public static final int WHEEL_X = 17;
-    public static final int WHEEL_Y = 186;
+    public static final int WHEEL_Y = 206;
     public static final int INV_X = 80;
-    public static final int INV_Y = 186;
-    public static final int REPAIR_X = 270;
-    public static final int REPAIR_Y = 186;
-    /** Painted lock. No widget until the button is wired. */
-    public static final int LOCK_X = 20;
-    public static final int LOCK_Y = 234;
-    public static final int LOCK_SIZE = 26;
+    public static final int INV_Y = 166;
+    public static final int REPAIR_X = 269;
 
     private final BarrelWagon wagon;
     private final int contentStart;
     private final int wheelStart;
     private final int playerStart;
     private final int repairStart;
+    private final int harnessSlot;
 
     public BarrelMenu(int id, Inventory inventory, BarrelWagon wagon) {
         super(TWMenuTypes.BARREL.get(), id);
@@ -65,7 +64,7 @@ public class BarrelMenu extends AbstractContainerMenu {
         for(int barrel = 0; barrel < BarrelWagon.BARRELS; barrel++) {
             for(int offset = 0; offset < BarrelWagon.CONTENTS; offset++) {
                 addSlot(new BarrelContentSlot(wagon, wagon.getCargo(), BarrelWagon.contentIndex(barrel, offset),
-                        contentX(barrel, offset), barrelY(barrel)));
+                        contentX(barrel, offset), contentY(barrel, offset)));
             }
         }
 
@@ -81,9 +80,17 @@ public class BarrelMenu extends AbstractContainerMenu {
                 addSlot(new Slot(inventory, 9 + x + y * 9, INV_X + x * 18, INV_Y + y * 18));
         }
 
+        this.harnessSlot = slots.size();
+        addSlot(new HarnessSlot(wagon, wagon.getHarnessItems(), 0, HARNESS_X, HARNESS_Y));
         this.repairStart = slots.size();
         for(int i = 0; i < AbstractWagon.REPAIR_SLOTS; i++)
-            addSlot(new RepairSlot(wagon, wagon.getRepair(), i, REPAIR_X + (i % 2) * 18, REPAIR_Y + (i / 2) * 18));
+            addSlot(new RepairSlot(wagon, wagon.getRepair(), i, REPAIR_X, SEAT_Y));
+    }
+
+    public static int draftX(int slots, int index) {
+        if(slots < 2)
+            return DRAFT_SINGLE_X;
+        return DRAFT_PAIR_X + index * DRAFT_STRIDE;
     }
 
     public BarrelMenu(int id, Inventory inventory, FriendlyByteBuf data) {
@@ -91,15 +98,21 @@ public class BarrelMenu extends AbstractContainerMenu {
     }
 
     public static int barrelX(int index) {
-        return index < BarrelWagon.BARRELS / 2 ? LEFT_BARREL_X : CENTER_BARREL_X;
+        return BARREL_X + (index % BARREL_COLUMNS) * 18;
     }
 
     public static int barrelY(int index) {
-        return BARREL_Y + (index % (BarrelWagon.BARRELS / 2)) * 18;
+        return BARREL_Y + (index / BARREL_COLUMNS) * 18;
     }
 
     public static int contentX(int barrel, int offset) {
-        return barrelX(barrel) + 16 + 1 + CONTENT_GAP + 1 + offset * 18;
+        int index = barrel * BarrelWagon.CONTENTS + offset;
+        return CONTENT_X + (index % CONTENT_COLUMNS) * 18;
+    }
+
+    public static int contentY(int barrel, int offset) {
+        int index = barrel * BarrelWagon.CONTENTS + offset;
+        return CONTENT_Y + (index / CONTENT_COLUMNS) * 18;
     }
 
     public BarrelWagon getWagon() {
@@ -131,8 +144,11 @@ public class BarrelMenu extends AbstractContainerMenu {
         ItemStack copy = item.copy();
         boolean moved;
         boolean specific = false;
-        if(index < wheelStart || index >= repairStart || (index >= wheelStart && index < playerStart)) {
-            moved = moveItemStackTo(item, playerStart, repairStart, false);
+        if(index == harnessSlot || index < wheelStart || index >= repairStart || (index >= wheelStart && index < playerStart)) {
+            moved = moveItemStackTo(item, playerStart, harnessSlot, false);
+        } else if(TWItems.isHarness(item)) {
+            moved = fill(item, harnessSlot, harnessSlot + 1);
+            specific = true;
         } else if(item.is(TrottingWagons.WAGON_WHEELS)) {
             moved = fill(item, wheelStart, playerStart);
             specific = true;
