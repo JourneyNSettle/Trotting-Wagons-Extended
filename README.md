@@ -87,6 +87,8 @@ Most of these can be dyed, and the dye is not used up. Dye does not change the b
 
 A new wagon starts with four regular wheels. Wheels wear down as the wagon rolls. At low durability the wagon sags. A missing wheel stops it.
 
+Four wide wheels ride over dirt, grass, sand, gravel, and snow. Any other full set slows to a stop over about twelve seconds on those blocks and settles as low as a wagon with no wheels. A dirt path stays firm for narrow wheels too.
+
 | Wheel | Effect |
 | --- | --- |
 | Regular | Normal speed. |
