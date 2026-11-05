@@ -1,6 +1,7 @@
 package net.favouriteless.trotting_wagons.common.entities.wagons;
 
 import net.favouriteless.trotting_wagons.ServerConfig;
+import net.favouriteless.trotting_wagons.common.entities.WagonBuild;
 import net.favouriteless.trotting_wagons.common.entities.base.AbstractInventoryWagon;
 import net.favouriteless.trotting_wagons.common.entities.base.WagonSeat;
 import net.favouriteless.trotting_wagons.common.init.TWItems;
@@ -211,6 +212,13 @@ public class ConestogaWagon extends AbstractInventoryWagon {
         ItemStack stack = harness.get(0);
         int slots = stack.is(TWItems.TONGUE.get()) ? 2 : stack.is(TWItems.SHAFTS.get()) ? 1 : 0;
         entityData.set(DATA_HARNESS, slots);
+    }
+
+    /** About half of each base-bill line. The old oak-plank and iron scrap does not drop. */
+    @Override
+    protected void dropDestructionLoot() {
+        if(builtFromBase())
+            WagonBuild.conestoga().dropAboutHalf(this, builtPlan());
     }
 
     @Override

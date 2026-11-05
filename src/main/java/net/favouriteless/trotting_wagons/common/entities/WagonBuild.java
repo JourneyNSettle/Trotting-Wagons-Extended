@@ -10,6 +10,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.tags.ItemTags;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -222,6 +223,52 @@ public final class WagonBuild {
         for(ItemStack stack : stacks)
             if(!stack.isEmpty())
                 entity.spawnAtLocation(stack.copy());
+    }
+
+    /**
+     * About half of one bill line, in the same band as the animal wagon's sticks and planks.
+     * One item is a coin flip. Two items return one. A larger line stays near half and never returns the whole line.
+     */
+    public static int salvage(RandomSource random, int required) {
+        if(required <= 0)
+            return 0;
+        if(required == 1)
+            return random.nextInt(2);
+        if(required == 2)
+            return 1;
+        int half = required / 2;
+        int spread = Math.max(1, required / 8);
+        int min = Math.max(1, half - spread);
+        int max = Math.min(required - 1, half + spread);
+        return min + random.nextInt(max - min + 1);
+    }
+
+    /** About half of each line. {@code stored} is what was paid; this bill only names the lines. */
+    public void dropAboutHalf(Entity entity, WagonBuild stored) {
+        RandomSource random = entity.getRandom();
+        for(Need need : needs)
+            stored.dropUpTo(entity, need.test, salvage(random, need.required), fallback(need.name));
+    }
+
+    private static Item fallback(String name) {
+        return switch(name) {
+            case "sticks" -> TWItems.LONG_STICK.get();
+            case "planks" -> Items.OAK_PLANKS;
+            case "iron" -> Items.IRON_INGOT;
+            case "iron_block" -> Items.IRON_BLOCK;
+            case "string" -> Items.STRING;
+            case "wool" -> Items.WHITE_WOOL;
+            case "hay" -> Items.HAY_BLOCK;
+            case "chest" -> Items.CHEST;
+            case "lead" -> Items.LEAD;
+            case "red_dye" -> Items.RED_DYE;
+            case "yellow_dye" -> Items.YELLOW_DYE;
+            case "blue_dye" -> Items.BLUE_DYE;
+            case "bed" -> Items.WHITE_BED;
+            case "log" -> Items.OAK_LOG;
+            case "brick" -> Items.BRICK;
+            default -> Items.OAK_PLANKS;
+        };
     }
 
     /** Drops up to {@code amount} stored items of this kind. The remainder uses {@code fallback}. */
