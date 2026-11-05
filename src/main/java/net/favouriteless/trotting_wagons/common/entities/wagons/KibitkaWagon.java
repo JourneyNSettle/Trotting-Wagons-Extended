@@ -166,7 +166,7 @@ public class KibitkaWagon extends AbstractInventoryWagon {
     }
 
     @Override
-    public WheelSag wheelSag() {
+    protected WheelSag posedWheelSag() {
         int mask = getWheelMask() & 0x0F;
         if(Integer.bitCount(mask) == 0)
             return new WheelSag(0, 0, bareDrop());

@@ -168,11 +168,11 @@ public class BarrelWagon extends AbstractWagon implements MenuProvider {
 
     /** One remaining wheel settles onto the frame. A diagonal pair uses the shared three-point pose. */
     @Override
-    public WheelSag wheelSag() {
+    protected WheelSag posedWheelSag() {
         int mask = getWheelMask() & 0x0F;
         int count = Integer.bitCount(mask);
         if(count != 1)
-            return super.wheelSag();
+            return super.posedWheelSag();
         int key = mask;
         for(int slot = 0; slot < WHEEL_COUNT; slot++) {
             int kind = getWheelKind(slot).ordinal();

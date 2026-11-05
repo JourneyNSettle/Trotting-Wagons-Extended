@@ -27,6 +27,7 @@ import net.minecraft.network.syncher.SynchedEntityData.Builder;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.EntityTypeTags;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.util.Mth;
@@ -52,6 +53,7 @@ import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.AABB;
@@ -92,9 +94,13 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
     private static final EntityDataAccessor<Float> DATA_CURRENT_SPEED = SynchedEntityData.defineId(AbstractWagon.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Float> DATA_MAX_SPEED = SynchedEntityData.defineId(AbstractWagon.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<String> DATA_REPAIR = SynchedEntityData.defineId(AbstractWagon.class, EntityDataSerializers.STRING);
+    /** 0 riding, 1 settled on soft ground. Synced so the body drop matches the server. */
+    private static final EntityDataAccessor<Float> DATA_BOG = SynchedEntityData.defineId(AbstractWagon.class, EntityDataSerializers.FLOAT);
     public static final int REPAIR_SLOTS = 4;
     private static final int WHEEL_DURABILITY = 100;
     private static final double WIDE_WHEEL_FACTOR = 0.8D;
+    /** Twelve seconds from firm ground to a full settle, and the same to climb back out. */
+    private static final float BOG_STEP = 1.0F / 240.0F;
     private static final int WHEEL_BREAK_BELOW = 20;
 
     public static final double GRAVITY = 0.04D;
@@ -393,6 +399,7 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         if(!hasAllWheels() || holdsTravel())
             currentSpeed = 0;
 
+        tickBog();
         handleSteering();
         handleAcceleration();
 
@@ -487,7 +494,51 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
             speed *= WIDE_WHEEL_FACTOR;
         speed *= groundSpeedFactor();
         speed *= harnessSpeedFactor();
+        speed *= 1.0D - bogDepth();
         return speed;
+    }
+
+    /** Narrow wheels dig into soil, sand, gravel, and snow. Four wide wheels do not. A dirt path stays firm. */
+    private void tickBog() {
+        float bog = bogDepth();
+        float next = sinking() ? Math.min(1.0F, bog + BOG_STEP) : Math.max(0.0F, bog - BOG_STEP);
+        if(next != bog)
+            entityData.set(DATA_BOG, next);
+    }
+
+    /** A parked wagon stays up. Rolling, or a gear above zero, starts the settle, and it then runs to the bottom. */
+    private boolean sinking() {
+        if(!hasAllWheels() || wheelSet() == WheelSet.WIDE || !onSoftGround())
+            return false;
+        return bogDepth() > 0.0F || Math.abs(currentSpeed) > 1.0E-4D || getSpeedLevel() > 0;
+    }
+
+    private boolean onSoftGround() {
+        for(WagonParts.Part part : WagonParts.of(this)) {
+            if(part.kind() != WagonParts.Kind.WHEEL || (getWheelMask() & (1 << part.index())) == 0)
+                continue;
+            if(softGround(blockUnderWheel(part)))
+                return true;
+        }
+        return false;
+    }
+
+    /** Dirt-family blocks, sand, gravel, and snow. Dirt path is a road and is not soft. */
+    private static boolean softGround(BlockState state) {
+        if(state.is(BlockTags.DIRT) || state.is(BlockTags.SAND))
+            return true;
+        if(state.is(Blocks.GRAVEL) || state.is(Blocks.SUSPICIOUS_GRAVEL))
+            return true;
+        return state.is(Blocks.SNOW) || state.is(Blocks.SNOW_BLOCK) || state.is(Blocks.POWDER_SNOW);
+    }
+
+    private BlockState blockUnderWheel(WagonParts.Part part) {
+        Vec3 center = WagonParts.worldCenter(this, part);
+        return level().getBlockState(BlockPos.containing(center.x, getY() - 1.0E-5D, center.z));
+    }
+
+    public float bogDepth() {
+        return entityData.get(DATA_BOG);
     }
 
     /** Two-animal tongue stays at 1. Shafts for one animal multiply the finished speed. */
@@ -505,9 +556,7 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         for(WagonParts.Part part : WagonParts.of(this)) {
             if(part.kind() != WagonParts.Kind.WHEEL || (getWheelMask() & (1 << part.index())) == 0)
                 continue;
-            Vec3 center = WagonParts.worldCenter(this, part);
-            BlockPos pos = BlockPos.containing(center.x, getY() - 1.0E-5D, center.z);
-            slowest = Math.min(slowest, BlockRunnerSpeed.factor(level().getBlockState(pos).getBlock()));
+            slowest = Math.min(slowest, BlockRunnerSpeed.factor(blockUnderWheel(part).getBlock()));
         }
         return slowest == Double.POSITIVE_INFINITY ? 1.0D : slowest;
     }
@@ -894,6 +943,7 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         builder.define(DATA_CURRENT_SPEED, 0.0F);
         builder.define(DATA_MAX_SPEED, 0.0F);
         builder.define(DATA_REPAIR, ",,,");
+        builder.define(DATA_BOG, 0.0F);
     }
 
     @Override
@@ -916,6 +966,8 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         entityData.set(DATA_LOCKED, nbt.getBoolean("locked"));
         if(nbt.contains("speedLevel"))
             setSpeedLevel(nbt.getInt("speedLevel"));
+        if(nbt.contains("Bog"))
+            entityData.set(DATA_BOG, nbt.getFloat("Bog"));
         UUID left = nbt.hasUUID("leftHorse") ? nbt.getUUID("leftHorse") : null;
         UUID right = nbt.hasUUID("rightHorse") ? nbt.getUUID("rightHorse") : null;
         if(hitchSlots() > 1 && nbt.getByte("hitchSides") < HITCH_SIDES) {
@@ -997,6 +1049,7 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         ContainerHelper.saveAllItems(repairTag, repair, registryAccess());
         nbt.put("Repair", repairTag);
         nbt.putString("RepairNeeds", repairNeeds());
+        nbt.putFloat("Bog", bogDepth());
         nbt.putBoolean("BuiltFromBase", builtFromBase);
         if(builtFromBase)
             builtPlan.save(nbt, "BuiltPlan", registryAccess());
@@ -1752,6 +1805,16 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
     private WheelSag settledPose;
 
     public WheelSag wheelSag() {
+        WheelSag pose = posedWheelSag();
+        float bog = bogDepth();
+        if(bog <= 0.0F)
+            return pose;
+        float stay = 1.0F - bog;
+        return new WheelSag(pose.pitch() * stay, pose.roll() * stay, pose.drop() + (bareDrop() - pose.drop()) * bog);
+    }
+
+    /** Pose from the wheels that are fitted. Soft ground blends this toward {@link #bareDrop()}. */
+    protected WheelSag posedWheelSag() {
         boolean fl = wheelOn(0);
         boolean fr = wheelOn(1);
         boolean rl = wheelOn(2);
