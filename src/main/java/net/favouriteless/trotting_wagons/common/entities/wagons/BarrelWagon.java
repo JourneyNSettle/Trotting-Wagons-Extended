@@ -1,6 +1,7 @@
 package net.favouriteless.trotting_wagons.common.entities.wagons;
 
 import net.favouriteless.trotting_wagons.ServerConfig;
+import net.favouriteless.trotting_wagons.common.entities.WagonBuild;
 import net.favouriteless.trotting_wagons.common.entities.base.AbstractWagon;
 import net.favouriteless.trotting_wagons.common.entities.base.WagonSeat;
 import net.favouriteless.trotting_wagons.common.init.TWItems;
@@ -379,6 +380,15 @@ public class BarrelWagon extends AbstractWagon implements MenuProvider {
             loading = false;
         }
         super.onDestroyed(dropItem);
+    }
+
+    @Override
+    protected void dropDestructionLoot() {
+        if(builtFromBase()) {
+            WagonBuild.barrel().dropAboutHalf(this, builtPlan());
+            return;
+        }
+        super.dropDestructionLoot();
     }
 
     @Override

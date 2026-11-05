@@ -589,12 +589,6 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
                 return InteractionResult.sidedSuccess(isClientSide);
             }
 
-            if(stack.is(ItemTags.AXES)) {
-                if(!isClientSide && player.getUUID().equals(owner))
-                    onDestroyed(true);
-                return InteractionResult.sidedSuccess(isClientSide);
-            }
-
             if(acceptsDye() && TrottingWagons.DYE_ITEMS.containsKey(item)) {
                 setColor(TrottingWagons.DYE_ITEMS.get(item));
                 return InteractionResult.sidedSuccess(isClientSide);

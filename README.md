@@ -1,10 +1,10 @@
 # Trotting Wagons Extended
 
-Horse-drawn wagons for Minecraft 1.21.1. Version **0.9.2** is a public test build: it is meant to be played, and it is not a finished 1.0.
+Horse-drawn wagons for Minecraft 1.21.1. Version **0.9.3** is a public test build: it is meant to be played, and it is not a finished 1.0.
 
 This repository continues [Favouriteless/Trotting-Wagons](https://github.com/Favouriteless/Trotting-Wagons). The mod id is still `trotting_wagons`, so old worlds keep their wagons. The name in the game is Trotting Wagons Extended.
 
-The current test jar is on the [0.9.2 release](https://github.com/JourneyNSettle/Trotting-Wagons-Extended/releases/tag/v0.9.2).
+The current test jar is on the [0.9.3 release](https://github.com/JourneyNSettle/Trotting-Wagons-Extended/releases/tag/v0.9.3).
 
 ## Requirements
 
@@ -20,17 +20,19 @@ The current test jar is on the [0.9.2 release](https://github.com/JourneyNSettle
 
 ## Install
 
-Put `trotting-wagons-extended-0.9.2.jar`, GeckoLib, and BoneHitboxLib in the `mods` folder. The server and every player need the same copy.
+Put `trotting-wagons-extended-0.9.3.jar`, GeckoLib, and BoneHitboxLib in the `mods` folder. The server and every player need the same copy.
 
 ## Wagon base
 
 Craft a long stick from sticks and string, then a chassis from long sticks, sticks, string, and a slimeball. Place the chassis and right-click it with planks and iron ingots. One click adds one item. Sneak adds as many as the stage still needs, up to 16 planks and 4 iron ingots. When both are full, the chassis becomes a wagon base. The chassis does not stop the player. The finished base does, through a BoneHitboxLib hitbox. Break either with an axe to get the chassis item and the materials back.
 
-New wagons are in the **Trotting Wagons Extended** creative tab. The horse whip and all three wheel types also have crafting recipes. The wagons themselves are built from the base.
+The horse whip, tongue, shafts, wheels, long stick, and chassis are in the **Trotting Wagons Extended** creative tab. Finished wagons are not in that tab, and JEI does not list them. They are built from the base. The whip, both harnesses, the long stick, the chassis, and all three wheel types have crafting recipes.
 
 ## Driving
 
-Sit in the driver seat. Right-click with the horse whip raises the gear by one, up to 4. Left-click with the whip in the main hand lowers it by one. Gear 0 is stopped. The wagon does not drop from 4 back to 0 on its own. A bar above the hotbar shows speed only to the driver.
+Sit in the driver seat. The view switches to third person behind the wagon, and it returns to first person when you leave that seat. In third person the mouse wheel sets the camera distance, from 1 to 10 blocks, starting at 6. Scrolling closer than 1 block switches to first person. Scrolling out from first person returns to third person. Scrolling does not change the hotbar slot while you are driving. Passengers keep the normal camera.
+
+Right-click with the horse whip raises the gear by one, up to 4. Left-click with the whip in the main hand lowers it by one. Gear 0 is stopped. The wagon does not drop from 4 back to 0 on its own. A bar above the hotbar shows speed only to the driver.
 
 Reverse is shift-right-click with the whip. Reverse uses the same gear at a quarter of the forward target.
 
@@ -61,7 +63,7 @@ Right-click a wagon to sit in the nearest free seat. Opening your inventory whil
 
 From the menu you can move passengers and animals between seats, hitch and unhitch draft animals, change wheels, repair the wagon, and use that wagon's own cargo. Villagers and wandering traders count as passengers. They can use player and universal seats. They cannot drive.
 
-The owner is the player who placed the wagon. Only the owner can break it, and only with an axe, while sneaking.
+The owner is the player who placed the wagon. Sneak-right-click with an axe no longer picks the wagon up. Wearing its health down destroys it. Wheels, the harness, and cargo still drop. A wagon built on the base drops about half of each material from that build. One item is a coin flip, two items return one, and larger lines stay near half. The animal wagon keeps its own ranges. The conestoga, the royal wagon, and the armored wagon do not drop the old scrap of oak planks and iron.
 
 ## Wagons
 

@@ -1,6 +1,7 @@
 package net.favouriteless.trotting_wagons.common.entities.wagons;
 
 import net.favouriteless.trotting_wagons.ServerConfig;
+import net.favouriteless.trotting_wagons.common.entities.WagonBuild;
 import net.favouriteless.trotting_wagons.common.entities.base.AbstractWagon;
 import net.favouriteless.trotting_wagons.common.entities.base.WagonSeat;
 import net.favouriteless.trotting_wagons.common.init.TWItems;
@@ -292,6 +293,15 @@ public class PassengerWagon extends AbstractWagon implements MenuProvider {
     private void removeLightBlock(BlockPos pos) {
         if(pos != null && level().getBlockState(pos).is(Blocks.LIGHT))
             level().setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
+    }
+
+    @Override
+    protected void dropDestructionLoot() {
+        if(builtFromBase()) {
+            WagonBuild.passenger().dropAboutHalf(this, builtPlan());
+            return;
+        }
+        super.dropDestructionLoot();
     }
 
     @Override

@@ -10,6 +10,7 @@ import net.favouriteless.trotting_wagons.common.items.HorseWhipItem;
 import net.favouriteless.trotting_wagons.common.network.packets.HitchAnimalPayload;
 import net.favouriteless.trotting_wagons.common.network.packets.OpenWagonMenuPayload;
 import net.favouriteless.trotting_wagons.common.network.packets.WhipLowerGearPayload;
+import net.minecraft.client.CameraType;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -25,6 +26,7 @@ import net.neoforged.neoforge.client.event.RenderLivingEvent;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.CalculateDetachedCameraDistanceEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.InputEvent;
 import net.neoforged.neoforge.client.event.RenderGuiEvent;
@@ -41,6 +43,12 @@ public class TWClientEvents {
             GLFW.GLFW_KEY_R,
             "key.categories.trotting_wagons"
     );
+
+    /** Small Ships scrolls the helm camera from 1 to 20. A wagon stops at half of that. */
+    private static final double DRIVER_ZOOM_MIN = 1.0D;
+    private static final double DRIVER_ZOOM_MAX = 10.0D;
+    private static double driverZoom = 6.0D;
+    private static boolean wasDriver;
 
     @SubscribeEvent
     public static void onRenderHarnessed(RenderLivingEvent.Pre<?, ?> event) {
@@ -61,13 +69,60 @@ public class TWClientEvents {
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
         Minecraft minecraft = Minecraft.getInstance();
-        if(minecraft.player == null || minecraft.screen != null)
+        if(minecraft.player == null)
+            return;
+
+        boolean driver = driving(minecraft);
+        if(driver && !wasDriver)
+            minecraft.options.setCameraType(CameraType.THIRD_PERSON_BACK);
+        else if(!driver && wasDriver)
+            minecraft.options.setCameraType(CameraType.FIRST_PERSON);
+        wasDriver = driver;
+
+        if(minecraft.screen != null)
             return;
 
         while(HITCH_KEY.consumeClick()) {
             if(minecraft.player.getVehicle() instanceof Mob)
                 PacketDistributor.sendToServer(new HitchAnimalPayload());
         }
+    }
+
+    /** Third-person distance while the local player is the driver. Walls still cut it short. */
+    @SubscribeEvent
+    public static void onDriverCamera(CalculateDetachedCameraDistanceEvent event) {
+        if(driving(Minecraft.getInstance()))
+            event.setDistance((float)driverZoom);
+    }
+
+    /** Scroll up moves closer. The closest step is first person. Scroll down backs out, and the hotbar stays put. */
+    @SubscribeEvent
+    public static void onDriverScroll(InputEvent.MouseScrollingEvent event) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if(!driving(minecraft))
+            return;
+        double delta = event.getScrollDeltaY();
+        if(delta == 0.0D)
+            return;
+        if(minecraft.options.getCameraType().isFirstPerson()) {
+            if(delta < 0.0D)
+                minecraft.options.setCameraType(CameraType.THIRD_PERSON_BACK);
+            event.setCanceled(true);
+            return;
+        }
+        double next = driverZoom - delta;
+        if(next < DRIVER_ZOOM_MIN) {
+            driverZoom = DRIVER_ZOOM_MIN;
+            minecraft.options.setCameraType(CameraType.FIRST_PERSON);
+        } else
+            driverZoom = Math.min(DRIVER_ZOOM_MAX, next);
+        event.setCanceled(true);
+    }
+
+    private static boolean driving(Minecraft minecraft) {
+        return minecraft.player != null
+                && minecraft.player.getVehicle() instanceof AbstractWagon wagon
+                && wagon.getControllingPassenger() == minecraft.player;
     }
 
     @SubscribeEvent

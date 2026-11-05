@@ -2,6 +2,7 @@ package net.favouriteless.trotting_wagons.common.entities.wagons;
 
 import net.favouriteless.trotting_wagons.ServerConfig;
 import net.favouriteless.trotting_wagons.common.KibitkaSpawnMemory;
+import net.favouriteless.trotting_wagons.common.entities.WagonBuild;
 import net.favouriteless.trotting_wagons.common.entities.base.AbstractInventoryWagon;
 import net.favouriteless.trotting_wagons.common.entities.base.WagonSeat;
 import net.favouriteless.trotting_wagons.common.init.TWItems;
@@ -436,6 +437,15 @@ public class KibitkaWagon extends AbstractInventoryWagon {
             }
         }
         super.onDestroyed(dropItem);
+    }
+
+    @Override
+    protected void dropDestructionLoot() {
+        if(builtFromBase()) {
+            WagonBuild.kibitka().dropAboutHalf(this, builtPlan());
+            return;
+        }
+        super.dropDestructionLoot();
     }
 
     @Override

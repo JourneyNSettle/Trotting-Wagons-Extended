@@ -34,6 +34,14 @@ license="${mod_license}"
     side="BOTH"
 
 [[dependencies.${mod_id}]]
+    modId="jei"
+    type="optional"
+    mandatory=false
+    versionRange="*"
+    ordering="NONE"
+    side="CLIENT"
+
+[[dependencies.${mod_id}]]
     modId="bonehitboxlib"
     type="required"
     mandatory=true

@@ -74,12 +74,19 @@ repositories {
 			includeGroup('fuzs.forgeconfigapiport')
 		}
 	}
+	exclusiveContent {
+		forRepository { maven { url = 'https://maven.blamejared.com' } }
+		filter {
+			includeGroup('mezz.jei')
+		}
+	}
 }
 
 dependencies {
     implementation "software.bernie.geckolib:geckolib-neoforge-${minecraft_version}:${geckolib_version}"
     compileOnly 'com.kltyton:bonehitboxlib-common-1.21.1:0.3.0'
     runtimeOnly 'com.kltyton:bonehitboxlib-neoforge-1.21.1:0.3.0'
+    compileOnly 'mezz.jei:jei-1.21.1-neoforge-api:19.21.0.247'
 }
 
 processResources {
