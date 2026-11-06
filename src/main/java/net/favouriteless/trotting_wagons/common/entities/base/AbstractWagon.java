@@ -1410,6 +1410,8 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
     public static boolean isAllowedPuller(Entity entity) {
         if(entity instanceof LivingEntity living && living.isBaby())
             return false;
+        if(entity.getType().is(TrottingWagons.DRAFT_ANIMALS))
+            return true;
         try {
             return ServerConfig.INSTANCE.allowedEntities.get().contains(entity.getType().builtInRegistryHolder().key().location().toString());
         } catch(IllegalStateException ignored) {

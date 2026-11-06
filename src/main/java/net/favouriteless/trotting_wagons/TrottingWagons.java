@@ -27,6 +27,7 @@ public class TrottingWagons {
     public static final String MOD_ID = "trotting_wagons";
     public static final Logger LOGGER = LogUtils.getLogger();
 
+    public static final TagKey<EntityType<?>> DRAFT_ANIMALS = TagKey.create(Registries.ENTITY_TYPE, id("draft_animals"));
     public static final TagKey<EntityType<?>> CANNOT_MOUNT_WAGON = TagKey.create(Registries.ENTITY_TYPE, id("cannot_mount_wagon"));
     public static final TagKey<EntityType<?>> LARGE_WAGON_PASSENGER = TagKey.create(Registries.ENTITY_TYPE, id("large_wagon_passenger"));
     public static final TagKey<EntityType<?>> PIGS = TagKey.create(Registries.ENTITY_TYPE, id("pigs"));
