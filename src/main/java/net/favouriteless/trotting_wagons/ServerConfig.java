@@ -77,7 +77,7 @@ public class ServerConfig {
     public final DoubleValue bigCartTurnRate;
 
     public ServerConfig(Builder builder) {
-        this.allowedEntities = builder.comment("EntityTypes allowed to pull wagons").defineList("allowed_entities", List.of(
+        this.allowedEntities = builder.comment("Extra entity ids allowed to pull wagons. The tag trotting_wagons:draft_animals is always allowed.").defineList("allowed_entities", List.of(
                 "minecraft:horse"
         ), e -> true);
         builder.push("Conestoga Wagon Options");

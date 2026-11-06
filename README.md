@@ -42,7 +42,7 @@ Top speed is the slowest living draft animal, times the wagon, times the wheels,
 
 ## Hitching
 
-The hitch key is **R**. While you are riding an allowed animal, it sends that animal to a free hitch point within 1.5 blocks. The default allowed animal is `minecraft:horse`. Babies are refused. Change the list in `config/trotting_wagons-server.toml` under `allowed_entities`.
+The hitch key is **R**. While you are riding an allowed animal, it sends that animal to a free hitch point within 1.5 blocks. The tag `trotting_wagons:draft_animals` allows `minecraft:horse`. Babies are refused. Add more ids in `config/trotting_wagons-server.toml` under `allowed_entities`, or append them to that tag from another mod.
 
 Every wagon has a harness slot.
 
