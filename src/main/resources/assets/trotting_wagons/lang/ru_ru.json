@@ -109,7 +109,5 @@
   "gui.trotting_wagons.condition.critical": "Критическая",
   "gui.trotting_wagons.unlock": "Разблокировать",
   "advancements.trotting_wagons.sinner.title": "Грешник",
-  "advancements.trotting_wagons.sinner.description": "Запрягите двух животных разных видов в одну повозку",
-  "advancements.trotting_wagons.pig_ride.title": "Свинья-пассажир",
-  "advancements.trotting_wagons.pig_ride.description": "Сядьте в повозку для животных, в которой сидит свинья"
+  "advancements.trotting_wagons.sinner.description": "Запрягите двух животных разных видов в одну повозку"
 }
