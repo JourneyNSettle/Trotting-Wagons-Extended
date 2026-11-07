@@ -1,16 +1,15 @@
 package net.favouriteless.trotting_wagons.common.items;
 
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 
 import java.util.List;
 
-public class WheelItem extends Item {
+public class WheelItem extends PartItem {
 
-    public WheelItem(Properties properties) {
-        super(properties);
+    public WheelItem(Properties properties, String model) {
+        super(properties, model);
     }
 
     @Override

@@ -6,19 +6,21 @@ import net.favouriteless.trotting_wagons.common.menus.BaseBuildMenu;
 import net.favouriteless.trotting_wagons.common.network.packets.ClearBaseBuildPayload;
 import net.favouriteless.trotting_wagons.common.network.packets.SelectBaseBuildPayload;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 public class BaseBuildScreen extends net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<BaseBuildMenu> {
 
     private static final ResourceLocation FRAME = TrottingWagons.id("textures/gui/icons/big_slot.png");
+    private static final ResourceLocation PANEL = ResourceLocation.withDefaultNamespace("popup/background");
 
     public BaseBuildScreen(BaseBuildMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
@@ -42,7 +44,7 @@ public class BaseBuildScreen extends net.minecraft.client.gui.screens.inventory.
 
     @Override
     protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
-        graphics.fill(leftPos, topPos, leftPos + imageWidth, topPos + imageHeight, 0xC0101010);
+        graphics.blitSprite(PANEL, leftPos, topPos, imageWidth, imageHeight);
     }
 
     @Override
@@ -59,10 +61,13 @@ public class BaseBuildScreen extends net.minecraft.client.gui.screens.inventory.
         private final String id;
         private final BaseWagon wagon;
 
+        private final ItemStack icon;
+
         private ChoiceButton(int x, int y, String id, BaseWagon wagon) {
             super(x, y, 26, 26, Component.translatable("item.trotting_wagons." + id));
             this.id = id;
             this.wagon = wagon;
+            this.icon = new ItemStack(BuiltInRegistries.ITEM.get(TrottingWagons.id(id)));
             setTooltip(Tooltip.create(getMessage()));
         }
 
@@ -72,6 +77,7 @@ public class BaseBuildScreen extends net.minecraft.client.gui.screens.inventory.
             active = !locked;
             setTooltip(Tooltip.create(locked ? Component.translatable("gui.trotting_wagons.base_build.locked") : getMessage()));
             graphics.blit(FRAME, getX(), getY(), 0, 0, 26, 26, 26, 26);
+            graphics.renderItem(icon, getX() + 5, getY() + 5);
             if(locked)
                 graphics.fill(getX(), getY(), getX() + 26, getY() + 26, 0x88000000);
             if(wagon != null && id.equals(wagon.choice())) {
@@ -82,17 +88,6 @@ public class BaseBuildScreen extends net.minecraft.client.gui.screens.inventory.
                 graphics.fill(x, y, x + 1, y + 26, 0xFFFFFF55);
                 graphics.fill(x + 25, y, x + 26, y + 26, 0xFFFFFF55);
             }
-            graphics.pose().pushPose();
-            graphics.pose().scale(0.45F, 0.45F, 1.0F);
-            int textX = (int)((getX() + 2) / 0.45F);
-            int textY = (int)((getY() + 9) / 0.45F);
-            graphics.drawString(net.minecraft.client.Minecraft.getInstance().font, shortName(), textX, textY, 0xFFFFFF, false);
-            graphics.pose().popPose();
-        }
-
-        private String shortName() {
-            String text = getMessage().getString();
-            return text.length() > 8 ? text.substring(0, 8) : text;
         }
 
         @Override

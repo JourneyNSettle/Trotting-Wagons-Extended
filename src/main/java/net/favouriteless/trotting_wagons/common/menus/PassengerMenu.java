@@ -11,7 +11,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 
 public class PassengerMenu extends AbstractContainerMenu {
 
@@ -101,7 +100,7 @@ public class PassengerMenu extends AbstractContainerMenu {
             return ItemStack.EMPTY;
         } else if(item.is(TrottingWagons.WAGON_WHEELS)) {
             moved = moveItemStackTo(item, 0, WHEEL_END, false);
-        } else if(item.is(Items.LANTERN)) {
+        } else if(item.is(TrottingWagons.LANTERNS)) {
             moved = moveItemStackTo(item, WHEEL_END, LANTERN_END, false);
         } else if(TWItems.isHarness(item)) {
             moved = moveItemStackTo(item, harnessSlot, harnessSlot + 1, false);

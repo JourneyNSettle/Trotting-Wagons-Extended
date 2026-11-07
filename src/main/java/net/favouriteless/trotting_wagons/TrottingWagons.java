@@ -13,6 +13,7 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.Block;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
@@ -32,6 +33,21 @@ public class TrottingWagons {
     public static final TagKey<EntityType<?>> LARGE_WAGON_PASSENGER = TagKey.create(Registries.ENTITY_TYPE, id("large_wagon_passenger"));
     public static final TagKey<Item> WAGON_WHEELS = TagKey.create(Registries.ITEM, id("wagon_wheels"));
     public static final TagKey<Item> LOG_WAGON_CARGO = TagKey.create(Registries.ITEM, id("log_wagon_cargo"));
+    public static final TagKey<Item> IRON_INGOTS = TagKey.create(Registries.ITEM, id("iron_ingots"));
+    public static final TagKey<Item> IRON_BLOCKS = TagKey.create(Registries.ITEM, id("iron_blocks"));
+    public static final TagKey<Item> IRON_BARS = TagKey.create(Registries.ITEM, id("iron_bars"));
+    public static final TagKey<Item> STRING = TagKey.create(Registries.ITEM, id("string"));
+    public static final TagKey<Item> GLUE = TagKey.create(Registries.ITEM, id("glue"));
+    public static final TagKey<Item> CHESTS = TagKey.create(Registries.ITEM, id("chests"));
+    public static final TagKey<Item> BARRELS = TagKey.create(Registries.ITEM, id("barrels"));
+    public static final TagKey<Item> LANTERNS = TagKey.create(Registries.ITEM, id("lanterns"));
+    public static final TagKey<Item> HAY = TagKey.create(Registries.ITEM, id("hay"));
+    public static final TagKey<Item> BRICKS = TagKey.create(Registries.ITEM, id("bricks"));
+    public static final TagKey<Item> BEDS = TagKey.create(Registries.ITEM, id("beds"));
+    public static final TagKey<Item> ROPE = TagKey.create(Registries.ITEM, id("rope"));
+    public static final TagKey<Item> LONG_STICKS = TagKey.create(Registries.ITEM, id("long_sticks"));
+    public static final TagKey<Item> WOOL = TagKey.create(Registries.ITEM, id("wool"));
+    public static final TagKey<Block> SOFT_GROUND = TagKey.create(Registries.BLOCK, id("soft_ground"));
 
     public static final Map<Item, DyeColor> DYE_ITEMS = Map.ofEntries(
         Map.entry(Items.WHITE_WOOL, DyeColor.WHITE),

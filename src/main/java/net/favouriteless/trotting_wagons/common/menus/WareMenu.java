@@ -11,7 +11,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 
 public class WareMenu extends AbstractContainerMenu {
 
@@ -186,7 +185,7 @@ public class WareMenu extends AbstractContainerMenu {
         } else if(item.is(TrottingWagons.WAGON_WHEELS)) {
             moved = fill(item, 0, AbstractWagon.WHEEL_COUNT);
             specific = true;
-        } else if(item.is(Items.LANTERN)) {
+        } else if(item.is(TrottingWagons.LANTERNS)) {
             moved = fill(item, AbstractWagon.WHEEL_COUNT, chestStart);
             specific = true;
         } else if(WareWagon.isChest(copy) || (wagon != null && wagon.isRepairMaterial(item))) {

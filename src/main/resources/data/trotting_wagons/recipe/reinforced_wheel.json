@@ -7,8 +7,8 @@
     "IBI"
   ],
   "key": {
-    "I": { "item": "minecraft:iron_ingot" },
-    "B": { "item": "minecraft:iron_bars" }
+    "I": { "tag": "trotting_wagons:iron_ingots" },
+    "B": { "tag": "trotting_wagons:iron_bars" }
   },
   "result": { "id": "trotting_wagons:reinforced_wheel" }
 }

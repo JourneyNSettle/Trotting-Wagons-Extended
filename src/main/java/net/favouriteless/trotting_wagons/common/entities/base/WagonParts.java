@@ -189,7 +189,7 @@ public final class WagonParts {
                     return true;
             }
         }
-        if(stack.is(Items.LANTERN)) {
+        if(stack.is(TrottingWagons.LANTERNS)) {
             if(wagon instanceof DebugWagon debug && !debug.hasLantern())
                 return true;
             if(wagon instanceof PassengerWagon passenger && passenger.firstEmptyLantern() >= 0)
@@ -278,7 +278,7 @@ public final class WagonParts {
             wagon.getWheels().setStackInSlot(slot, one);
             return;
         }
-        if(stack.is(Items.LANTERN)) {
+        if(stack.is(TrottingWagons.LANTERNS)) {
             if(wagon instanceof DebugWagon debug && !debug.hasLantern()) {
                 debug.getLanternItems().setStackInSlot(0, one(player, stack));
                 return;

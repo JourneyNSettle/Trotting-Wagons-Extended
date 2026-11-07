@@ -37,6 +37,7 @@
   "gui.trotting_wagons.build.sticks": "Long Sticks %s/%s",
   "gui.trotting_wagons.build.planks": "Planks %s/%s",
   "gui.trotting_wagons.build.iron": "Iron Ingots %s/%s",
+  "gui.trotting_wagons.build.gearbox": "Gear Box %s/%s",
   "gui.trotting_wagons.build.hay": "Hay Bales %s/%s",
   "gui.trotting_wagons.build.wool": "Wool %s/%s",
   "gui.trotting_wagons.build.iron_block": "Iron Blocks %s/%s",

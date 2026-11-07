@@ -1,0 +1,33 @@
+{
+	"format_version": "1.12.0",
+	"minecraft:geometry": [
+		{
+			"description": {
+				"identifier": "geometry.tongue",
+				"texture_width": 256,
+				"texture_height": 256,
+				"visible_bounds_width": 7,
+				"visible_bounds_height": 4,
+				"visible_bounds_offset": [0, 1, 0]
+			},
+			"bones": [
+				{
+					"name": "Tongue",
+					"pivot": [0, 0, 0],
+					"cubes": [
+						{"origin": [4.24249, -2.57, 22.29052], "size": [2, 3, 22], "pivot": [5.24249, -1.07, 33.29052], "rotation": [0, 25, 0], "uv": [91, 87]},
+						{"origin": [-6.24249, -2.57, 22.29052], "size": [2, 3, 22], "pivot": [-5.24249, -1.07, 33.29052], "rotation": [0, -25, 0], "uv": [139, 87]},
+						{"origin": [-1.5, -2.57, -1.10148], "size": [3, 3, 25], "uv": [162, 84]},
+						{"origin": [-1.5, -2.57, -24.10148], "size": [3, 3, 23], "uv": [68, 131]},
+						{"origin": [-2.5, -2.67, -2.10148], "size": [5, 4, 4], "uv": [158, 16]},
+						{"origin": [-2.5, -2.67, -25.10148], "size": [5, 4, 4], "uv": [158, 16]},
+						{"origin": [-1.5, -0.57, -24.10148], "size": [3, 2, 8], "pivot": [0, 0.43, -20.10148], "rotation": [0, -90, 0], "uv": [72, 108]},
+						{"origin": [3, -0.07, -21.98609], "size": [13, 6, 4], "uv": [158, 6]},
+						{"origin": [-16, -0.07, -21.98609], "size": [13, 6, 4], "uv": [158, 6], "mirror": true},
+						{"origin": [-2.5, -2.67, 15.89852], "size": [5, 4, 4], "uv": [158, 16]}
+					]
+				}
+			]
+		}
+	]
+}

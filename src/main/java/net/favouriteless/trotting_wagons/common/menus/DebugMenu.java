@@ -1,5 +1,6 @@
 package net.favouriteless.trotting_wagons.common.menus;
 
+import net.favouriteless.trotting_wagons.TrottingWagons;
 import net.favouriteless.trotting_wagons.common.entities.base.AbstractInventoryWagon;
 import net.favouriteless.trotting_wagons.common.entities.base.AbstractWagon;
 import net.favouriteless.trotting_wagons.common.entities.wagons.DebugWagon;
@@ -11,7 +12,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.BannerItem;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 
 public class DebugMenu extends AbstractWagonMenu {
 
@@ -81,9 +81,9 @@ public class DebugMenu extends AbstractWagonMenu {
         boolean fromPlayer = index >= PLAYER_START && index < bannerSlot;
         AbstractWagon wagon = getWagon();
         boolean harnessItem = TWItems.isHarness(item);
-        if(fromRepair || accessory || fromHarness || (fromPlayer && (item.getItem() instanceof BannerItem || item.is(Items.LANTERN) || harnessItem || wagon != null && wagon.isRepairMaterial(item)))) {
+        if(fromRepair || accessory || fromHarness || (fromPlayer && (item.getItem() instanceof BannerItem || item.is(TrottingWagons.LANTERNS) || harnessItem || wagon != null && wagon.isRepairMaterial(item)))) {
             ItemStack copy = item.copy();
-            int start = fromRepair || accessory || fromHarness ? PLAYER_START : item.getItem() instanceof BannerItem ? bannerSlot : item.is(Items.LANTERN) ? lanternSlot : harnessItem ? harnessSlot : repairStart;
+            int start = fromRepair || accessory || fromHarness ? PLAYER_START : item.getItem() instanceof BannerItem ? bannerSlot : item.is(TrottingWagons.LANTERNS) ? lanternSlot : harnessItem ? harnessSlot : repairStart;
             int end = fromRepair || accessory || fromHarness ? bannerSlot : start == repairStart ? slots.size() : start + 1;
             boolean moved = start == repairStart
                     ? RepairShift.fill(item, start, end, this::moveItemStackTo)

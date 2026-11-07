@@ -1,6 +1,7 @@
 package net.favouriteless.trotting_wagons.common.entities.wagons;
 
 import net.favouriteless.trotting_wagons.ServerConfig;
+import net.favouriteless.trotting_wagons.TrottingWagons;
 import net.favouriteless.trotting_wagons.common.entities.WagonBuild;
 import net.favouriteless.trotting_wagons.common.entities.base.AbstractWagon;
 import net.favouriteless.trotting_wagons.common.entities.base.WagonSeat;
@@ -25,7 +26,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.LightBlock;
@@ -83,7 +83,7 @@ public class PassengerWagon extends AbstractWagon implements MenuProvider {
     private final ItemStackHandler lanternItems = new ItemStackHandler(lantern) {
         @Override
         public boolean isItemValid(int slot, ItemStack stack) {
-            return stack.is(Items.LANTERN);
+            return stack.is(TrottingWagons.LANTERNS);
         }
 
         @Override
@@ -136,7 +136,7 @@ public class PassengerWagon extends AbstractWagon implements MenuProvider {
     @Override
     public void tick() {
         super.tick();
-        setBoundingBox(makeBoundingBox());
+        refreshBounds();
         if(!level().isClientSide && tickCount % 10 == 0)
             updateLanternLight();
     }

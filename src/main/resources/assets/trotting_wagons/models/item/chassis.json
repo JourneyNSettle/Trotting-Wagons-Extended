@@ -1,6 +1,15 @@
 {
-  "parent": "minecraft:item/generated",
-  "textures": {
-    "layer0": "trotting_wagons:item/chassis"
+  "parent": "minecraft:builtin/entity",
+  "display": {
+    "thirdperson_righthand": { "rotation": [30, 45, 0], "scale": [0.15, 0.15, 0.15] },
+    "thirdperson_lefthand": { "rotation": [30, 45, 0], "scale": [0.15, 0.15, 0.15] },
+    "firstperson_righthand": { "rotation": [30, 45, 0], "scale": [0.18, 0.18, 0.18] },
+    "firstperson_lefthand": { "rotation": [30, 45, 0], "scale": [0.18, 0.18, 0.18] },
+    "ground": { "scale": [0.15, 0.15, 0.15] },
+    "gui": {
+      "rotation": [90, 0, 0],
+      "scale": [0.242, 0.242, 0.242]
+    },
+    "fixed": { "rotation": [0, 90, 0], "scale": [0.2, 0.2, 0.2] }
   }
 }
