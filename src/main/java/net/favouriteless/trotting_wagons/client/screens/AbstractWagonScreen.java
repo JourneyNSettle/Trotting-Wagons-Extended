@@ -105,6 +105,12 @@ public abstract class AbstractWagonScreen<T extends AbstractWagonMenu> extends A
             super.renderTooltip(graphics, mouseX, mouseY);
             return;
         }
+        if(hoveredSlot instanceof net.favouriteless.trotting_wagons.common.menus.HarnessSlot) {
+            if(!tooltips.ready(hoveredSlot))
+                return;
+            graphics.renderTooltip(font, Component.translatable("gui.trotting_wagons.harness.slot"), mouseX, mouseY);
+            return;
+        }
         if(!(hoveredSlot instanceof RepairSlot repair) || !tooltips.ready(hoveredSlot))
             return;
         AbstractWagon wagon = menu.getWagon();

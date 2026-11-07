@@ -64,6 +64,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import java.util.HashMap;
 import java.util.List;
@@ -640,6 +641,9 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
                 return InteractionResult.sidedSuccess(isClientSide);
             }
 
+            if(hitchLeashedAnimal(player))
+                return InteractionResult.sidedSuccess(isClientSide);
+
             if(player.getVehicle() != this && WagonParts.take(this, player))
                 return InteractionResult.sidedSuccess(isClientSide);
         }
@@ -662,6 +666,62 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         double reach = player.entityInteractionRange();
         AABB target = getBoundingBox().inflate(boardingPickRadius());
         return target.distanceToSqr(player.getEyePosition()) <= reach * reach;
+    }
+
+    /**
+     * Shift-click on the wagon hitches one tame draft animal the player is leading.
+     * The harness item must be fitted and a hitch slot must be free. The lead comes back.
+     */
+    public boolean hitchLeashedAnimal(Player player) {
+        Mob animal = nearestLeashedPuller(player);
+        if(animal == null)
+            return false;
+        if(level().isClientSide)
+            return true;
+        if(animal.getVehicle() != null)
+            animal.stopRiding();
+        if(animal instanceof Leashable leashable && leashable.getLeashHolder() == player) {
+            leashable.dropLeash(true, false);
+            if(!player.hasInfiniteMaterials())
+                player.getInventory().placeItemBackInInventory(new ItemStack(Items.LEAD));
+        }
+        if(getHitchEntityId(Side.LEFT) < 0)
+            hitchHorse(animal, Side.LEFT);
+        else if(hitchSlots() > 1)
+            hitchHorse(animal, Side.RIGHT);
+        if(player instanceof ServerPlayer serverPlayer)
+            awardSinner(serverPlayer);
+        return true;
+    }
+
+    private Mob nearestLeashedPuller(Player player) {
+        if(!hitchOpen())
+            return null;
+        Mob best = null;
+        double bestDist = Double.MAX_VALUE;
+        AABB search = player.getBoundingBox().inflate(10.0D);
+        for(Mob mob : level().getEntitiesOfClass(Mob.class, search, mob -> ledBy(player, mob))) {
+            if(!isAllowedPuller(mob) || findHitch(mob) != null)
+                continue;
+            double dist = mob.distanceToSqr(this);
+            if(dist < bestDist) {
+                bestDist = dist;
+                best = mob;
+            }
+        }
+        return best;
+    }
+
+    private boolean hitchOpen() {
+        if(hitchSlots() < 1)
+            return false;
+        if(getHitchEntityId(Side.LEFT) < 0)
+            return true;
+        return hitchSlots() > 1 && getHitchEntityId(Side.RIGHT) < 0;
+    }
+
+    private static boolean ledBy(Player player, Mob mob) {
+        return mob instanceof Leashable leashable && leashable.getLeashHolder() == player;
     }
 
     public boolean hitchRiddenAnimal(Mob animal) {
@@ -1686,9 +1746,29 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         return Component.translatable("gui.trotting_wagons.condition." + key);
     }
 
+    private record RepairKind(Predicate<ItemStack> test, Supplier<ItemStack> icon, Supplier<Component> tooltip) {}
+
+    private static final Map<String, RepairKind> repairKinds = new HashMap<>();
+
+    /** Replaces one repair material and its empty-slot icon. Absent kinds stay vanilla. */
+    public static void setRepairKind(String name, Predicate<ItemStack> test, Supplier<ItemStack> icon) {
+        setRepairKind(name, test, icon, null);
+    }
+
+    /** Same replacement, with a fixed empty-slot hint instead of the icon's own name. */
+    public static void setRepairKind(String name, Predicate<ItemStack> test, Supplier<ItemStack> icon, Supplier<Component> tooltip) {
+        if(test == null || icon == null)
+            repairKinds.remove(name);
+        else
+            repairKinds.put(name, new RepairKind(test, icon, tooltip));
+    }
+
     public boolean acceptsRepair(int slot, ItemStack stack) {
         if(level() != null && level().getGameTime() < repairBlockedUntil)
             return false;
+        RepairKind kind = repairKinds.get(repairNeed(slot));
+        if(kind != null)
+            return kind.test().test(stack);
         return switch(repairNeed(slot)) {
             case "planks" -> stack.is(ItemTags.PLANKS);
             case "iron" -> stack.is(TrottingWagons.IRON_INGOTS);
@@ -1701,11 +1781,26 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
     }
 
     public boolean isRepairMaterial(ItemStack stack) {
-        return stack.is(ItemTags.PLANKS) || stack.is(TrottingWagons.IRON_INGOTS) || stack.is(TrottingWagons.WOOL)
-                || stack.is(Items.LEATHER) || stack.is(TrottingWagons.STRING) || stack.is(TrottingWagons.GLUE);
+        for(RepairKind kind : repairKinds.values())
+            if(kind.test().test(stack))
+                return true;
+        if(!repairKinds.containsKey("planks") && stack.is(ItemTags.PLANKS))
+            return true;
+        if(!repairKinds.containsKey("iron") && stack.is(TrottingWagons.IRON_INGOTS))
+            return true;
+        if(!repairKinds.containsKey("wool") && stack.is(TrottingWagons.WOOL))
+            return true;
+        if(!repairKinds.containsKey("leather") && stack.is(Items.LEATHER))
+            return true;
+        if(!repairKinds.containsKey("string") && stack.is(TrottingWagons.STRING))
+            return true;
+        return !repairKinds.containsKey("slime") && stack.is(TrottingWagons.GLUE);
     }
 
     public ItemStack repairIcon(int slot) {
+        RepairKind kind = repairKinds.get(repairNeed(slot));
+        if(kind != null)
+            return kind.icon().get();
         return switch(repairNeed(slot)) {
             case "planks" -> new ItemStack(Items.OAK_PLANKS);
             case "iron" -> new ItemStack(Items.IRON_INGOT);
@@ -1718,6 +1813,15 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
     }
 
     public Component repairTooltip(int slot) {
+        RepairKind kind = repairKinds.get(repairNeed(slot));
+        if(kind != null) {
+            if(kind.tooltip() != null) {
+                Component tip = kind.tooltip().get();
+                if(tip != null)
+                    return tip;
+            }
+            return kind.icon().get().getHoverName();
+        }
         return switch(repairNeed(slot)) {
             case "planks" -> Component.translatable("gui.trotting_wagons.repair.planks");
             case "wool" -> Component.translatable("gui.trotting_wagons.repair.wool");

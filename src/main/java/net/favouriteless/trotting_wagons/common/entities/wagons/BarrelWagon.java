@@ -1,8 +1,5 @@
 package net.favouriteless.trotting_wagons.common.entities.wagons;
 
-import com.kltyton.bonehitboxlib.api.bone.collision.ObbCollisionMode;
-import com.kltyton.bonehitboxlib.api.geckolib.entity.GeoBoneHitboxEntity;
-import com.kltyton.bonehitboxlib.api.registration.registrar.ObbBoneRegistrar;
 import net.favouriteless.trotting_wagons.ServerConfig;
 import net.favouriteless.trotting_wagons.TrottingWagons;
 import net.favouriteless.trotting_wagons.common.entities.WagonBuild;
@@ -32,7 +29,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.items.ItemStackHandler;
 
-public class BarrelWagon extends AbstractWagon implements MenuProvider, GeoBoneHitboxEntity {
+public class BarrelWagon extends AbstractWagon implements MenuProvider {
 
     public static final int BARRELS = 12;
     public static final int CONTENTS = 4;
@@ -106,16 +103,6 @@ public class BarrelWagon extends AbstractWagon implements MenuProvider, GeoBoneH
                 syncBarrels();
         }
     };
-
-    /** The shell is always solid. Each placed barrel adds its own bone. */
-    @Override
-    public void bonehitboxlib$registerObbBones(ObbBoneRegistrar registrar) {
-        registrar.register(GeoBoneHitboxEntity.BONEHITBOXLIB_GEO_SOURCE, "hitbox")
-                .collision(ObbCollisionMode.HARD);
-        for(int i = 1; i <= BARRELS; i++)
-            registrar.register(GeoBoneHitboxEntity.BONEHITBOXLIB_GEO_SOURCE, "Barrel_" + i)
-                    .collision(ObbCollisionMode.HARD);
-    }
 
     public BarrelWagon(EntityType<BarrelWagon> type, Level level) {
         super(type, level, 19.5D / 16D, 17D / 16D, SEATS, ServerConfig.INSTANCE.barrelSpeedEmpty.get(),
