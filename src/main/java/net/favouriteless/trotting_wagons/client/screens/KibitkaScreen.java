@@ -3,6 +3,7 @@ package net.favouriteless.trotting_wagons.client.screens;
 import net.favouriteless.trotting_wagons.TrottingWagons;
 import net.favouriteless.trotting_wagons.common.entities.base.AbstractWagon;
 import net.favouriteless.trotting_wagons.common.entities.wagons.KibitkaWagon;
+import net.favouriteless.trotting_wagons.common.menus.HarnessSlot;
 import net.favouriteless.trotting_wagons.common.menus.KibitkaMenu;
 import net.favouriteless.trotting_wagons.common.menus.RepairSlot;
 import net.favouriteless.trotting_wagons.common.network.packets.KibitkaRespawnPayload;
@@ -143,6 +144,21 @@ public class KibitkaScreen extends AbstractContainerScreen<KibitkaMenu> {
         if(SeatButton.finishDrag(mouseX, mouseY))
             return true;
         return super.mouseReleased(mouseX, mouseY, button);
+    }
+
+    @Override
+    protected void renderTooltip(GuiGraphics graphics, int mouseX, int mouseY) {
+        if(hoveredSlot != null && hoveredSlot.hasItem()) {
+            super.renderTooltip(graphics, mouseX, mouseY);
+            return;
+        }
+        if(hoveredSlot instanceof HarnessSlot)
+            graphics.renderTooltip(font, Component.translatable("gui.trotting_wagons.harness.slot"), mouseX, mouseY);
+        else if(hoveredSlot instanceof RepairSlot repair && menu.getWagon() != null) {
+            Component tip = menu.getWagon().repairTooltip(repair.getSlotIndex());
+            if(tip != null)
+                graphics.renderTooltip(font, tip, mouseX, mouseY);
+        }
     }
 
     @Override

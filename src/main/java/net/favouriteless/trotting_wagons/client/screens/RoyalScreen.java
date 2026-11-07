@@ -3,6 +3,7 @@ package net.favouriteless.trotting_wagons.client.screens;
 import net.favouriteless.trotting_wagons.TrottingWagons;
 import net.favouriteless.trotting_wagons.common.entities.base.AbstractWagon;
 import net.favouriteless.trotting_wagons.common.entities.wagons.RoyalWagon;
+import net.favouriteless.trotting_wagons.common.menus.HarnessSlot;
 import net.favouriteless.trotting_wagons.common.menus.RepairSlot;
 import net.favouriteless.trotting_wagons.common.menus.RoyalMenu;
 import net.minecraft.client.gui.GuiGraphics;
@@ -111,6 +112,12 @@ public class RoyalScreen extends AbstractContainerScreen<RoyalMenu> {
         if(hoveredSlot != null && hoveredSlot.hasItem()) {
             tooltips.ready(null);
             super.renderTooltip(graphics, mouseX, mouseY);
+            return;
+        }
+        if(hoveredSlot instanceof HarnessSlot) {
+            if(!tooltips.ready(hoveredSlot))
+                return;
+            graphics.renderTooltip(font, Component.translatable("gui.trotting_wagons.harness.slot"), mouseX, mouseY);
             return;
         }
         if(!(hoveredSlot instanceof RepairSlot repair) || !tooltips.ready(hoveredSlot))

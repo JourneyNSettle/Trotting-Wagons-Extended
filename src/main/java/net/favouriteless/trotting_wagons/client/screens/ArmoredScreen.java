@@ -3,6 +3,7 @@ package net.favouriteless.trotting_wagons.client.screens;
 import net.favouriteless.trotting_wagons.TrottingWagons;
 import net.favouriteless.trotting_wagons.common.entities.base.AbstractWagon;
 import net.favouriteless.trotting_wagons.common.menus.ArmoredMenu;
+import net.favouriteless.trotting_wagons.common.menus.HarnessSlot;
 import net.favouriteless.trotting_wagons.common.menus.RepairSlot;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -109,6 +110,12 @@ public class ArmoredScreen extends AbstractContainerScreen<ArmoredMenu> {
         if(hoveredSlot != null && hoveredSlot.hasItem()) {
             tooltips.ready(null);
             super.renderTooltip(graphics, mouseX, mouseY);
+            return;
+        }
+        if(hoveredSlot instanceof HarnessSlot) {
+            if(!tooltips.ready(hoveredSlot))
+                return;
+            graphics.renderTooltip(font, Component.translatable("gui.trotting_wagons.harness.slot"), mouseX, mouseY);
             return;
         }
         if(!(hoveredSlot instanceof RepairSlot repair) || !tooltips.ready(hoveredSlot))

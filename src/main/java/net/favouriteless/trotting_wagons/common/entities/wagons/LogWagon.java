@@ -1,5 +1,8 @@
 package net.favouriteless.trotting_wagons.common.entities.wagons;
 
+import com.kltyton.bonehitboxlib.api.bone.collision.ObbCollisionMode;
+import com.kltyton.bonehitboxlib.api.geckolib.entity.GeoBoneHitboxEntity;
+import com.kltyton.bonehitboxlib.api.registration.registrar.ObbBoneRegistrar;
 import net.favouriteless.trotting_wagons.ServerConfig;
 import net.favouriteless.trotting_wagons.TrottingWagons;
 import net.favouriteless.trotting_wagons.common.entities.WagonBuild;
@@ -30,7 +33,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.items.ItemStackHandler;
 
-public class LogWagon extends AbstractWagon implements MenuProvider {
+public class LogWagon extends AbstractWagon implements MenuProvider, GeoBoneHitboxEntity {
 
     public static final int CAPACITY = 7040;
     public static final int TYPE_SLOTS = 90;
@@ -89,6 +92,16 @@ public class LogWagon extends AbstractWagon implements MenuProvider {
             syncHarness();
         }
     };
+
+    /** The shell is always solid. Each visible log pile adds its own bone. */
+    @Override
+    public void bonehitboxlib$registerObbBones(ObbBoneRegistrar registrar) {
+        registrar.register(GeoBoneHitboxEntity.BONEHITBOXLIB_GEO_SOURCE, "hitbox")
+                .collision(ObbCollisionMode.HARD);
+        for(int i = 1; i <= LOG_BONES; i++)
+            registrar.register(GeoBoneHitboxEntity.BONEHITBOXLIB_GEO_SOURCE, "Log_" + i)
+                    .collision(ObbCollisionMode.HARD);
+    }
 
     public LogWagon(EntityType<LogWagon> type, Level level) {
         super(type, level, 19.5D / 16D, 19D / 16D, SEATS, ServerConfig.INSTANCE.logSpeedEmpty.get(),

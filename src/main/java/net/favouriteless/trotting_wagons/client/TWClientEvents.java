@@ -169,16 +169,12 @@ public class TWClientEvents {
     }
 
     private static void drawBuildHint(GuiGraphics graphics, Minecraft minecraft, Chassis chassis) {
-        Component planks = Component.translatable("gui.trotting_wagons.build.planks", chassis.plankCount(), WagonBuild.PLANKS);
-        Component iron = Component.translatable("gui.trotting_wagons.build.iron", chassis.ironCount(), WagonBuild.IRON);
+        WagonBuild.Need[] bill = WagonBuild.chassisBill();
         int x = graphics.guiWidth() / 2;
         int y = graphics.guiHeight() / 2 + 16;
-        graphics.drawString(minecraft.font, planks, x - minecraft.font.width(planks) / 2, y, 0xFFFFFF, true);
-        graphics.drawString(minecraft.font, iron, x - minecraft.font.width(iron) / 2, y + 10, 0xFFFFFF, true);
-        WagonBuild.Need extra = WagonBuild.chassisExtra();
-        if(extra != null) {
-            Component line = Component.translatable("gui.trotting_wagons.build." + extra.name(), chassis.extraCount(), extra.required());
-            graphics.drawString(minecraft.font, line, x - minecraft.font.width(line) / 2, y + 20, 0xFFFFFF, true);
+        for(int i = 0; i < bill.length; i++) {
+            Component line = Component.translatable("gui.trotting_wagons.build." + bill[i].name(), chassis.syncedCount(i), bill[i].required());
+            graphics.drawString(minecraft.font, line, x - minecraft.font.width(line) / 2, y + i * 10, 0xFFFFFF, true);
         }
     }
 

@@ -18,6 +18,7 @@ import software.bernie.geckolib.renderer.layer.GeoRenderLayer;
 import software.bernie.geckolib.util.RenderUtil;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,7 +29,8 @@ public class YellowBoxLayer<T extends GeoAnimatable> extends GeoRenderLayer<T> {
     public record Capture(List<ObbGeometry> boxes, long gameTime) {}
 
     private static final Map<Integer, Capture> CAPTURES = new ConcurrentHashMap<>();
-    private static final ThreadLocal<List<ObbGeometry>> FILLING = new ThreadLocal<>();
+    /** Entity whose list the current bone pass must fill. Bones run before {@link #render}. */
+    private static final ThreadLocal<Integer> FILLING = new ThreadLocal<>();
 
     public YellowBoxLayer(GeoRenderer<T> renderer) {
         super(renderer);
@@ -38,30 +40,49 @@ public class YellowBoxLayer<T extends GeoAnimatable> extends GeoRenderLayer<T> {
         return CAPTURES.get(entityId);
     }
 
-    public static Iterable<Map.Entry<Integer, Capture>> captures() {
-        return CAPTURES.entrySet();
+    public static Iterator<Map.Entry<Integer, Capture>> captures() {
+        return CAPTURES.entrySet().iterator();
     }
 
     private static boolean isCollisionBone(String name) {
-        return name.equals("hitbox") || name.startsWith("Barrel_");
+        return name.equals("hitbox") || name.startsWith("Log_");
+    }
+
+    /** A held-item preview is not in the level. Its render must not take a real wagon's list. */
+    private static boolean inWorld(Entity entity) {
+        return entity.isAlive() && entity.level().getEntity(entity.getId()) == entity;
+    }
+
+    @Override
+    public void preRender(PoseStack pose, T animatable, BakedGeoModel model, RenderType type, MultiBufferSource buffer,
+                          VertexConsumer consumer, float partialTick, int packedLight, int packedOverlay) {
+        // GeckoLib draws bones before GeoRenderLayer.render. The list has to exist first,
+        // or each wagon's cubes are stored on the previous wagon and one wagon stays empty.
+        if(!(animatable instanceof Entity entity) || !inWorld(entity)) {
+            FILLING.remove();
+            return;
+        }
+        List<ObbGeometry> boxes = new ArrayList<>();
+        FILLING.set(entity.getId());
+        CAPTURES.put(entity.getId(), new Capture(boxes, entity.level().getGameTime()));
     }
 
     @Override
     public void render(PoseStack pose, T animatable, BakedGeoModel model, RenderType type, MultiBufferSource buffer,
                        VertexConsumer consumer, float partialTick, int packedLight, int packedOverlay) {
-        if(!(animatable instanceof Entity entity))
-            return;
-        List<ObbGeometry> boxes = new ArrayList<>();
-        FILLING.set(boxes);
-        CAPTURES.put(entity.getId(), new Capture(boxes, entity.level().getGameTime()));
+        FILLING.remove();
     }
 
     @Override
     public void renderForBone(PoseStack pose, T animatable, GeoBone bone, RenderType type, MultiBufferSource buffer,
                               VertexConsumer consumer, float partialTick, int packedLight, int packedOverlay) {
-        List<ObbGeometry> boxes = FILLING.get();
-        if(boxes == null || bone.isHidden() || !isCollisionBone(bone.getName()))
+        Integer filling = FILLING.get();
+        if(filling == null || !(animatable instanceof Entity entity) || entity.getId() != filling)
             return;
+        Capture capture = CAPTURES.get(filling);
+        if(capture == null || bone.isHidden() || !isCollisionBone(bone.getName()))
+            return;
+        List<ObbGeometry> boxes = capture.boxes();
         Vec3 camera = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
         for(GeoCube cube : bone.getCubes()) {
             if(cube.quads() == null)

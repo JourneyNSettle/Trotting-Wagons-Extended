@@ -1,8 +1,11 @@
 package net.favouriteless.trotting_wagons.common.entities;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import net.favouriteless.trotting_wagons.TrottingWagons;
 import net.favouriteless.trotting_wagons.common.init.TWItems;
@@ -32,8 +35,16 @@ public final class WagonBuild {
     private final List<ItemStack> stacks = new ArrayList<>();
 
     private static Need chassisExtra;
+    private static Need[] chassisBill;
+    private static final Map<String, Need[]> choiceBills = new HashMap<>();
+    private static final Map<String, Supplier<Item>> salvageFallbacks = new HashMap<>();
 
-    /** One extra line on the chassis bill. The compat mod uses this for a gear box. Absent in a normal world. */
+    /** Replaces the chassis bill. A normal world keeps sixteen planks and four iron ingots. */
+    public static void setChassisBill(Need... needs) {
+        chassisBill = needs == null || needs.length == 0 ? null : needs.clone();
+    }
+
+    /** One extra line on the vanilla chassis bill. Ignored once {@link #setChassisBill} is used. */
     public static void addChassisNeed(String name, Predicate<ItemStack> test, int required) {
         chassisExtra = new Need(name, test, required);
     }
@@ -42,16 +53,23 @@ public final class WagonBuild {
         return chassisExtra;
     }
 
-    public WagonBuild() {
-        this(chassisNeeds());
-    }
-
-    private static Need[] chassisNeeds() {
+    /** The bill a new chassis uses. A custom bill is copied so later edits do not change placed frames. */
+    public static Need[] chassisBill() {
+        if(chassisBill != null)
+            return chassisBill.clone();
         Need planks = need("planks", stack -> stack.is(ItemTags.PLANKS), PLANKS);
         Need iron = need("iron", stack -> stack.is(TrottingWagons.IRON_INGOTS), IRON);
         if(chassisExtra == null)
             return new Need[]{planks, iron};
         return new Need[]{planks, iron, chassisExtra};
+    }
+
+    public WagonBuild() {
+        this(chassisNeeds());
+    }
+
+    private static Need[] chassisNeeds() {
+        return chassisBill();
     }
 
     public WagonBuild(Need... needs) {
@@ -60,6 +78,22 @@ public final class WagonBuild {
 
     public static WagonBuild none() {
         return new WagonBuild(new Need[0]);
+    }
+
+    /** Replaces one wagon-type bill. A normal world keeps that type's vanilla list. */
+    public static void setChoiceBill(String id, Need... needs) {
+        if(id == null || needs == null || needs.length == 0)
+            choiceBills.remove(id);
+        else
+            choiceBills.put(id, needs.clone());
+    }
+
+    /** Item used when a broken wagon owes more of a line than it still holds. */
+    public static void setSalvageFallback(String name, Supplier<Item> item) {
+        if(name == null || item == null)
+            salvageFallbacks.remove(name);
+        else
+            salvageFallbacks.put(name, item);
     }
 
     public static WagonBuild forChoice(String id) {
@@ -80,7 +114,15 @@ public final class WagonBuild {
         };
     }
 
+    private static WagonBuild choice(String id) {
+        Need[] bill = choiceBills.get(id);
+        return bill == null ? null : new WagonBuild(bill.clone());
+    }
+
     public static WagonBuild animal() {
+        WagonBuild replaced = choice("animal_wagon");
+        if(replaced != null)
+            return replaced;
         return new WagonBuild(
                 need("sticks", stack -> stack.is(TrottingWagons.LONG_STICKS), ANIMAL_STICKS),
                 need("planks", stack -> stack.is(ItemTags.PLANKS), ANIMAL_PLANKS),
@@ -90,6 +132,9 @@ public final class WagonBuild {
     }
 
     public static WagonBuild armored() {
+        WagonBuild replaced = choice("armored_wagon");
+        if(replaced != null)
+            return replaced;
         return new WagonBuild(
                 need("planks", stack -> stack.is(ItemTags.PLANKS), 64),
                 need("sticks", stack -> stack.is(TrottingWagons.LONG_STICKS), 12),
@@ -99,6 +144,9 @@ public final class WagonBuild {
     }
 
     public static WagonBuild barrel() {
+        WagonBuild replaced = choice("barrel_wagon");
+        if(replaced != null)
+            return replaced;
         return new WagonBuild(
                 need("sticks", stack -> stack.is(TrottingWagons.LONG_STICKS), 4),
                 need("planks", stack -> stack.is(ItemTags.PLANKS), 24),
@@ -108,6 +156,9 @@ public final class WagonBuild {
     }
 
     public static WagonBuild bigCart() {
+        WagonBuild replaced = choice("big_cart");
+        if(replaced != null)
+            return replaced;
         return new WagonBuild(
                 need("planks", stack -> stack.is(ItemTags.PLANKS), 16),
                 need("string", stack -> stack.is(TrottingWagons.STRING), 16),
@@ -116,6 +167,9 @@ public final class WagonBuild {
     }
 
     public static WagonBuild conestoga() {
+        WagonBuild replaced = choice("conestoga_wagon");
+        if(replaced != null)
+            return replaced;
         return new WagonBuild(
                 need("chest", stack -> stack.is(TrottingWagons.CHESTS), 2),
                 need("wool", stack -> stack.is(TrottingWagons.WOOL), 16),
@@ -126,10 +180,10 @@ public final class WagonBuild {
     }
 
     public static WagonBuild kibitka() {
+        WagonBuild replaced = choice("kibitka_wagon");
+        if(replaced != null)
+            return replaced;
         return new WagonBuild(
-                need("red_dye", stack -> stack.is(Items.RED_DYE), 2),
-                need("yellow_dye", stack -> stack.is(Items.YELLOW_DYE), 2),
-                need("blue_dye", stack -> stack.is(Items.BLUE_DYE), 2),
                 need("bed", stack -> stack.is(TrottingWagons.BEDS), 1),
                 need("chest", stack -> stack.is(TrottingWagons.CHESTS), 1),
                 need("log", stack -> stack.is(ItemTags.LOGS), 4),
@@ -141,6 +195,9 @@ public final class WagonBuild {
     }
 
     public static WagonBuild log() {
+        WagonBuild replaced = choice("log_wagon");
+        if(replaced != null)
+            return replaced;
         return new WagonBuild(
                 need("iron", stack -> stack.is(TrottingWagons.IRON_INGOTS), 24),
                 need("sticks", stack -> stack.is(TrottingWagons.LONG_STICKS), 16),
@@ -149,6 +206,9 @@ public final class WagonBuild {
     }
 
     public static WagonBuild passenger() {
+        WagonBuild replaced = choice("passenger_wagon");
+        if(replaced != null)
+            return replaced;
         return new WagonBuild(
                 need("wool", stack -> stack.is(TrottingWagons.WOOL), 1),
                 need("planks", stack -> stack.is(ItemTags.PLANKS), 64),
@@ -157,6 +217,9 @@ public final class WagonBuild {
     }
 
     public static WagonBuild royal() {
+        WagonBuild replaced = choice("royal_wagon");
+        if(replaced != null)
+            return replaced;
         return new WagonBuild(
                 need("wool", stack -> stack.is(TrottingWagons.WOOL), 16),
                 need("chest", stack -> stack.is(TrottingWagons.CHESTS), 1),
@@ -166,6 +229,9 @@ public final class WagonBuild {
     }
 
     public static WagonBuild ware() {
+        WagonBuild replaced = choice("ware_wagon");
+        if(replaced != null)
+            return replaced;
         return new WagonBuild(
                 need("iron", stack -> stack.is(TrottingWagons.IRON_INGOTS), 32),
                 need("planks", stack -> stack.is(ItemTags.PLANKS), 48),
@@ -277,6 +343,12 @@ public final class WagonBuild {
     }
 
     private static Item fallback(String name) {
+        Supplier<Item> custom = salvageFallbacks.get(name);
+        if(custom != null) {
+            Item item = custom.get();
+            if(item != null && item != Items.AIR)
+                return item;
+        }
         return switch(name) {
             case "sticks" -> TWItems.LONG_STICK.get();
             case "planks" -> Items.OAK_PLANKS;
@@ -287,9 +359,6 @@ public final class WagonBuild {
             case "hay" -> Items.HAY_BLOCK;
             case "chest" -> Items.CHEST;
             case "lead" -> Items.LEAD;
-            case "red_dye" -> Items.RED_DYE;
-            case "yellow_dye" -> Items.YELLOW_DYE;
-            case "blue_dye" -> Items.BLUE_DYE;
             case "bed" -> Items.WHITE_BED;
             case "log" -> Items.OAK_LOG;
             case "brick" -> Items.BRICK;

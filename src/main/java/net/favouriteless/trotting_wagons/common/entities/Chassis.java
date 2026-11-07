@@ -1,6 +1,5 @@
 package net.favouriteless.trotting_wagons.common.entities;
 
-import net.favouriteless.trotting_wagons.TrottingWagons;
 import net.favouriteless.trotting_wagons.common.entities.base.AbstractGeckolibVehicle;
 import net.favouriteless.trotting_wagons.common.init.TWEntityTypes;
 import net.favouriteless.trotting_wagons.common.init.TWItems;
@@ -41,9 +40,16 @@ public class Chassis extends Entity implements GeoEntity {
     private static final double MIN_Z = -29.0D / 16.0D;
     private static final double MAX_Z = 22.0D / 16.0D;
 
-    private static final EntityDataAccessor<Integer> DATA_PLANKS = SynchedEntityData.defineId(Chassis.class, EntityDataSerializers.INT);
-    private static final EntityDataAccessor<Integer> DATA_IRON = SynchedEntityData.defineId(Chassis.class, EntityDataSerializers.INT);
-    private static final EntityDataAccessor<Integer> DATA_EXTRA = SynchedEntityData.defineId(Chassis.class, EntityDataSerializers.INT);
+    private static final int COUNT_SLOTS = 8;
+    private static final EntityDataAccessor<Integer>[] DATA_COUNT = counts();
+
+    @SuppressWarnings("unchecked")
+    private static EntityDataAccessor<Integer>[] counts() {
+        EntityDataAccessor<Integer>[] counts = new EntityDataAccessor[COUNT_SLOTS];
+        for(int i = 0; i < counts.length; i++)
+            counts[i] = SynchedEntityData.defineId(Chassis.class, EntityDataSerializers.INT);
+        return counts;
+    }
 
     private final AnimatableInstanceCache animCache = GeckoLibUtil.createInstanceCache(this);
     private final WagonBuild build = new WagonBuild();
@@ -53,23 +59,16 @@ public class Chassis extends Entity implements GeoEntity {
         noPhysics = true;
     }
 
-    public int plankCount() {
-        return entityData.get(DATA_PLANKS);
-    }
-
-    public int ironCount() {
-        return entityData.get(DATA_IRON);
-    }
-
-    public int extraCount() {
-        return entityData.get(DATA_EXTRA);
+    public int syncedCount(int index) {
+        if(index < 0 || index >= DATA_COUNT.length)
+            return 0;
+        return entityData.get(DATA_COUNT[index]);
     }
 
     @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
-        builder.define(DATA_PLANKS, 0);
-        builder.define(DATA_IRON, 0);
-        builder.define(DATA_EXTRA, 0);
+        for(EntityDataAccessor<Integer> count : DATA_COUNT)
+            builder.define(count, 0);
     }
 
     @Override
@@ -119,7 +118,7 @@ public class Chassis extends Entity implements GeoEntity {
         if(build.ready())
             finish();
         else
-            playSound(held.is(TrottingWagons.IRON_INGOTS) ? SoundEvents.ITEM_PICKUP : SoundEvents.WOOD_PLACE, 0.8F, 1.0F);
+            playSound(woodNeed(held) ? SoundEvents.WOOD_PLACE : SoundEvents.ITEM_PICKUP, 0.8F, 1.0F);
         return InteractionResult.CONSUME;
     }
 
@@ -149,24 +148,30 @@ public class Chassis extends Entity implements GeoEntity {
     }
 
     private int roomFor(ItemStack held) {
-        if(held.is(ItemTags.PLANKS))
-            return Math.max(0, WagonBuild.PLANKS - shown(build.planks(), plankCount()));
-        if(held.is(TrottingWagons.IRON_INGOTS))
-            return Math.max(0, WagonBuild.IRON - shown(build.iron(), ironCount()));
-        WagonBuild.Need extra = WagonBuild.chassisExtra();
-        if(extra != null && extra.test().test(held))
-            return Math.max(0, extra.required() - shown(build.countOf(extra), extraCount()));
+        if(!level().isClientSide)
+            return build.roomFor(held);
+        WagonBuild.Need[] bill = WagonBuild.chassisBill();
+        for(int i = 0; i < bill.length && i < DATA_COUNT.length; i++) {
+            if(!bill[i].test().test(held))
+                continue;
+            return Math.max(0, bill[i].required() - syncedCount(i));
+        }
         return 0;
     }
 
-    private int shown(int stored, int synced) {
-        return level().isClientSide ? synced : stored;
+    private static boolean woodNeed(ItemStack held) {
+        for(WagonBuild.Need need : WagonBuild.chassisBill()) {
+            if(!need.test().test(held))
+                continue;
+            return need.name().equals("planks") || need.name().equals("lumber");
+        }
+        return false;
     }
 
     private void syncCounts() {
-        entityData.set(DATA_PLANKS, build.planks());
-        entityData.set(DATA_IRON, build.iron());
-        entityData.set(DATA_EXTRA, build.countOf(WagonBuild.chassisExtra()));
+        WagonBuild.Need[] bill = WagonBuild.chassisBill();
+        for(int i = 0; i < DATA_COUNT.length; i++)
+            entityData.set(DATA_COUNT[i], i < bill.length ? build.countOf(bill[i]) : 0);
     }
 
     private void finish() {

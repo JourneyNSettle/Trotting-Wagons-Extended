@@ -4,6 +4,7 @@ import net.favouriteless.trotting_wagons.TrottingWagons;
 import net.favouriteless.trotting_wagons.common.entities.base.AbstractWagon;
 import net.favouriteless.trotting_wagons.common.entities.wagons.ConestogaWagon;
 import net.favouriteless.trotting_wagons.common.menus.ConestogaMenu;
+import net.favouriteless.trotting_wagons.common.menus.HarnessSlot;
 import net.favouriteless.trotting_wagons.common.menus.RepairSlot;
 import net.favouriteless.trotting_wagons.common.network.packets.SelectConestogaPagePayload;
 import net.minecraft.client.gui.GuiGraphics;
@@ -179,6 +180,12 @@ public class ConestogaScreen extends AbstractContainerScreen<ConestogaMenu> {
         if(hoveredSlot != null && hoveredSlot.hasItem()) {
             tooltips.ready(null);
             super.renderTooltip(graphics, mouseX, mouseY);
+            return;
+        }
+        if(hoveredSlot instanceof HarnessSlot) {
+            if(!tooltips.ready(hoveredSlot))
+                return;
+            graphics.renderTooltip(font, Component.translatable("gui.trotting_wagons.harness.slot"), mouseX, mouseY);
             return;
         }
         if(!(hoveredSlot instanceof RepairSlot repair) || !tooltips.ready(hoveredSlot))

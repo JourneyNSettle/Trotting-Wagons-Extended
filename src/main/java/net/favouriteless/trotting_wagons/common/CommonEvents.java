@@ -89,13 +89,14 @@ public class CommonEvents {
         if(!player.isCrouching())
             return;
 
+        // A seated animal stays seated. Shift-click does not put it out.
         if(target.getVehicle() instanceof AbstractWagon) {
-            if(!level.isClientSide)
-                target.stopRiding();
             event.setCancellationResult(InteractionResult.sidedSuccess(level.isClientSide));
             event.setCanceled(true);
+            return;
         }
-        else if(target instanceof Mob mob) {
+
+        if(target instanceof Mob mob) {
             AbstractWagon wagon = AbstractWagon.findHitch(mob);
             if(wagon == null)
                 return;

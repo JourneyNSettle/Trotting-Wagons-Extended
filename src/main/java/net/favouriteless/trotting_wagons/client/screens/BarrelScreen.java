@@ -4,6 +4,7 @@ import net.favouriteless.trotting_wagons.TrottingWagons;
 import net.favouriteless.trotting_wagons.common.entities.wagons.BarrelWagon;
 import net.favouriteless.trotting_wagons.common.menus.BarrelContentSlot;
 import net.favouriteless.trotting_wagons.common.menus.BarrelMenu;
+import net.favouriteless.trotting_wagons.common.menus.HarnessSlot;
 import net.favouriteless.trotting_wagons.common.menus.RepairSlot;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -181,6 +182,8 @@ public class BarrelScreen extends AbstractContainerScreen<BarrelMenu> {
     }
 
     private Component emptySlotTip(Slot slot) {
+        if(slot instanceof HarnessSlot)
+            return Component.translatable("gui.trotting_wagons.harness.slot");
         if(slot instanceof RepairSlot repair && menu.getWagon() != null)
             return menu.getWagon().repairTooltip(repair.getSlotIndex());
         ItemStack icon = WagonGui.ghostIcon(menu, slot);
