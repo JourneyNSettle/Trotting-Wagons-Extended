@@ -7,6 +7,7 @@ import net.favouriteless.trotting_wagons.common.entities.Chassis;
 import net.favouriteless.trotting_wagons.common.entities.WagonBuild;
 import net.favouriteless.trotting_wagons.common.entities.base.AbstractWagon;
 import net.favouriteless.trotting_wagons.common.items.HorseWhipItem;
+import net.favouriteless.trotting_wagons.common.items.WheelItem;
 import net.favouriteless.trotting_wagons.common.network.packets.HitchAnimalPayload;
 import net.favouriteless.trotting_wagons.common.network.packets.OpenWagonMenuPayload;
 import net.favouriteless.trotting_wagons.common.network.packets.WhipLowerGearPayload;
@@ -16,6 +17,7 @@ import net.minecraft.client.Minecraft;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.LivingEntity;
@@ -30,6 +32,7 @@ import net.neoforged.neoforge.client.event.CalculateDetachedCameraDistanceEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.InputEvent;
 import net.neoforged.neoforge.client.event.RenderGuiEvent;
+import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
 import net.neoforged.neoforge.client.event.ScreenEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.lwjgl.glfw.GLFW;
@@ -172,6 +175,11 @@ public class TWClientEvents {
         int y = graphics.guiHeight() / 2 + 16;
         graphics.drawString(minecraft.font, planks, x - minecraft.font.width(planks) / 2, y, 0xFFFFFF, true);
         graphics.drawString(minecraft.font, iron, x - minecraft.font.width(iron) / 2, y + 10, 0xFFFFFF, true);
+        WagonBuild.Need extra = WagonBuild.chassisExtra();
+        if(extra != null) {
+            Component line = Component.translatable("gui.trotting_wagons.build." + extra.name(), chassis.extraCount(), extra.required());
+            graphics.drawString(minecraft.font, line, x - minecraft.font.width(line) / 2, y + 20, 0xFFFFFF, true);
+        }
     }
 
     private static void drawBuildPlan(GuiGraphics graphics, Minecraft minecraft, BaseWagon wagon) {
@@ -181,6 +189,15 @@ public class TWClientEvents {
             Component line = Component.translatable("gui.trotting_wagons.build." + wagon.planName(i), wagon.planCount(i), wagon.planRequired(i));
             graphics.drawString(minecraft.font, line, x - minecraft.font.width(line) / 2, y + i * 10, 0xFFFFFF, true);
         }
+    }
+
+    /** Advanced tooltips add item.durability beside the wheel's own line. */
+    @SubscribeEvent
+    public static void onWheelTooltip(ItemTooltipEvent event) {
+        if(!(event.getItemStack().getItem() instanceof WheelItem))
+            return;
+        event.getToolTip().removeIf(line -> line.getContents() instanceof TranslatableContents contents
+                && contents.getKey().equals("item.durability"));
     }
 
     @SubscribeEvent

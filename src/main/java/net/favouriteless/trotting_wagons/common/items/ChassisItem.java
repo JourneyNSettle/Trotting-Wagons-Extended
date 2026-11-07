@@ -6,15 +6,14 @@ import net.minecraft.core.Direction;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 
-public class ChassisItem extends Item {
+public class ChassisItem extends PartItem {
 
     public ChassisItem(Properties properties) {
-        super(properties);
+        super(properties, "chassis", "textures/entity/wagon_base/none.png");
     }
 
     @Override

@@ -1,7 +1,7 @@
 package net.favouriteless.trotting_wagons.common.menus;
 
+import net.favouriteless.trotting_wagons.TrottingWagons;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.SlotItemHandler;
 
@@ -13,7 +13,7 @@ public class LanternSlot extends SlotItemHandler {
 
     @Override
     public boolean mayPlace(ItemStack stack) {
-        return stack.is(Items.LANTERN);
+        return stack.is(TrottingWagons.LANTERNS);
     }
 
     @Override

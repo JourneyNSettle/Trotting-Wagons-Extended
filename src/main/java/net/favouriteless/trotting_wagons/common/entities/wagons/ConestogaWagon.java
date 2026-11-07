@@ -1,5 +1,8 @@
 package net.favouriteless.trotting_wagons.common.entities.wagons;
 
+import com.kltyton.bonehitboxlib.api.bone.collision.ObbCollisionMode;
+import com.kltyton.bonehitboxlib.api.geckolib.entity.GeoBoneHitboxEntity;
+import com.kltyton.bonehitboxlib.api.registration.registrar.ObbBoneRegistrar;
 import net.favouriteless.trotting_wagons.ServerConfig;
 import net.favouriteless.trotting_wagons.common.entities.WagonBuild;
 import net.favouriteless.trotting_wagons.common.entities.base.AbstractInventoryWagon;
@@ -27,7 +30,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.items.ItemStackHandler;
 
-public class ConestogaWagon extends AbstractInventoryWagon {
+public class ConestogaWagon extends AbstractInventoryWagon implements GeoBoneHitboxEntity {
 
     public static final int CARGO = 42;
     /** Main chest, then the optional hold. Older saves kept only the first page. */
@@ -68,6 +71,13 @@ public class ConestogaWagon extends AbstractInventoryWagon {
         super(type, level, 1, 1, SEATS, ServerConfig.INSTANCE.conestogaSpeed.get(),
                 ServerConfig.INSTANCE.conestogaTurnRate.get(), ServerConfig.INSTANCE.conestogaHealth.get(), 0.6D, 3.6D,
                 13, CARGO * 2);
+    }
+
+    /** Body shell. The cubes are not drawn; BoneHitboxLib uses them as the solid box. */
+    @Override
+    public void bonehitboxlib$registerObbBones(ObbBoneRegistrar registrar) {
+        registrar.register(GeoBoneHitboxEntity.BONEHITBOXLIB_GEO_SOURCE, "hitbox")
+                .collision(ObbCollisionMode.HARD);
     }
 
     @Override

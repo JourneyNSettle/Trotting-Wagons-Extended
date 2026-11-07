@@ -8,9 +8,9 @@
   ],
   "key": {
     "S": { "item": "minecraft:stick" },
-    "L": { "item": "trotting_wagons:long_stick" },
-    "T": { "item": "minecraft:string" },
-    "M": { "item": "minecraft:slime_ball" }
+    "L": { "tag": "trotting_wagons:long_sticks" },
+    "T": { "tag": "trotting_wagons:string" },
+    "M": { "tag": "trotting_wagons:glue" }
   },
   "result": { "id": "trotting_wagons:chassis" }
 }

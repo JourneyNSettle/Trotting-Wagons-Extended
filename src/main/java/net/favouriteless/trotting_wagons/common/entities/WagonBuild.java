@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 
+import net.favouriteless.trotting_wagons.TrottingWagons;
 import net.favouriteless.trotting_wagons.common.init.TWItems;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
@@ -30,8 +31,27 @@ public final class WagonBuild {
     private final Need[] needs;
     private final List<ItemStack> stacks = new ArrayList<>();
 
+    private static Need chassisExtra;
+
+    /** One extra line on the chassis bill. The compat mod uses this for a gear box. Absent in a normal world. */
+    public static void addChassisNeed(String name, Predicate<ItemStack> test, int required) {
+        chassisExtra = new Need(name, test, required);
+    }
+
+    public static Need chassisExtra() {
+        return chassisExtra;
+    }
+
     public WagonBuild() {
-        this(need("planks", stack -> stack.is(ItemTags.PLANKS), PLANKS), need("iron", stack -> stack.is(Items.IRON_INGOT), IRON));
+        this(chassisNeeds());
+    }
+
+    private static Need[] chassisNeeds() {
+        Need planks = need("planks", stack -> stack.is(ItemTags.PLANKS), PLANKS);
+        Need iron = need("iron", stack -> stack.is(TrottingWagons.IRON_INGOTS), IRON);
+        if(chassisExtra == null)
+            return new Need[]{planks, iron};
+        return new Need[]{planks, iron, chassisExtra};
     }
 
     public WagonBuild(Need... needs) {
@@ -62,47 +82,47 @@ public final class WagonBuild {
 
     public static WagonBuild animal() {
         return new WagonBuild(
-                need("sticks", stack -> stack.is(TWItems.LONG_STICK.get()), ANIMAL_STICKS),
+                need("sticks", stack -> stack.is(TrottingWagons.LONG_STICKS), ANIMAL_STICKS),
                 need("planks", stack -> stack.is(ItemTags.PLANKS), ANIMAL_PLANKS),
-                need("iron", stack -> stack.is(Items.IRON_INGOT), ANIMAL_IRON),
-                need("hay", stack -> stack.is(Items.HAY_BLOCK), ANIMAL_HAY),
-                need("wool", stack -> stack.is(ItemTags.WOOL), ANIMAL_WOOL));
+                need("iron", stack -> stack.is(TrottingWagons.IRON_INGOTS), ANIMAL_IRON),
+                need("hay", stack -> stack.is(TrottingWagons.HAY), ANIMAL_HAY),
+                need("wool", stack -> stack.is(TrottingWagons.WOOL), ANIMAL_WOOL));
     }
 
     public static WagonBuild armored() {
         return new WagonBuild(
                 need("planks", stack -> stack.is(ItemTags.PLANKS), 64),
-                need("sticks", stack -> stack.is(TWItems.LONG_STICK.get()), 12),
-                need("iron_block", stack -> stack.is(Items.IRON_BLOCK), 2),
-                need("iron", stack -> stack.is(Items.IRON_INGOT), 32),
-                need("string", stack -> stack.is(Items.STRING), 8));
+                need("sticks", stack -> stack.is(TrottingWagons.LONG_STICKS), 12),
+                need("iron_block", stack -> stack.is(TrottingWagons.IRON_BLOCKS), 2),
+                need("iron", stack -> stack.is(TrottingWagons.IRON_INGOTS), 32),
+                need("string", stack -> stack.is(TrottingWagons.STRING), 8));
     }
 
     public static WagonBuild barrel() {
         return new WagonBuild(
-                need("sticks", stack -> stack.is(TWItems.LONG_STICK.get()), 4),
+                need("sticks", stack -> stack.is(TrottingWagons.LONG_STICKS), 4),
                 need("planks", stack -> stack.is(ItemTags.PLANKS), 24),
-                need("iron", stack -> stack.is(Items.IRON_INGOT), 12),
-                need("wool", stack -> stack.is(ItemTags.WOOL), 1),
-                need("string", stack -> stack.is(Items.STRING), 8));
+                need("iron", stack -> stack.is(TrottingWagons.IRON_INGOTS), 12),
+                need("wool", stack -> stack.is(TrottingWagons.WOOL), 1),
+                need("string", stack -> stack.is(TrottingWagons.STRING), 8));
     }
 
     public static WagonBuild bigCart() {
         return new WagonBuild(
                 need("planks", stack -> stack.is(ItemTags.PLANKS), 16),
-                need("string", stack -> stack.is(Items.STRING), 16),
-                need("wool", stack -> stack.is(ItemTags.WOOL), 1),
-                need("iron", stack -> stack.is(Items.IRON_INGOT), 8));
+                need("string", stack -> stack.is(TrottingWagons.STRING), 16),
+                need("wool", stack -> stack.is(TrottingWagons.WOOL), 1),
+                need("iron", stack -> stack.is(TrottingWagons.IRON_INGOTS), 8));
     }
 
     public static WagonBuild conestoga() {
         return new WagonBuild(
-                need("chest", stack -> stack.is(Items.CHEST), 2),
-                need("wool", stack -> stack.is(ItemTags.WOOL), 16),
-                need("sticks", stack -> stack.is(TWItems.LONG_STICK.get()), 18),
-                need("lead", stack -> stack.is(Items.LEAD), 1),
+                need("chest", stack -> stack.is(TrottingWagons.CHESTS), 2),
+                need("wool", stack -> stack.is(TrottingWagons.WOOL), 16),
+                need("sticks", stack -> stack.is(TrottingWagons.LONG_STICKS), 18),
+                need("lead", stack -> stack.is(TrottingWagons.ROPE), 1),
                 need("planks", stack -> stack.is(ItemTags.PLANKS), 32),
-                need("iron", stack -> stack.is(Items.IRON_INGOT), 8));
+                need("iron", stack -> stack.is(TrottingWagons.IRON_INGOTS), 8));
     }
 
     public static WagonBuild kibitka() {
@@ -110,47 +130,47 @@ public final class WagonBuild {
                 need("red_dye", stack -> stack.is(Items.RED_DYE), 2),
                 need("yellow_dye", stack -> stack.is(Items.YELLOW_DYE), 2),
                 need("blue_dye", stack -> stack.is(Items.BLUE_DYE), 2),
-                need("bed", stack -> stack.is(ItemTags.BEDS), 1),
-                need("chest", stack -> stack.is(Items.CHEST), 1),
+                need("bed", stack -> stack.is(TrottingWagons.BEDS), 1),
+                need("chest", stack -> stack.is(TrottingWagons.CHESTS), 1),
                 need("log", stack -> stack.is(ItemTags.LOGS), 4),
-                need("sticks", stack -> stack.is(TWItems.LONG_STICK.get()), 12),
+                need("sticks", stack -> stack.is(TrottingWagons.LONG_STICKS), 12),
                 need("planks", stack -> stack.is(ItemTags.PLANKS), 40),
-                need("iron", stack -> stack.is(Items.IRON_INGOT), 8),
-                need("wool", stack -> stack.is(ItemTags.WOOL), 4),
-                need("brick", stack -> stack.is(Items.BRICK), 40));
+                need("iron", stack -> stack.is(TrottingWagons.IRON_INGOTS), 8),
+                need("wool", stack -> stack.is(TrottingWagons.WOOL), 4),
+                need("brick", stack -> stack.is(TrottingWagons.BRICKS), 40));
     }
 
     public static WagonBuild log() {
         return new WagonBuild(
-                need("iron", stack -> stack.is(Items.IRON_INGOT), 24),
-                need("sticks", stack -> stack.is(TWItems.LONG_STICK.get()), 16),
+                need("iron", stack -> stack.is(TrottingWagons.IRON_INGOTS), 24),
+                need("sticks", stack -> stack.is(TrottingWagons.LONG_STICKS), 16),
                 need("planks", stack -> stack.is(ItemTags.PLANKS), 24),
-                need("wool", stack -> stack.is(ItemTags.WOOL), 1));
+                need("wool", stack -> stack.is(TrottingWagons.WOOL), 1));
     }
 
     public static WagonBuild passenger() {
         return new WagonBuild(
-                need("wool", stack -> stack.is(ItemTags.WOOL), 1),
+                need("wool", stack -> stack.is(TrottingWagons.WOOL), 1),
                 need("planks", stack -> stack.is(ItemTags.PLANKS), 64),
-                need("string", stack -> stack.is(Items.STRING), 8),
-                need("iron", stack -> stack.is(Items.IRON_INGOT), 32));
+                need("string", stack -> stack.is(TrottingWagons.STRING), 8),
+                need("iron", stack -> stack.is(TrottingWagons.IRON_INGOTS), 32));
     }
 
     public static WagonBuild royal() {
         return new WagonBuild(
-                need("wool", stack -> stack.is(ItemTags.WOOL), 16),
-                need("chest", stack -> stack.is(Items.CHEST), 1),
-                need("string", stack -> stack.is(Items.STRING), 8),
+                need("wool", stack -> stack.is(TrottingWagons.WOOL), 16),
+                need("chest", stack -> stack.is(TrottingWagons.CHESTS), 1),
+                need("string", stack -> stack.is(TrottingWagons.STRING), 8),
                 need("planks", stack -> stack.is(ItemTags.PLANKS), 32),
-                need("iron", stack -> stack.is(Items.IRON_INGOT), 12));
+                need("iron", stack -> stack.is(TrottingWagons.IRON_INGOTS), 12));
     }
 
     public static WagonBuild ware() {
         return new WagonBuild(
-                need("iron", stack -> stack.is(Items.IRON_INGOT), 32),
+                need("iron", stack -> stack.is(TrottingWagons.IRON_INGOTS), 32),
                 need("planks", stack -> stack.is(ItemTags.PLANKS), 48),
-                need("wool", stack -> stack.is(ItemTags.WOOL), 1),
-                need("string", stack -> stack.is(Items.STRING), 16));
+                need("wool", stack -> stack.is(TrottingWagons.WOOL), 1),
+                need("string", stack -> stack.is(TrottingWagons.STRING), 16));
     }
 
     private static Need need(String name, Predicate<ItemStack> test, int required) {
@@ -182,7 +202,13 @@ public final class WagonBuild {
     }
 
     public int iron() {
-        return count(stack -> stack.is(Items.IRON_INGOT));
+        return count(stack -> stack.is(TrottingWagons.IRON_INGOTS));
+    }
+
+    public int countOf(Need need) {
+        if(need == null)
+            return 0;
+        return count(need.test());
     }
 
     public boolean ready() {

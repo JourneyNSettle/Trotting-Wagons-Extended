@@ -4,6 +4,7 @@ import com.kltyton.bonehitboxlib.api.bone.collision.ObbCollisionMode;
 import com.kltyton.bonehitboxlib.api.geckolib.entity.GeoBoneHitboxEntity;
 import com.kltyton.bonehitboxlib.api.registration.registrar.ObbBoneRegistrar;
 import net.favouriteless.trotting_wagons.ServerConfig;
+import net.favouriteless.trotting_wagons.TrottingWagons;
 import net.favouriteless.trotting_wagons.common.entities.base.AbstractInventoryWagon;
 import net.favouriteless.trotting_wagons.common.entities.base.WagonSeat;
 import net.favouriteless.trotting_wagons.common.init.TWItems;
@@ -83,7 +84,7 @@ public class DebugWagon extends AbstractInventoryWagon implements GeoBoneHitboxE
     private final ItemStackHandler lanternItems = new ItemStackHandler(lantern) {
         @Override
         public boolean isItemValid(int slot, ItemStack stack) {
-            return stack.is(Items.LANTERN);
+            return stack.is(TrottingWagons.LANTERNS);
         }
 
         @Override
@@ -209,7 +210,7 @@ public class DebugWagon extends AbstractInventoryWagon implements GeoBoneHitboxE
     @Override
     public void tick() {
         super.tick();
-        setBoundingBox(makeBoundingBox());
+        refreshBounds();
         if(level().isClientSide) {
             tickLadderVisual();
             return;
@@ -230,7 +231,7 @@ public class DebugWagon extends AbstractInventoryWagon implements GeoBoneHitboxE
         return orientedBody(1.984D, 0.0D, 4.564D, 2.644D, 1.953D);
     }
 
-    /** The white box stays visible, but walking into the wagon is handled by the yellow body box. */
+    /** The ground plate is not solid. Walking into the wagon meets the yellow body box. */
     @Override
     public boolean canBeCollidedWith() {
         return false;

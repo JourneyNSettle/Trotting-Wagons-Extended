@@ -10,7 +10,7 @@
     "P": { "tag": "minecraft:planks" },
     "S": { "item": "minecraft:stick" },
     "W": { "item": "trotting_wagons:wheel" },
-    "I": { "item": "minecraft:iron_ingot" }
+    "I": { "tag": "trotting_wagons:iron_ingots" }
   },
   "result": { "id": "trotting_wagons:wide_wheel" }
 }

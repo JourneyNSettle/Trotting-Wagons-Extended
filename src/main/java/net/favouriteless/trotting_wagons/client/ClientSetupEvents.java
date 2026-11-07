@@ -1,6 +1,7 @@
 package net.favouriteless.trotting_wagons.client;
 
 import net.favouriteless.trotting_wagons.TrottingWagons;
+import net.favouriteless.trotting_wagons.client.render.PartItemRenderer;
 import net.favouriteless.trotting_wagons.client.render.WagonItemRenderer;
 import net.favouriteless.trotting_wagons.client.render.entity.BaseWagonRenderer;
 import net.favouriteless.trotting_wagons.client.render.entity.ChassisRenderer;
@@ -50,6 +51,7 @@ public class ClientSetupEvents {
         event.registerItem(wagonExtension(TWEntityTypes.WARE_WAGON.get()), TWItems.WARE_WAGON.get());
         event.registerItem(wagonExtension(TWEntityTypes.KIBITKA_WAGON.get()), TWItems.KIBITKA_WAGON.get());
         event.registerItem(wagonExtension(TWEntityTypes.BIG_CART_WAGON.get()), TWItems.BIG_CART_WAGON.get());
+        event.registerItem(partExtension(), TWItems.TONGUE.get(), TWItems.SHAFTS.get(), TWItems.WHEEL.get(), TWItems.WIDE_WHEEL.get(), TWItems.REINFORCED_WHEEL.get(), TWItems.CHASSIS.get());
     }
 
     @SubscribeEvent
@@ -88,6 +90,19 @@ public class ClientSetupEvents {
         event.registerEntityRenderer(TWEntityTypes.BIG_CART_WAGON.get(), context -> new WagonRenderer<>(context, TrottingWagons.id("big_cart")));
         event.registerEntityRenderer(TWEntityTypes.CHASSIS.get(), ChassisRenderer::new);
         event.registerEntityRenderer(TWEntityTypes.BASE_WAGON.get(), BaseWagonRenderer::new);
+    }
+
+    public static IClientItemExtensions partExtension() {
+        return new IClientItemExtensions() {
+
+            private final PartItemRenderer renderer = new PartItemRenderer();
+
+            @Override
+            public BlockEntityWithoutLevelRenderer getCustomRenderer() {
+                return renderer;
+            }
+
+        };
     }
 
     public static IClientItemExtensions wagonExtension(EntityType<? extends AbstractWagon> entityType) {

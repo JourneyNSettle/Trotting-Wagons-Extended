@@ -1,6 +1,7 @@
 package net.favouriteless.trotting_wagons.common.entities.wagons;
 
 import net.favouriteless.trotting_wagons.ServerConfig;
+import net.favouriteless.trotting_wagons.TrottingWagons;
 import net.favouriteless.trotting_wagons.common.entities.base.AbstractWagon;
 import net.favouriteless.trotting_wagons.common.entities.base.WagonSeat;
 import net.favouriteless.trotting_wagons.common.init.TWItems;
@@ -119,11 +120,11 @@ public class AnimalWagon extends AbstractWagon implements MenuProvider {
             return;
         }
         WagonBuild plan = builtPlan();
-        plan.dropUpTo(this, stack -> stack.is(TWItems.LONG_STICK.get()), 2 + getRandom().nextInt(3), TWItems.LONG_STICK.get());
+        plan.dropUpTo(this, stack -> stack.is(TrottingWagons.LONG_STICKS), 2 + getRandom().nextInt(3), TWItems.LONG_STICK.get());
         plan.dropUpTo(this, stack -> stack.is(ItemTags.PLANKS), 12 + getRandom().nextInt(9), Items.OAK_PLANKS);
-        plan.dropUpTo(this, stack -> stack.is(Items.IRON_INGOT), 6 + getRandom().nextInt(5), Items.IRON_INGOT);
-        plan.dropUpTo(this, stack -> stack.is(Items.HAY_BLOCK), 1 + getRandom().nextInt(2), Items.HAY_BLOCK);
-        plan.dropUpTo(this, stack -> stack.is(ItemTags.WOOL), getRandom().nextInt(2), Items.WHITE_WOOL);
+        plan.dropUpTo(this, stack -> stack.is(TrottingWagons.IRON_INGOTS), 6 + getRandom().nextInt(5), Items.IRON_INGOT);
+        plan.dropUpTo(this, stack -> stack.is(TrottingWagons.HAY), 1 + getRandom().nextInt(2), Items.HAY_BLOCK);
+        plan.dropUpTo(this, stack -> stack.is(TrottingWagons.WOOL), getRandom().nextInt(2), Items.WHITE_WOOL);
     }
 
     @Override
@@ -155,7 +156,7 @@ public class AnimalWagon extends AbstractWagon implements MenuProvider {
         gateO = gate;
         float target = animalGateClosed() ? 0.0F : 1.0F;
         gate += Mth.clamp(target - gate, -0.15F, 0.15F);
-        setBoundingBox(makeBoundingBox());
+        refreshBounds();
     }
 
     /** Lowest point is the rotated cart step, 5.5398px. */

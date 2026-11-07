@@ -8,7 +8,7 @@
   ],
   "key": {
     "S": { "item": "minecraft:stick" },
-    "L": { "item": "minecraft:lead" }
+    "L": { "tag": "trotting_wagons:rope" }
   },
   "result": { "id": "trotting_wagons:horse_whip" }
 }

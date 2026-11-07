@@ -1,10 +1,10 @@
 # Trotting Wagons Extended
 
-Horse-drawn wagons for Minecraft 1.21.1. Version **0.9.3** is a public test build: it is meant to be played, and it is not a finished 1.0.
+Horse-drawn wagons for Minecraft 1.21.1. Version **0.9.4** is a public test build: it is meant to be played, and it is not a finished 1.0.
 
 This repository continues [Favouriteless/Trotting-Wagons](https://github.com/Favouriteless/Trotting-Wagons). The mod id is still `trotting_wagons`, so old worlds keep their wagons. The name in the game is Trotting Wagons Extended.
 
-The current test jar is on the [0.9.3 release](https://github.com/JourneyNSettle/Trotting-Wagons-Extended/releases/tag/v0.9.3).
+The current test jar is on the [0.9.4 release](https://github.com/JourneyNSettle/Trotting-Wagons-Extended/releases/tag/v0.9.4).
 
 ## Requirements
 
@@ -20,7 +20,7 @@ The current test jar is on the [0.9.3 release](https://github.com/JourneyNSettle
 
 ## Install
 
-Put `trotting-wagons-extended-0.9.3.jar`, GeckoLib, and BoneHitboxLib in the `mods` folder. The server and every player need the same copy.
+Put `trotting-wagons-extended-0.9.4.jar`, GeckoLib, and BoneHitboxLib in the `mods` folder. The server and every player need the same copy.
 
 ## Wagon base
 
@@ -42,7 +42,7 @@ Top speed is the slowest living draft animal, times the wagon, times the wheels,
 
 ## Hitching
 
-The hitch key is **R**. While you are riding an allowed animal, it sends that animal to a free hitch point within 1.5 blocks. The tag `trotting_wagons:draft_animals` allows `minecraft:horse`. Babies are refused. Add more ids in `config/trotting_wagons-server.toml` under `allowed_entities`, or append them to that tag from another mod.
+The hitch key is **R**. While you are riding an allowed animal, it sends that animal to a free hitch point within 1.5 blocks. The tag `trotting_wagons:draft_animals` allows `minecraft:horse`. The animal must be tamed. Babies are refused. Add more ids in `config/trotting_wagons-server.toml` under `allowed_entities`, or append them to that tag from another mod.
 
 Every wagon has a harness slot.
 
@@ -55,7 +55,7 @@ The English names follow the icons. Shafts are the single pole. The tongue is th
 
 Right-click a free wagon with the harness item to fit it. Shift-right-click the pole to take it off. It cannot be removed or swapped while an animal is hitched. An empty harness releases any animals that were still recorded on that wagon.
 
-A hitched animal stands straight, does not graze, and is pulled back if it drifts more than half a block sideways. If it ends up more than 2 blocks from its hitch point, in any direction, it is released where it stands. An animal in an unloaded chunk stays hitched.
+A hitched animal stands straight, does not graze, and is pulled back if it drifts more than half a block sideways. If it ends up more than 5 blocks from its hitch point, in any direction, it is released where it stands. An animal in an unloaded chunk stays hitched.
 
 ## Seats and the menu
 

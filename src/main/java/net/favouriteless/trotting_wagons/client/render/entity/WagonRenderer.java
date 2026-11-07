@@ -18,6 +18,7 @@ public class WagonRenderer<T extends AbstractWagon> extends GeoEntityRenderer<T>
     public WagonRenderer(Context renderManager, ResourceLocation id) {
         super(renderManager, new WagonModel<>(id));
         addRenderLayer(new WagonBannerLayer<>(this));
+        addRenderLayer(new YellowBoxLayer<>(this));
     }
 
     @Override
@@ -47,7 +48,8 @@ public class WagonRenderer<T extends AbstractWagon> extends GeoEntityRenderer<T>
 
     @Override
     public void renderCubesOfBone(PoseStack poseStack, GeoBone bone, VertexConsumer buffer, int packedLight, int packedOverlay, int colour) {
-        if(bone.getName().equals("banner"))
+        String name = bone.getName();
+        if(name.equals("banner") || name.equals("hitbox"))
             return;
         super.renderCubesOfBone(poseStack, bone, buffer, packedLight, packedOverlay, colour);
     }

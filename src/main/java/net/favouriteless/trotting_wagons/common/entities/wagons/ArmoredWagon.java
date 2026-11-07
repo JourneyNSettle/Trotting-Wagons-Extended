@@ -1,5 +1,8 @@
 package net.favouriteless.trotting_wagons.common.entities.wagons;
 
+import com.kltyton.bonehitboxlib.api.bone.collision.ObbCollisionMode;
+import com.kltyton.bonehitboxlib.api.geckolib.entity.GeoBoneHitboxEntity;
+import com.kltyton.bonehitboxlib.api.registration.registrar.ObbBoneRegistrar;
 import net.favouriteless.trotting_wagons.ServerConfig;
 import net.favouriteless.trotting_wagons.common.entities.WagonBuild;
 import net.favouriteless.trotting_wagons.common.entities.base.AbstractWagon;
@@ -26,7 +29,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.items.ItemStackHandler;
 
-public class ArmoredWagon extends AbstractWagon implements MenuProvider {
+public class ArmoredWagon extends AbstractWagon implements MenuProvider, GeoBoneHitboxEntity {
 
     /** 0 none, 1 shafts (bone shafts, one animal), 2 tongue (bone Tongue, two animals). */
     private static final EntityDataAccessor<Integer> DATA_HARNESS = SynchedEntityData.defineId(ArmoredWagon.class, EntityDataSerializers.INT);
@@ -58,6 +61,13 @@ public class ArmoredWagon extends AbstractWagon implements MenuProvider {
             new WagonSeat(new Vec3(-0.5D, 1.18D, -1.1D), WagonSeat.Kind.PLAYER),
             new WagonSeat(new Vec3(0.5D, 1.18D, -1.1D), WagonSeat.Kind.PLAYER)
     };
+
+    /** Body shell. The cubes are not drawn; BoneHitboxLib uses them as the solid box. */
+    @Override
+    public void bonehitboxlib$registerObbBones(ObbBoneRegistrar registrar) {
+        registrar.register(GeoBoneHitboxEntity.BONEHITBOXLIB_GEO_SOURCE, "hitbox")
+                .collision(ObbCollisionMode.HARD);
+    }
 
     public ArmoredWagon(EntityType<ArmoredWagon> type, Level level) {
         super(type, level, 1, 1, SEATS, ServerConfig.INSTANCE.armoredSpeed.get(),

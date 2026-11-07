@@ -30,6 +30,7 @@
   "gui.trotting_wagons.build.sticks": "Длинные палки %s/%s",
   "gui.trotting_wagons.build.planks": "Доски %s/%s",
   "gui.trotting_wagons.build.iron": "Железные слитки %s/%s",
+  "gui.trotting_wagons.build.gearbox": "Коробка передач %s/%s",
   "gui.trotting_wagons.build.hay": "Солома %s/%s",
   "gui.trotting_wagons.build.wool": "Шерсть %s/%s",
   "gui.trotting_wagons.build.iron_block": "Блоки железа %s/%s",
