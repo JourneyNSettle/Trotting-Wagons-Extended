@@ -25,6 +25,7 @@ public class WagonItemRenderer extends BlockEntityWithoutLevelRenderer {
         if(wagon == null)
             wagon = type.create(Minecraft.getInstance().level);
 
+        wagon.previewRegularWheels();
         wagon.setColor(stack.get(DataComponents.BASE_COLOR));
 
         Minecraft.getInstance().getEntityRenderDispatcher().render(wagon, 0, 0, 0, 0, 0, pose, buffer, packedLight);

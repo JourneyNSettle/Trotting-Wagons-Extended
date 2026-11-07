@@ -42,6 +42,14 @@ license="${mod_license}"
     side="CLIENT"
 
 [[dependencies.${mod_id}]]
+    modId="geckolib"
+    type="required"
+    mandatory=true
+    versionRange="[${geckolib_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
     modId="bonehitboxlib"
     type="required"
     mandatory=true

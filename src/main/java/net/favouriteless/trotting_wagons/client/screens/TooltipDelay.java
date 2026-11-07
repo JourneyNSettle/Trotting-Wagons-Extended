@@ -5,7 +5,7 @@ import net.minecraft.world.inventory.Slot;
 
 final class TooltipDelay {
 
-    static final long MILLIS = 1000L;
+    static final long MILLIS = 0L;
 
     private Slot slot;
     private long start = -1L;
@@ -19,7 +19,7 @@ final class TooltipDelay {
         if(hovered != slot) {
             slot = hovered;
             start = Util.getMillis();
-            return false;
+            return MILLIS <= 0L;
         }
         return Util.getMillis() - start >= MILLIS;
     }

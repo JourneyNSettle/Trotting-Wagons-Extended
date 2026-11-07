@@ -14,6 +14,7 @@ public class BaseWagonRenderer extends GeoEntityRenderer<BaseWagon> {
 
     public BaseWagonRenderer(Context context) {
         super(context, new BaseWagonModel());
+        addRenderLayer(new YellowBoxLayer<>(this));
     }
 
     @Override

@@ -27,7 +27,6 @@ import net.minecraft.network.syncher.SynchedEntityData.Builder;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.EntityTypeTags;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.util.Mth;
@@ -38,6 +37,7 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.EntityAttachment;
+import net.minecraft.world.entity.TamableAnimal;
 import net.minecraft.world.entity.animal.camel.Camel;
 import net.minecraft.world.entity.animal.horse.AbstractHorse;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -45,9 +45,7 @@ import net.minecraft.world.entity.npc.AbstractVillager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.Item;
-import net.minecraft.tags.ItemTags;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.GameRules;
@@ -63,7 +61,10 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import net.neoforged.neoforge.network.PacketDistributor;
 
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -108,7 +109,7 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
     private static final double BLOCKS_PER_SPEED_ATTRIBUTE = 43.17D;
     public static final double HORIZONTAL_TETHER = 0.5D * 0.5D; // Use sqr for performance
     /** Farther than this from the hitch point, in any direction, and the animal is released. */
-    private static final double HITCH_BREAK_DISTANCE_SQR = 2.0D * 2.0D;
+    private static final double HITCH_BREAK_DISTANCE_SQR = 5.0D * 5.0D;
     private static final Set<UUID> HARNESS_MARKS = ConcurrentHashMap.newKeySet();
     public static final int BOARD_COOLDOWN_TICKS = 60;
     public static final double ANIMAL_BOARD_RANGE = 1.0D;
@@ -242,7 +243,7 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
             }
         }
         super.tick();
-        setBoundingBox(makeBoundingBox());
+        refreshBounds();
     }
 
     /** Yaw-aligned body. The tongue and shafts are not part of this box. */
@@ -396,7 +397,7 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
             setSpeedLevel(0);
             setSteeringImpulse(0);
         }
-        if(!hasAllWheels() || holdsTravel())
+        if(!hasAllWheels() || hasSpentWheel() || holdsTravel())
             currentSpeed = 0;
 
         tickBog();
@@ -476,7 +477,7 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
     }
 
     private double computeMaxSpeedPerTick() {
-        if(!hasAllWheels() || !hasPullers() || holdsTravel())
+        if(!hasAllWheels() || hasSpentWheel() || !hasPullers() || holdsTravel())
             return 0;
         double slowest = Double.POSITIVE_INFINITY;
         for(Mob animal : horses) {
@@ -523,13 +524,9 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         return false;
     }
 
-    /** Dirt-family blocks, sand, gravel, and snow. Dirt path is a road and is not soft. */
+    /** Dirt, sand, snow, and gravel. Paths stay out of trotting_wagons:soft_ground. */
     private static boolean softGround(BlockState state) {
-        if(state.is(BlockTags.DIRT) || state.is(BlockTags.SAND))
-            return true;
-        if(state.is(Blocks.GRAVEL) || state.is(Blocks.SUSPICIOUS_GRAVEL))
-            return true;
-        return state.is(Blocks.SNOW) || state.is(Blocks.SNOW_BLOCK) || state.is(Blocks.POWDER_SNOW);
+        return state.is(TrottingWagons.SOFT_GROUND);
     }
 
     private BlockState blockUnderWheel(WagonParts.Part part) {
@@ -623,7 +620,7 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
 
     @Override
     public InteractionResult interact(Player player, InteractionHand hand) {
-        if(!isAlive())
+        if(!isAlive() || !withinReach(player))
             return InteractionResult.PASS;
 
         final boolean isClientSide = level().isClientSide;
@@ -658,6 +655,13 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
             return InteractionResult.SUCCESS;
         }
         return InteractionResult.PASS;
+    }
+
+    /** Matches the modest pick radius, so a click on the body is accepted and a far click is not. */
+    private boolean withinReach(Player player) {
+        double reach = player.entityInteractionRange();
+        AABB target = getBoundingBox().inflate(boardingPickRadius());
+        return target.distanceToSqr(player.getEyePosition()) <= reach * reach;
     }
 
     public boolean hitchRiddenAnimal(Mob animal) {
@@ -1115,6 +1119,17 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         }
     }
 
+    private static final UnaryOperator<ItemStack> REMOVE_WHEEL = stack -> ItemStack.EMPTY;
+    private static UnaryOperator<ItemStack> wheelLoss = REMOVE_WHEEL;
+
+    /**
+     * Another mod can keep a wheel that would be removed. An empty result still removes it.
+     * While a handler is set, a wheel at 20 durability or less can drop to zero instead.
+     */
+    public static void setWheelLoss(UnaryOperator<ItemStack> loss) {
+        wheelLoss = loss == null ? REMOVE_WHEEL : loss;
+    }
+
     private void wearWheels() {
         boolean broke = false;
         for(int i = 0; i < wheels.size(); i++) {
@@ -1122,9 +1137,11 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
             if(stack.isEmpty())
                 continue;
             ensureWheelDurability(stack);
+            if(stack.getDamageValue() >= stack.getMaxDamage())
+                continue;
             int damage = stack.getDamageValue() + 1;
             if(damage >= stack.getMaxDamage()) {
-                wheelHandler.setStackInSlot(i, ItemStack.EMPTY);
+                wheelHandler.setStackInSlot(i, lostWheel(stack));
                 broke = true;
             } else {
                 stack.setDamageValue(damage);
@@ -1137,19 +1154,27 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
 
     private void maybeBreakWornWheels() {
         boolean broke = false;
+        int limit = wheelLoss == REMOVE_WHEEL ? WHEEL_BREAK_BELOW : WHEEL_BREAK_BELOW + 1;
         for(int i = 0; i < wheels.size(); i++) {
             ItemStack stack = wheels.get(i);
             if(stack.isEmpty())
                 continue;
             ensureWheelDurability(stack);
             int remaining = stack.getMaxDamage() - stack.getDamageValue();
-            if(remaining < WHEEL_BREAK_BELOW && RANDOM.nextFloat() < 0.01F) {
-                wheelHandler.setStackInSlot(i, ItemStack.EMPTY);
+            if(remaining <= 0 || remaining >= limit)
+                continue;
+            if(RANDOM.nextFloat() < 0.01F) {
+                wheelHandler.setStackInSlot(i, lostWheel(stack));
                 broke = true;
             }
         }
         if(broke)
             level().playSound(null, blockPosition(), SoundEvents.ITEM_BREAK, SoundSource.PLAYERS, 0.8F, 1.0F);
+    }
+
+    private static ItemStack lostWheel(ItemStack stack) {
+        ItemStack kept = wheelLoss.apply(stack);
+        return kept == null ? ItemStack.EMPTY : kept;
     }
 
     private static void ensureWheelDurability(ItemStack stack) {
@@ -1407,9 +1432,35 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         return entity.level().getGameTime() < entity.getPersistentData().getLong(BOARD_COOLDOWN);
     }
 
+    private static final List<Predicate<Entity>> DRAFT_CHECKS = new ArrayList<>();
+
+    /** Another mod can refuse a listed animal. TFC uses this for the outlined familiarity heart. */
+    public static void addDraftCheck(Predicate<Entity> check) {
+        DRAFT_CHECKS.add(check);
+    }
+
     public static boolean isAllowedPuller(Entity entity) {
         if(entity instanceof LivingEntity living && living.isBaby())
             return false;
+        if(!isTamedMount(entity) || !isListedDraft(entity))
+            return false;
+        for(Predicate<Entity> check : DRAFT_CHECKS) {
+            if(!check.test(entity))
+                return false;
+        }
+        return true;
+    }
+
+    /** A horse or camel must be tamed. A wolf or cat must be tamed. Other mobs have no tame state. */
+    private static boolean isTamedMount(Entity entity) {
+        if(entity instanceof AbstractHorse horse)
+            return horse.isTamed();
+        if(entity instanceof TamableAnimal animal)
+            return animal.isTame();
+        return false;
+    }
+
+    private static boolean isListedDraft(Entity entity) {
         if(entity.getType().is(TrottingWagons.DRAFT_ANIMALS))
             return true;
         try {
@@ -1640,18 +1691,18 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
             return false;
         return switch(repairNeed(slot)) {
             case "planks" -> stack.is(ItemTags.PLANKS);
-            case "iron" -> stack.is(Items.IRON_INGOT);
-            case "wool" -> stack.is(ItemTags.WOOL);
+            case "iron" -> stack.is(TrottingWagons.IRON_INGOTS);
+            case "wool" -> stack.is(TrottingWagons.WOOL);
             case "leather" -> stack.is(Items.LEATHER);
-            case "string" -> stack.is(Items.STRING);
-            case "slime" -> stack.is(Items.SLIME_BALL);
+            case "string" -> stack.is(TrottingWagons.STRING);
+            case "slime" -> stack.is(TrottingWagons.GLUE);
             default -> false;
         };
     }
 
     public boolean isRepairMaterial(ItemStack stack) {
-        return stack.is(ItemTags.PLANKS) || stack.is(Items.IRON_INGOT) || stack.is(ItemTags.WOOL)
-                || stack.is(Items.LEATHER) || stack.is(Items.STRING) || stack.is(Items.SLIME_BALL);
+        return stack.is(ItemTags.PLANKS) || stack.is(TrottingWagons.IRON_INGOTS) || stack.is(TrottingWagons.WOOL)
+                || stack.is(Items.LEATHER) || stack.is(TrottingWagons.STRING) || stack.is(TrottingWagons.GLUE);
     }
 
     public ItemStack repairIcon(int slot) {
@@ -1761,6 +1812,15 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         refreshRepairSlots();
     }
 
+    /** The inventory icon is a dummy entity. It shows four regular wheels and is never spawned. */
+    public void previewRegularWheels() {
+        int kinds = 0;
+        for(int i = 0; i < WHEEL_COUNT; i++)
+            kinds |= WheelKind.REGULAR.ordinal() << (i * 2);
+        entityData.set(DATA_WHEEL_KINDS, (byte)kinds);
+        entityData.set(DATA_WHEELS, (byte)0x0F);
+    }
+
     public int getWheelMask() {
         return entityData.get(DATA_WHEELS) & 0x0F;
     }
@@ -1772,6 +1832,11 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
 
     public boolean hasAllWheels() {
         return getWheelMask() == 0x0F;
+    }
+
+    /** High nibble of {@code DATA_WHEELS}: that fitted wheel is at zero durability. */
+    private boolean hasSpentWheel() {
+        return (entityData.get(DATA_WHEELS) & 0xF0) != 0;
     }
 
     private boolean hasWideWheel() {
@@ -1827,7 +1892,7 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         if(count >= 3)
             return WheelSag.NONE;
 
-        float half = WHEEL_SAG * 0.25F;
+        float half = oneWheelSag();
         float pitch = 0;
         float roll = 0;
         if(!fl && !fr && rl && rr)
@@ -1888,6 +1953,11 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
      */
     protected double bareDrop() {
         return 7D / 16D;
+    }
+
+    /** Pitch and roll magnitude when only one wheel remains. */
+    protected float oneWheelSag() {
+        return WHEEL_SAG * 0.25F;
     }
 
     protected float missingRearPitch() {
@@ -1952,14 +2022,18 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
 
     private void updateWheelMask() {
         int mask = 0;
+        int spent = 0;
         int kinds = 0;
         for(int i = 0; i < wheels.size(); i++) {
-            WheelKind kind = WheelKind.fromStack(wheels.get(i));
+            ItemStack stack = wheels.get(i);
+            WheelKind kind = WheelKind.fromStack(stack);
             if(kind != WheelKind.NONE)
                 mask |= 1 << i;
+            if(kind != WheelKind.NONE && stack.getMaxDamage() > 0 && stack.getDamageValue() >= stack.getMaxDamage())
+                spent |= 1 << i;
             kinds |= kind.ordinal() << (i * 2);
         }
-        entityData.set(DATA_WHEELS, (byte)mask);
+        entityData.set(DATA_WHEELS, (byte)(mask | (spent << 4)));
         entityData.set(DATA_WHEEL_KINDS, (byte)kinds);
     }
 

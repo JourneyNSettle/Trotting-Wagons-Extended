@@ -1,6 +1,7 @@
 package net.favouriteless.trotting_wagons.common.entities.wagons;
 
 import net.favouriteless.trotting_wagons.ServerConfig;
+import net.favouriteless.trotting_wagons.TrottingWagons;
 import net.favouriteless.trotting_wagons.common.entities.WagonBuild;
 import net.favouriteless.trotting_wagons.common.entities.base.AbstractInventoryWagon;
 import net.favouriteless.trotting_wagons.common.entities.base.WagonSeat;
@@ -23,7 +24,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.LightBlock;
@@ -71,7 +71,7 @@ public class BigCartWagon extends AbstractInventoryWagon {
     private final ItemStackHandler lanternItems = new ItemStackHandler(lantern) {
         @Override
         public boolean isItemValid(int slot, ItemStack stack) {
-            return stack.is(Items.LANTERN);
+            return stack.is(TrottingWagons.LANTERNS);
         }
 
         @Override
@@ -110,15 +110,33 @@ public class BigCartWagon extends AbstractInventoryWagon {
     @Override
     public void tick() {
         super.tick();
-        setBoundingBox(makeBoundingBox());
+        refreshBounds();
         if(!level().isClientSide && tickCount % 10 == 0)
             updateLanternLight();
     }
 
-    /** Axle foot at y=6.75. */
+    /** Axle foot at y=6.75, then two pixels lower with no wheels. */
     @Override
     protected double bareDrop() {
-        return 6.75D / 16D;
+        return 8.75D / 16D;
+    }
+
+    /** One remaining wheel leans one degree past the shared 3.5° pitch and roll. */
+    @Override
+    protected float oneWheelSag() {
+        return super.oneWheelSag() + 1.0F;
+    }
+
+    /** One remaining wheel sits two pixels lower. A lone rear wheel sits one pixel lower still. */
+    @Override
+    protected double sagDropCorrection(int count, float pitch, float roll, double anchored) {
+        double correction = super.sagDropCorrection(count, pitch, roll, anchored);
+        if(count == 1)
+            correction += 2D / 16D;
+        int mask = getWheelMask() & 0x0F;
+        if(mask == 0b0100 || mask == 0b1000)
+            correction += 1D / 16D;
+        return correction;
     }
 
     @Override

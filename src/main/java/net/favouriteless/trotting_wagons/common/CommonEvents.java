@@ -1,6 +1,7 @@
 package net.favouriteless.trotting_wagons.common;
 
 import net.favouriteless.trotting_wagons.TrottingWagons;
+import net.favouriteless.trotting_wagons.common.entities.ObbAnimalStop;
 import net.favouriteless.trotting_wagons.common.entities.base.AbstractWagon;
 import net.favouriteless.trotting_wagons.common.entities.wagons.KibitkaWagon;
 import net.favouriteless.trotting_wagons.common.items.HorseWhipItem;
@@ -10,6 +11,7 @@ import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.animal.Animal;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.player.Player.BedSleepingProblem;
 import net.minecraft.world.item.ItemStack;
@@ -21,6 +23,7 @@ import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
 import net.neoforged.neoforge.event.entity.player.CanContinueSleepingEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.neoforge.event.tick.EntityTickEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
 @EventBusSubscriber(modid = TrottingWagons.MOD_ID)
@@ -44,6 +47,12 @@ public class CommonEvents {
     public static void onStartTracking(PlayerEvent.StartTracking event) {
         if(event.getEntity() instanceof ServerPlayer player && event.getTarget() instanceof AbstractWagon wagon)
             wagon.sendSeatSync(player);
+    }
+
+    @SubscribeEvent
+    public static void onAnimalTick(EntityTickEvent.Post event) {
+        if(event.getEntity() instanceof Animal animal)
+            ObbAnimalStop.afterTick(animal);
     }
 
     @SubscribeEvent

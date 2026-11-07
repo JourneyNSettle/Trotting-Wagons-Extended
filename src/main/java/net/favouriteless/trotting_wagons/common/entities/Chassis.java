@@ -1,5 +1,7 @@
 package net.favouriteless.trotting_wagons.common.entities;
 
+import net.favouriteless.trotting_wagons.TrottingWagons;
+import net.favouriteless.trotting_wagons.common.entities.base.AbstractGeckolibVehicle;
 import net.favouriteless.trotting_wagons.common.init.TWEntityTypes;
 import net.favouriteless.trotting_wagons.common.init.TWItems;
 import net.minecraft.nbt.CompoundTag;
@@ -16,7 +18,6 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
@@ -42,6 +43,7 @@ public class Chassis extends Entity implements GeoEntity {
 
     private static final EntityDataAccessor<Integer> DATA_PLANKS = SynchedEntityData.defineId(Chassis.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> DATA_IRON = SynchedEntityData.defineId(Chassis.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Integer> DATA_EXTRA = SynchedEntityData.defineId(Chassis.class, EntityDataSerializers.INT);
 
     private final AnimatableInstanceCache animCache = GeckoLibUtil.createInstanceCache(this);
     private final WagonBuild build = new WagonBuild();
@@ -59,10 +61,15 @@ public class Chassis extends Entity implements GeoEntity {
         return entityData.get(DATA_IRON);
     }
 
+    public int extraCount() {
+        return entityData.get(DATA_EXTRA);
+    }
+
     @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         builder.define(DATA_PLANKS, 0);
         builder.define(DATA_IRON, 0);
+        builder.define(DATA_EXTRA, 0);
     }
 
     @Override
@@ -79,7 +86,7 @@ public class Chassis extends Entity implements GeoEntity {
     @Override
     public void tick() {
         super.tick();
-        setBoundingBox(makeBoundingBox());
+        setBoundingBox(AbstractGeckolibVehicle.halfFootprint(makeBoundingBox(), false));
     }
 
     @Override
@@ -112,7 +119,7 @@ public class Chassis extends Entity implements GeoEntity {
         if(build.ready())
             finish();
         else
-            playSound(held.is(Items.IRON_INGOT) ? SoundEvents.ITEM_PICKUP : SoundEvents.WOOD_PLACE, 0.8F, 1.0F);
+            playSound(held.is(TrottingWagons.IRON_INGOTS) ? SoundEvents.ITEM_PICKUP : SoundEvents.WOOD_PLACE, 0.8F, 1.0F);
         return InteractionResult.CONSUME;
     }
 
@@ -144,8 +151,11 @@ public class Chassis extends Entity implements GeoEntity {
     private int roomFor(ItemStack held) {
         if(held.is(ItemTags.PLANKS))
             return Math.max(0, WagonBuild.PLANKS - shown(build.planks(), plankCount()));
-        if(held.is(Items.IRON_INGOT))
+        if(held.is(TrottingWagons.IRON_INGOTS))
             return Math.max(0, WagonBuild.IRON - shown(build.iron(), ironCount()));
+        WagonBuild.Need extra = WagonBuild.chassisExtra();
+        if(extra != null && extra.test().test(held))
+            return Math.max(0, extra.required() - shown(build.countOf(extra), extraCount()));
         return 0;
     }
 
@@ -156,6 +166,7 @@ public class Chassis extends Entity implements GeoEntity {
     private void syncCounts() {
         entityData.set(DATA_PLANKS, build.planks());
         entityData.set(DATA_IRON, build.iron());
+        entityData.set(DATA_EXTRA, build.countOf(WagonBuild.chassisExtra()));
     }
 
     private void finish() {

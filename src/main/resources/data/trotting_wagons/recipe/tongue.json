@@ -7,9 +7,9 @@
     " L "
   ],
   "key": {
-    "L": { "item": "trotting_wagons:long_stick" },
+    "L": { "tag": "trotting_wagons:long_sticks" },
     "S": { "item": "minecraft:saddle" },
-    "T": { "item": "minecraft:string" }
+    "T": { "tag": "trotting_wagons:string" }
   },
   "result": { "id": "trotting_wagons:tongue" }
 }

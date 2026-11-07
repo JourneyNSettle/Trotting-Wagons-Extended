@@ -10,6 +10,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import software.bernie.geckolib.animatable.GeoEntity;
@@ -260,7 +261,48 @@ public abstract class AbstractGeckolibVehicle extends Entity implements GeoEntit
         lerpSteps = steps;
     }
 
-    /** The white box still blocks terrain and can be targeted. It does not stop a player or an animal. */
+    /** Full body, kept for rendering culling. The entity box itself is only the ground plate. */
+    private AABB visualBody;
+
+    /**
+     * The tall white cage is not used. The entity box is a ground plate, half as long and
+     * half as wide as the body. Clicking adds half the old pick radius, so the player can
+     * reach the body without the earlier wide halo. The yellow bone box stops a player or a horse.
+     */
+    protected void refreshBounds() {
+        AABB body = makeBoundingBox();
+        visualBody = body;
+        setBoundingBox(halfFootprint(body, true));
+    }
+
+    /** Half the length and width, centered. A plate keeps only the bottom quarter block. */
+    public static AABB halfFootprint(AABB body, boolean plate) {
+        double centerX = (body.minX + body.maxX) * 0.5D;
+        double centerZ = (body.minZ + body.maxZ) * 0.5D;
+        double halfX = (body.maxX - body.minX) * 0.25D;
+        double halfZ = (body.maxZ - body.minZ) * 0.25D;
+        double top = plate ? Math.min(body.maxY, body.minY + 0.25D) : body.maxY;
+        return new AABB(centerX - halfX, body.minY, centerZ - halfZ, centerX + halfX, top, centerZ + halfZ);
+    }
+
+    @Override
+    public AABB getBoundingBoxForCulling() {
+        return visualBody != null ? visualBody : super.getBoundingBoxForCulling();
+    }
+
+    /** Half of the old radius, which used the whole body height. */
+    protected float boardingPickRadius() {
+        if(visualBody == null)
+            return 0.0F;
+        return (float)Math.max(0.0D, (visualBody.maxY - getBoundingBox().maxY) * 0.5D);
+    }
+
+    @Override
+    public float getPickRadius() {
+        return Math.max(super.getPickRadius(), boardingPickRadius());
+    }
+
+    /** The ground plate blocks terrain. It does not stop a player or an animal. */
     @Override
     public boolean canBeCollidedWith() {
         return false;

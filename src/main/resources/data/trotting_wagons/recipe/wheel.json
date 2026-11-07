@@ -9,7 +9,7 @@
   "key": {
     "P": { "tag": "minecraft:planks" },
     "S": { "item": "minecraft:stick" },
-    "I": { "item": "minecraft:iron_ingot" }
+    "I": { "tag": "trotting_wagons:iron_ingots" }
   },
   "result": { "id": "trotting_wagons:wheel" }
 }

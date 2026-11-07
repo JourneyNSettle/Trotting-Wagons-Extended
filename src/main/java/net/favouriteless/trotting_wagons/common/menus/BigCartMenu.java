@@ -11,7 +11,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 
 public class BigCartMenu extends AbstractContainerMenu {
 
@@ -121,7 +120,7 @@ public class BigCartMenu extends AbstractContainerMenu {
             moved = moveItemStackTo(item, wheelStart, playerStart, false);
         } else if(TWItems.isHarness(item)) {
             moved = moveItemStackTo(item, harnessSlot, harnessSlot + 1, false);
-        } else if(item.is(Items.LANTERN)) {
+        } else if(item.is(TrottingWagons.LANTERNS)) {
             moved = moveItemStackTo(item, lanternSlot, lanternSlot + 1, false);
         } else if(wagon != null && wagon.isRepairMaterial(item)
                 && RepairShift.fill(item, repairStart, slots.size(), this::moveItemStackTo)) {

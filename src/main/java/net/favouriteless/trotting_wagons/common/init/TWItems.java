@@ -3,6 +3,7 @@ package net.favouriteless.trotting_wagons.common.init;
 import net.favouriteless.trotting_wagons.TrottingWagons;
 import net.favouriteless.trotting_wagons.common.items.ChassisItem;
 import net.favouriteless.trotting_wagons.common.items.HorseWhipItem;
+import net.favouriteless.trotting_wagons.common.items.PartItem;
 import net.favouriteless.trotting_wagons.common.items.WagonItem;
 import net.favouriteless.trotting_wagons.common.items.WheelItem;
 import net.minecraft.core.component.DataComponents;
@@ -33,12 +34,12 @@ public class TWItems {
 
     public static final DeferredHolder<Item, HorseWhipItem> HORSE_WHIP = REGISTRY.register("horse_whip", () -> new HorseWhipItem(new Properties().stacksTo(1)));
     /** Two animals. The model bone is Tongue. */
-    public static final DeferredHolder<Item, Item> TONGUE = REGISTRY.register("tongue", () -> new Item(new Properties().stacksTo(1)));
+    public static final DeferredHolder<Item, PartItem> TONGUE = REGISTRY.register("tongue", () -> new PartItem(new Properties().stacksTo(1), "tongue"));
     /** One animal. The model bone is shafts. */
-    public static final DeferredHolder<Item, Item> SHAFTS = REGISTRY.register("shafts", () -> new Item(new Properties().stacksTo(1)));
-    public static final DeferredHolder<Item, WheelItem> WHEEL = REGISTRY.register("wheel", () -> new WheelItem(new Properties().durability(100)));
-    public static final DeferredHolder<Item, WheelItem> WIDE_WHEEL = REGISTRY.register("wide_wheel", () -> new WheelItem(new Properties().durability(100)));
-    public static final DeferredHolder<Item, WheelItem> REINFORCED_WHEEL = REGISTRY.register("reinforced_wheel", () -> new WheelItem(new Properties().durability(300)));
+    public static final DeferredHolder<Item, PartItem> SHAFTS = REGISTRY.register("shafts", () -> new PartItem(new Properties().stacksTo(1), "shafts"));
+    public static final DeferredHolder<Item, WheelItem> WHEEL = REGISTRY.register("wheel", () -> new WheelItem(new Properties().durability(100), "wheel"));
+    public static final DeferredHolder<Item, WheelItem> WIDE_WHEEL = REGISTRY.register("wide_wheel", () -> new WheelItem(new Properties().durability(100), "wide_wheel"));
+    public static final DeferredHolder<Item, WheelItem> REINFORCED_WHEEL = REGISTRY.register("reinforced_wheel", () -> new WheelItem(new Properties().durability(300), "reinforced_wheel"));
     public static final DeferredHolder<Item, Item> LONG_STICK = REGISTRY.register("long_stick", () -> new Item(new Properties()));
     public static final DeferredHolder<Item, ChassisItem> CHASSIS = REGISTRY.register("chassis", () -> new ChassisItem(new Properties()));
 

@@ -1,0 +1,9 @@
+{
+  "values": [
+    "#minecraft:dirt",
+    "#minecraft:sand",
+    "#minecraft:snow",
+    "minecraft:gravel",
+    "minecraft:suspicious_gravel"
+  ]
+}

@@ -3,6 +3,8 @@ package net.favouriteless.trotting_wagons.common.entities;
 import com.kltyton.bonehitboxlib.api.bone.collision.ObbCollisionMode;
 import com.kltyton.bonehitboxlib.api.geckolib.entity.GeoBoneHitboxEntity;
 import com.kltyton.bonehitboxlib.api.registration.registrar.ObbBoneRegistrar;
+import net.favouriteless.trotting_wagons.TrottingWagons;
+import net.favouriteless.trotting_wagons.common.entities.base.AbstractGeckolibVehicle;
 import net.favouriteless.trotting_wagons.common.entities.base.AbstractWagon;
 import net.favouriteless.trotting_wagons.common.init.TWEntityTypes;
 import net.favouriteless.trotting_wagons.common.init.TWItems;
@@ -25,7 +27,6 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
@@ -169,12 +170,15 @@ public class BaseWagon extends Entity implements GeoEntity, GeoBoneHitboxEntity,
 
     @Override
     public InteractionResult interact(Player player, InteractionHand hand) {
+        double reach = player.entityInteractionRange();
+        if(getBoundingBox().distanceToSqr(player.getEyePosition()) > reach * reach)
+            return InteractionResult.PASS;
         if(level().isClientSide)
             return InteractionResult.SUCCESS;
         if(showsPlan()) {
             ItemStack held = player.getItemInHand(hand);
             int limit = player.isShiftKeyDown() ? Integer.MAX_VALUE : 1;
-            boolean metal = held.is(Items.IRON_INGOT) || held.is(Items.IRON_BLOCK);
+            boolean metal = held.is(TrottingWagons.IRON_INGOTS) || held.is(TrottingWagons.IRON_BLOCKS);
             if(plan.offer(held, player.getAbilities().instabuild, limit)) {
                 syncPlan();
                 if(plan.ready())
@@ -209,10 +213,20 @@ public class BaseWagon extends Entity implements GeoEntity, GeoBoneHitboxEntity,
         compound.putString("Choice", choice());
     }
 
+    /** Full body for culling and clicks. The entity box is the ground plate. */
+    private AABB visualBody;
+
     @Override
     public void tick() {
         super.tick();
-        setBoundingBox(makeBoundingBox());
+        AABB body = makeBoundingBox();
+        visualBody = body;
+        setBoundingBox(AbstractGeckolibVehicle.halfFootprint(body, true));
+    }
+
+    @Override
+    public AABB getBoundingBoxForCulling() {
+        return visualBody != null ? visualBody : super.getBoundingBoxForCulling();
     }
 
     @Override
