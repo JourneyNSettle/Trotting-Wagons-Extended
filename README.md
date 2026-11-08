@@ -1,120 +1,89 @@
 # Trotting Wagons Extended
 
-Horse-drawn wagons for Minecraft 1.21.1. Version **0.9.6** is a public test build: it is meant to be played, and it is not a finished 1.0.
+Horse-drawn wagons for Minecraft 1.21.1. Version **0.9.6** is a public test build. The mod id is still `trotting_wagons`, so old worlds keep their wagons. This repository continues [Favouriteless/Trotting-Wagons](https://github.com/Favouriteless/Trotting-Wagons).
 
-This repository continues [Favouriteless/Trotting-Wagons](https://github.com/Favouriteless/Trotting-Wagons). The mod id is still `trotting_wagons`, so old worlds keep their wagons. The name in the game is Trotting Wagons Extended.
-
-The current test jar is on the [0.9.6 release](https://github.com/JourneyNSettle/Trotting-Wagons-Extended/releases/tag/v0.9.6).
-
-## Requirements
-
-| | |
-| --- | --- |
-| Minecraft | 1.21.1 |
-| NeoForge | 21.1.248 or newer in the 21.1 line |
-| BoneHitboxLib | 0.3.0 for NeoForge 1.21.1. The debug wagon uses it for the body collision |
-| GeckoLib | 4.8.3 for NeoForge 1.21.1 |
-| Sides | Server and every client |
-
-[Block Runner](https://www.curseforge.com/minecraft/mc-mods/block-runner) is optional. When it is installed, a wheel's speed follows the block under that wheel, and the Block Runner modifier is taken off the draft animal before the wagon speed is calculated.
+The test jar is on the [0.9.6 release](https://github.com/JourneyNSettle/Trotting-Wagons-Extended/releases/tag/v0.9.6).
 
 ## Install
 
-Put `trotting-wagons-extended-0.9.6.jar`, GeckoLib, and BoneHitboxLib in the `mods` folder. The server and every player need the same copy.
+Minecraft 1.21.1, NeoForge 21.1.248 or newer, GeckoLib 4.8.3, and BoneHitboxLib 0.3.0. Put the same jars on the server and on every client. [Block Runner](https://www.curseforge.com/minecraft/mc-mods/block-runner) is optional: wheels then follow the block under them.
 
-## Wagon base
+## Build a wagon
 
-Craft a long stick from sticks and string, then a chassis from long sticks, sticks, string, and a slimeball. Place the chassis and right-click it with planks and iron ingots. One click adds one item. Sneak adds as many as the stage still needs, up to 16 planks and 4 iron ingots. When both are full, the chassis becomes a wagon base. The chassis does not stop the player. The finished base does, through a BoneHitboxLib hitbox. Break either with an axe to get the chassis item and the materials back.
+Craft a long stick from two sticks and two strings. Craft a chassis from long sticks, sticks, string, and slime. Place the chassis on a block top and right-click it with planks and iron ingots. One click adds one item. Sneak adds as many as that step still needs: 16 planks and 4 iron ingots. The chassis then becomes a wagon base.
 
-The horse whip, tongue, shafts, wheels, long stick, and chassis are in the **Trotting Wagons Extended** creative tab. Finished wagons are not in that tab, and JEI does not list them. They are built from the base. The whip, both harnesses, the long stick, the chassis, and all three wheel types have crafting recipes.
+Right-click the base and choose a wagon. The screen lists what that wagon still needs. Right-click the base with those items to add them. Sneak adds a stack's worth. When the list is full, the wagon appears in place of the base. Finished wagons are not in the creative tab and not in JEI.
 
-## Driving
+Break a chassis or an unfinished base with an axe. You get the chassis item and the materials back.
 
-Sit in the driver seat. The view switches to third person behind the wagon, and it returns to first person when you leave that seat. In third person the mouse wheel sets the camera distance, from 1 to 10 blocks, starting at 6. Scrolling closer than 1 block switches to first person. Scrolling out from first person returns to third person. Scrolling does not change the hotbar slot while you are driving. Passengers keep the normal camera.
+## Fit the harness
 
-Right-click with the horse whip raises the gear by one, up to 4. Left-click with the whip in the main hand lowers it by one. Gear 0 is stopped. The wagon does not drop from 4 back to 0 on its own. A bar above the hotbar shows speed only to the driver.
-
-Reverse is shift-right-click with the whip. Reverse uses the same gear at a quarter of the forward target.
-
-The wagon moves only while a player is driving, every hitch point has an animal, and all four wheels are fitted. Steering still works with a partial team. A harnessed wagon that is not moving turns in place at half rate.
-
-Top speed is the slowest living draft animal, times the wagon, times the wheels, times the harness. One wide wheel anywhere on the wagon multiplies speed by 0.8. Four wide wheels stay at 0.8. Reinforced wheels do not change speed. The numbers are in [docs/common.md](docs/common.md).
-
-## Hitching
-
-The hitch key is **R**. While you are riding an allowed animal, it sends that animal to a free hitch point within 1.5 blocks. The tag `trotting_wagons:draft_animals` allows `minecraft:horse`. The animal must be tamed. Babies are refused. Add more ids in `config/trotting_wagons-server.toml` under `allowed_entities`, or append them to that tag from another mod.
-
-Every wagon has a harness slot.
-
-| In the game | Item id | Animals | Speed factor |
-| --- | --- | --- | --- |
-| Shafts | `tongue` | 1, centered | Depends on the wagon, from 1.0 down to 0.5 |
-| Tongue | `shafts` | 2, left and right | 1.0 on every wagon |
-
-The English names follow the icons. Shafts are the single pole. The tongue is the pair.
-
-Right-click a free wagon with the harness item to fit it. Shift-right-click the pole to take it off. It cannot be removed or swapped while an animal is hitched. An empty harness releases any animals that were still recorded on that wagon.
-
-A hitched animal stands straight, does not graze, and is pulled back if it drifts more than half a block sideways. If it ends up more than 5 blocks from its hitch point, in any direction, it is released where it stands. An animal in an unloaded chunk stays hitched.
-
-## Seats and the menu
-
-Right-click a wagon to sit in the nearest free seat. Opening your inventory while seated opens the wagon instead. The menu closes when you leave the wagon.
-
-From the menu you can move passengers and animals between seats, hitch and unhitch draft animals, change wheels, repair the wagon, and use that wagon's own cargo. Villagers and wandering traders count as passengers. They can use player and universal seats. They cannot drive.
-
-The owner is the player who placed the wagon. Sneak-right-click with an axe no longer picks the wagon up. Wearing its health down destroys it. Wheels, the harness, and cargo still drop. A wagon built on the base drops about half of each material from that build. One item is a coin flip, two items return one, and larger lines stay near half. The animal wagon keeps its own ranges. The conestoga, the royal wagon, and the armored wagon do not drop the old scrap of oak planks and iron.
-
-## Wagons
-
-| Wagon | What it is for |
+| Item | Animals |
 | --- | --- |
-| Conestoga | A covered wagon with two cargo pages of 42 slots. The second page, a large animal, and the two universal seats cannot all be used at once. |
-| Royal wagon | A carriage with 40 cargo slots and five seats: the driver and four passengers, two to a bench. |
-| Armored wagon | A slow wagon with the driver and six passenger seats. |
-| Passenger wagon | Seats for riders. Passengers step off by the rope ladder. The driver steps off beside the driver seat. |
-| Ware wagon | A freight wagon. Chests placed on it show on the model and slow it down. |
-| Log wagon | Holds logs, planks, and sticks. The pile on the model grows with the load, and so does the slowdown. |
-| Barrel wagon | Twelve barrel slots. Filled barrels show on the model and slow the wagon. |
-| Animal wagon | Seats for animals, including a large one. |
-| Kibitka | A covered cart with its own camp layout. |
-| Big cart | One open bed: 42 cargo slots, or one large animal, or two universal seats along the wagon. It has a lantern. The ladder is only decoration, and the wagon cannot be dyed. |
-| Debug wagon | The workbench wagon used to try seats, wheels, a lantern, and the harness. |
+| Tongue | Two, side by side |
+| Shafts | One, in the middle |
 
-Most of these can be dyed, and the dye is not used up. Dye does not change the big cart, or the wagons that ship with a single texture.
+Right-click the wagon with the item. Shift-right-click the pole to take it off. It stays put while an animal is hitched.
+
+## Hitch
+
+The animal must be a tamed adult. This mod's tag allows the horse. More animals can be added in `config/trotting_wagons-server.toml` or by another mod's datapack.
+
+- Ride the animal up to the pole and press **R**.
+- Or lead it to the wagon and shift-right-click the wagon. The lead comes back.
+
+Shift-right-click a hitched animal to release it. If a player is in the driver seat, only that player can release animals, or fit and remove wheels, the harness, lanterns, banners, and pumpkins.
+
+An animal that ends up more than 5 blocks from its hitch point is released where it stands.
+
+## Drive
+
+Right-click the wagon to sit in the nearest free seat. The driver seat is the only one that drives. The view moves behind the wagon and returns to first person when you leave. The mouse wheel sets that camera from 1 to 10 blocks and does not change the hotbar.
+
+The wagon rolls only with a driver, a full hitch, and all four wheels.
+
+Right-click with the horse whip to raise the gear, up to 4. Left-click with the whip in the main hand to lower it. Gear 0 is stopped. Shift-right-click with the whip toggles reverse. A speed bar shows for the driver only.
+
+## Seats and cargo
+
+Press the inventory key while you are seated. That opens the wagon. From there you can move passengers, change wheels, repair, and use that wagon's cargo. Click a seat to move yourself. Click an animal, or drag it, to move or unload it.
+
+Villagers and wandering traders can take passenger seats. They cannot drive.
 
 ## Wheels
 
-A new wagon starts with four regular wheels. Wheels wear down as the wagon rolls. At low durability the wagon sags. A missing wheel stops it.
+A new wagon starts with four regular wheels. Right-click with a wheel to fit one. Shift-right-click a wheel to take it off.
 
-Four wide wheels ride over dirt, grass, sand, gravel, and snow. Any other full set slows to a stop over about twelve seconds on those blocks and settles as low as a wagon with no wheels. A dirt path stays firm for narrow wheels too.
+Wide wheels are slower. One anywhere on the wagon is enough for that. Reinforced wheels last longer and keep normal speed. On dirt, grass, sand, gravel, or snow, any full set that is not four wide wheels sinks over about twelve seconds. A dirt path stays firm. Four wide wheels do not sink.
 
-| Wheel | Effect |
+## Damage
+
+Hits land on the wagon's solid body, including a tall cover such as the Conestoga. A hit on a wheel damages that wheel for half as much. A hit on the harness pole does nothing. Wearing the wagon down destroys it. Wheels, the harness, and cargo drop. A wagon built on the base also drops about half of the materials that went into it.
+
+## The wagons
+
+| Wagon | Use |
 | --- | --- |
-| Regular | Normal speed. |
-| Wide | 0.8 speed, once for the whole wagon, if at least one is fitted. |
-| Reinforced | Same speed as a regular wheel, and it lasts longer. |
+| Conestoga | Covered wagon, two pages of cargo. The second page, a large animal, and the side seats exclude one another. |
+| Royal wagon | Carriage with cargo and passenger benches. |
+| Armored wagon | Slow wagon with six passenger seats. |
+| Passenger wagon | Seats. Passengers step off by the rope ladder. |
+| Ware wagon | Freight. Chests placed on it show on the model and slow it. |
+| Log wagon | Logs, planks, and sticks. The pile grows with the load. |
+| Barrel wagon | Twelve barrels. Filled ones show on the model and slow it. |
+| Animal wagon | Seats for animals, including large ones. |
+| Kibitka | Covered cart with a camp layout. |
+| Big cart | One open bed: cargo, or one large animal, or two seats. The ladder is decoration. |
+| Debug wagon | A bench for trying seats, wheels, a lantern, and the harness. |
 
-Fit a wheel by right-clicking the wheel position. Shift-right-click removes it.
+Most wagons accept dye, and the dye is not used up. The big cart, and wagons that have only one texture, do not change color.
 
-## Config
+Server numbers for health, speed, and turning are in `config/trotting_wagons-server.toml`. The notes in [docs/](docs/) describe the current behavior in Russian.
 
-Server settings are in `config/trotting_wagons-server.toml`. Each wagon has health, a speed coefficient, and a turn rate. The `*_acceleration` keys are not used. Acceleration follows the current speed coefficient.
+## Building the mod
 
-The log wagon, the barrel wagon, and the ware wagon pick a new coefficient when the load changes, and again when the world loads. Other wagons keep the value they were given when they were created.
-
-## Building
-
-JDK 21. From the repository root:
-
-```
-./gradlew build
-```
-
-On Windows, use `gradlew.bat`. The jar is written to `build/libs`.
-
-The notes under [docs/](docs/) describe the current behavior in Russian, one file per wagon plus [docs/common.md](docs/common.md) for the shared rules.
+JDK 21. From the repository root run `./gradlew build`, or `gradlew.bat build` on Windows. The jar is written to `build/libs`.
 
 ## License
 
-All rights reserved. See the authors listed in `gradle.properties`.
+All rights reserved. Authors are listed in `gradle.properties`.
