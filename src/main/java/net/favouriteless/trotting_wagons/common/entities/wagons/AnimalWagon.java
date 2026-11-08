@@ -1,5 +1,8 @@
 package net.favouriteless.trotting_wagons.common.entities.wagons;
 
+import com.kltyton.bonehitboxlib.api.bone.collision.ObbCollisionMode;
+import com.kltyton.bonehitboxlib.api.geckolib.entity.GeoBoneHitboxEntity;
+import com.kltyton.bonehitboxlib.api.registration.registrar.ObbBoneRegistrar;
 import net.favouriteless.trotting_wagons.ServerConfig;
 import net.favouriteless.trotting_wagons.TrottingWagons;
 import net.favouriteless.trotting_wagons.common.entities.base.AbstractWagon;
@@ -32,7 +35,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.items.ItemStackHandler;
 
-public class AnimalWagon extends AbstractWagon implements MenuProvider {
+public class AnimalWagon extends AbstractWagon implements MenuProvider, GeoBoneHitboxEntity {
 
     /** 0 none, 1 shafts (bone shafts, one animal), 2 tongue (bone Tongue, two animals). */
     private static final EntityDataAccessor<Integer> DATA_HARNESS = SynchedEntityData.defineId(AnimalWagon.class, EntityDataSerializers.INT);
@@ -73,7 +76,8 @@ public class AnimalWagon extends AbstractWagon implements MenuProvider {
     private float gateO = 1.0F;
 
     public static final WagonSeat[] SEATS = new WagonSeat[] {
-            new WagonSeat(seat(0, 14, -32.25D), WagonSeat.Kind.DRIVER),
+            // 10px under the bench number: the sit pose otherwise floats above the cushion.
+            new WagonSeat(seat(0, 4, -32.25D), WagonSeat.Kind.DRIVER),
             new WagonSeat(seat(-6, 16.5D, -14), WagonSeat.Kind.ANIMAL),
             new WagonSeat(seat(6, 16.5D, -14), WagonSeat.Kind.ANIMAL),
             new WagonSeat(seat(0, 16.5D, -4), WagonSeat.Kind.ANIMALBIG),
@@ -83,6 +87,13 @@ public class AnimalWagon extends AbstractWagon implements MenuProvider {
             new WagonSeat(seat(-6, 16.5D, 34), WagonSeat.Kind.ANIMAL),
             new WagonSeat(seat(6, 16.5D, 34), WagonSeat.Kind.ANIMAL)
     };
+
+    /** Body shell. The cubes are not drawn; BoneHitboxLib uses them as the solid box. */
+    @Override
+    public void bonehitboxlib$registerObbBones(ObbBoneRegistrar registrar) {
+        registrar.register(GeoBoneHitboxEntity.BONEHITBOXLIB_GEO_SOURCE, "hitbox")
+                .collision(ObbCollisionMode.HARD);
+    }
 
     public AnimalWagon(EntityType<AnimalWagon> type, Level level) {
         super(type, level, 1.5D, 1.5D, SEATS, ServerConfig.INSTANCE.animalSpeed.get(),

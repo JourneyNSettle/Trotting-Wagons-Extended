@@ -121,6 +121,7 @@
   "gui.trotting_wagons.harness.shafts": "Shafts",
   "gui.trotting_wagons.harness.slot": "Tongue or Shafts",
   "gui.trotting_wagons.repair": "Repair",
+  "gui.trotting_wagons.cargo": "Cargo",
   "gui.trotting_wagons.custom_items": "Custom",
   "gui.trotting_wagons.custom_items.line2": "Items",
   "gui.trotting_wagons.condition.ok": "OK",

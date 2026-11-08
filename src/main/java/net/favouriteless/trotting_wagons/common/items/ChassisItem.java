@@ -27,10 +27,10 @@ public class ChassisItem extends PartItem {
             return InteractionResult.SUCCESS;
 
         Chassis chassis = TWEntityTypes.CHASSIS.get().create(level);
-        chassis.setPos(Vec3.atBottomCenterOf(context.getClickedPos().above()).add(0, 0.05D, 0));
         float yaw = context.getPlayer().getYHeadRot();
         chassis.setYRot(yaw);
         chassis.yRotO = yaw;
+        chassis.setPos(Vec3.atBottomCenterOf(context.getClickedPos().above()).add(0, 0.05D, 0));
         level.addFreshEntity(chassis);
         level.playSound(null, chassis.blockPosition(), SoundEvents.WOOD_PLACE, SoundSource.BLOCKS, 1.0F, 1.0F);
         context.getItemInHand().shrink(1);

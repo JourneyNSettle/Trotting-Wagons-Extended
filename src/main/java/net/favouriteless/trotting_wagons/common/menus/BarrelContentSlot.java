@@ -19,7 +19,7 @@ public class BarrelContentSlot extends SlotItemHandler {
 
     @Override
     public boolean isActive() {
-        return wagon != null && wagon.barrelFilled(barrel);
+        return BarrelWagon.contentsOpen() && wagon != null && wagon.barrelFilled(barrel);
     }
 
     @Override

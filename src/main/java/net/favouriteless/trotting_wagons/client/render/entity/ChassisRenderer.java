@@ -8,6 +8,7 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.EntityRendererProvider.Context;
 import net.minecraft.util.Mth;
 import software.bernie.geckolib.cache.object.BakedGeoModel;
+import software.bernie.geckolib.cache.object.GeoBone;
 import software.bernie.geckolib.renderer.GeoEntityRenderer;
 
 public class ChassisRenderer extends GeoEntityRenderer<Chassis> {
@@ -28,6 +29,15 @@ public class ChassisRenderer extends GeoEntityRenderer<Chassis> {
         float yaw = -Mth.rotLerp(partialTick, chassis.yRotO, chassis.getYRot());
         pose.mulPose(Axis.YP.rotationDegrees(yaw));
         super.preRender(pose, chassis, model, bufferSource, buffer, isReRender, partialTick, packedLight, packedOverlay, colour);
+    }
+
+    /** The base shares this model and turns the body bones back on. They are not part of the frame. */
+    @Override
+    public void renderCubesOfBone(PoseStack poseStack, GeoBone bone, VertexConsumer buffer, int packedLight, int packedOverlay, int colour) {
+        String name = bone.getName();
+        if(name.equals("hitbox") || name.equals("cart"))
+            return;
+        super.renderCubesOfBone(poseStack, bone, buffer, packedLight, packedOverlay, colour);
     }
 
 }

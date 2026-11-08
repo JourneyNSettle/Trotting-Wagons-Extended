@@ -202,19 +202,42 @@ public class LogScreen extends AbstractContainerScreen<LogMenu> {
         Component distance = Component.translatable("gui.trotting_wagons.distance",
                 String.format(Locale.ROOT, "%.1f", wagon.getDistance() / 1000.0F));
         graphics.drawString(font, distance, LogMenu.TITLE_X + font.width(title) + LogMenu.DISTANCE_GAP, titleY, 4210752, false);
-        String ownerName = wagon.getOwnerName();
-        if(!ownerName.isEmpty()) {
-            Component owner = Component.translatable("gui.trotting_wagons.owner", ownerName);
-            graphics.drawString(font, owner, LogMenu.TITLE_X, titleY + 12, 4210752, false);
-        }
         graphics.drawString(font, playerInventoryTitle, inventoryLabelX, inventoryLabelY, 4210752, false);
         drawCentered(graphics, Component.translatable(harnessKey(wagon.hitchSlots())), LogMenu.HARNESS_X + 8, LogMenu.HARNESS_Y + shift - 12);
         int wheelCenter = LogMenu.WHEEL_X + 17;
         drawCentered(graphics, Component.translatable("gui.trotting_wagons.wheels"), wheelCenter, LogMenu.WHEEL_Y + shift - 22);
         drawCentered(graphics, wagon.wheelSet().label(), wheelCenter, LogMenu.WHEEL_Y + shift - 12);
         int slotsCenter = LogMenu.REPAIR_X + 17;
-        drawCentered(graphics, Component.translatable("gui.trotting_wagons.repair"), slotsCenter, LogMenu.SEAT_Y + shift);
-        drawCentered(graphics, wagon.conditionName(), slotsCenter, LogMenu.SEAT_Y + shift + 10);
+        int headerY = LogMenu.SEAT_Y + shift;
+        drawCentered(graphics, Component.translatable("gui.trotting_wagons.repair"), slotsCenter, headerY);
+        drawCentered(graphics, wagon.conditionName(), slotsCenter, headerY + 10);
+        drawCargo(graphics, wagon, slotsCenter, headerY);
+    }
+
+    /** Stays under a full 2×2 repair block, even when fewer repair slots are open. */
+    private void drawCargo(GuiGraphics graphics, LogWagon wagon, int centerX, int headerY) {
+        int top = headerY + RepairLayout.UNDER_HEADER + 2 * 18 + 4;
+        drawCentered(graphics, Component.translatable("gui.trotting_wagons.cargo"), centerX, top);
+        int barW = 12;
+        int barH = 48;
+        int barX = centerX - barW / 2;
+        int barY = top + 12;
+        int max = LogWagon.cargoCapacity();
+        int count = Math.min(Math.max(0, wagon.cargoCount()), max);
+        int percent = max <= 0 ? 0 : (int)Math.round(100.0D * count / max);
+        int filled = max <= 0 ? 0 : (int)Math.round(barH * (count / (double)max));
+        graphics.fill(barX, barY, barX + barW, barY + barH, 0xFF2B2B2B);
+        if(filled > 0)
+            graphics.fill(barX, barY + barH - filled, barX + barW, barY + barH, cargoColor(percent));
+        drawCentered(graphics, Component.literal(percent + "%"), centerX, barY + barH + 3);
+    }
+
+    private static int cargoColor(int percent) {
+        if(percent <= 40)
+            return 0xFF3D9A45;
+        if(percent < 80)
+            return 0xFFE0B000;
+        return 0xFFC44536;
     }
 
     private static String harnessKey(int slots) {

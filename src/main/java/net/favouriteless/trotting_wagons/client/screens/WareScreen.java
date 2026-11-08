@@ -76,11 +76,6 @@ public class WareScreen extends AbstractContainerScreen<WareMenu> {
         Component distance = Component.translatable("gui.trotting_wagons.distance",
                 String.format(Locale.ROOT, "%.1f", wagon.getDistance() / 1000.0F));
         graphics.drawString(font, distance, WareMenu.TITLE_X + font.width(title) + WareMenu.DISTANCE_GAP, WareMenu.TITLE_Y, 4210752, false);
-        String ownerName = wagon.getOwnerName();
-        if(!ownerName.isEmpty()) {
-            Component owner = Component.translatable("gui.trotting_wagons.owner", ownerName);
-            graphics.drawString(font, owner, WareMenu.TITLE_X, WareMenu.TITLE_Y + 12, 4210752, false);
-        }
         drawCentered(graphics, Component.translatable(harnessKey(wagon.hitchSlots())), WareMenu.HARNESS_X + 8, 146);
         int wheelCenter = WareMenu.WHEEL_X + 17;
         drawCentered(graphics, Component.translatable("gui.trotting_wagons.wheels"), wheelCenter, 184);

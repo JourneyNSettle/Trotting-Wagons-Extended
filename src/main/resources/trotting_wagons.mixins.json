@@ -10,7 +10,10 @@
     "ServerGamePacketListenerImplMixin"
   ],
   "client": [
-    "BuildFlashMixin"
+    "BuildFlashMixin",
+    "HeldItemColliderMixin",
+    "WagonAttackMixin",
+    "YellowAttackMixin"
   ],
   "injectors": {
     "defaultRequire": 1

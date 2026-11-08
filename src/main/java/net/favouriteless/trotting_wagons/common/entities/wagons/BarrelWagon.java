@@ -1,5 +1,8 @@
 package net.favouriteless.trotting_wagons.common.entities.wagons;
 
+import com.kltyton.bonehitboxlib.api.bone.collision.ObbCollisionMode;
+import com.kltyton.bonehitboxlib.api.geckolib.entity.GeoBoneHitboxEntity;
+import com.kltyton.bonehitboxlib.api.registration.registrar.ObbBoneRegistrar;
 import net.favouriteless.trotting_wagons.ServerConfig;
 import net.favouriteless.trotting_wagons.TrottingWagons;
 import net.favouriteless.trotting_wagons.common.entities.WagonBuild;
@@ -29,10 +32,20 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.items.ItemStackHandler;
 
-public class BarrelWagon extends AbstractWagon implements MenuProvider {
+public class BarrelWagon extends AbstractWagon implements MenuProvider, GeoBoneHitboxEntity {
 
     public static final int BARRELS = 12;
     public static final int CONTENTS = 4;
+    private static boolean contentsOpen = true;
+
+    /** When false, a placed barrel does not open its item slots. The compat mod turns this off. */
+    public static void setContentsOpen(boolean open) {
+        contentsOpen = open;
+    }
+
+    public static boolean contentsOpen() {
+        return contentsOpen;
+    }
     public static final int SLOTS = BARRELS + BARRELS * CONTENTS;
     private static final int CARGO_VERSION = 2;
     private static final int OLD_CONTENTS = 6;
@@ -45,7 +58,7 @@ public class BarrelWagon extends AbstractWagon implements MenuProvider {
     private static final EntityDataAccessor<Integer> DATA_HARNESS = SynchedEntityData.defineId(BarrelWagon.class, EntityDataSerializers.INT);
 
     public static final WagonSeat[] SEATS = new WagonSeat[] {
-            new WagonSeat(seat(0, 14, -32.25D), WagonSeat.Kind.DRIVER)
+            new WagonSeat(seat(0, 16, -35.25D), WagonSeat.Kind.DRIVER)
     };
 
     private final NonNullList<ItemStack> stacks = NonNullList.withSize(SLOTS, ItemStack.EMPTY);
@@ -75,7 +88,7 @@ public class BarrelWagon extends AbstractWagon implements MenuProvider {
         public boolean isItemValid(int slot, ItemStack stack) {
             if(slot < BARRELS)
                 return isBarrel(stack);
-            return barrelFilled(barrelOf(slot));
+            return contentsOpen && barrelFilled(barrelOf(slot));
         }
 
         @Override
@@ -103,6 +116,16 @@ public class BarrelWagon extends AbstractWagon implements MenuProvider {
                 syncBarrels();
         }
     };
+
+    /** The shell is always solid. A placed barrel adds its own bone. */
+    @Override
+    public void bonehitboxlib$registerObbBones(ObbBoneRegistrar registrar) {
+        registrar.register(GeoBoneHitboxEntity.BONEHITBOXLIB_GEO_SOURCE, "hitbox")
+                .collision(ObbCollisionMode.HARD);
+        for(int i = 1; i <= BARRELS; i++)
+            registrar.register(GeoBoneHitboxEntity.BONEHITBOXLIB_GEO_SOURCE, "Barrel_" + i)
+                    .collision(ObbCollisionMode.HARD);
+    }
 
     public BarrelWagon(EntityType<BarrelWagon> type, Level level) {
         super(type, level, 19.5D / 16D, 17D / 16D, SEATS, ServerConfig.INSTANCE.barrelSpeedEmpty.get(),
@@ -402,7 +425,8 @@ public class BarrelWagon extends AbstractWagon implements MenuProvider {
     }
 
     private static Vec3 seat(double x, double y, double z) {
-        return new Vec3(x / 16D, y / 16D, -z / 16D).add(0, 0.7D, 0);
+        // positionRider subtracts 0.7. Sitting hips are 0.75 above the entity, so y is the hip height.
+        return new Vec3(x / 16D, y / 16D - 0.05D, -z / 16D);
     }
 
 }

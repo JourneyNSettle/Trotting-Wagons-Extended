@@ -1,5 +1,8 @@
 package net.favouriteless.trotting_wagons.common.entities.wagons;
 
+import com.kltyton.bonehitboxlib.api.bone.collision.ObbCollisionMode;
+import com.kltyton.bonehitboxlib.api.geckolib.entity.GeoBoneHitboxEntity;
+import com.kltyton.bonehitboxlib.api.registration.registrar.ObbBoneRegistrar;
 import net.favouriteless.trotting_wagons.ServerConfig;
 import net.favouriteless.trotting_wagons.common.entities.WagonBuild;
 import net.favouriteless.trotting_wagons.common.entities.base.AbstractInventoryWagon;
@@ -25,7 +28,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.items.ItemStackHandler;
 
-public class RoyalWagon extends AbstractInventoryWagon {
+public class RoyalWagon extends AbstractInventoryWagon implements GeoBoneHitboxEntity {
 
     public static final int CARGO = 40;
     /** Two riders share a bench. 7px off center matches the bench that already held a pair. */
@@ -62,6 +65,13 @@ public class RoyalWagon extends AbstractInventoryWagon {
             new WagonSeat(new Vec3(-BENCH_X, BENCH_Y, NEAR_Z), WagonSeat.Kind.PLAYER),
             new WagonSeat(new Vec3(-BENCH_X, BENCH_Y, FAR_Z), WagonSeat.Kind.PLAYER)
     };
+
+    /** Body shell. The cubes are not drawn; BoneHitboxLib uses them as the solid box. */
+    @Override
+    public void bonehitboxlib$registerObbBones(ObbBoneRegistrar registrar) {
+        registrar.register(GeoBoneHitboxEntity.BONEHITBOXLIB_GEO_SOURCE, "hitbox")
+                .collision(ObbCollisionMode.HARD);
+    }
 
     public RoyalWagon(EntityType<RoyalWagon> type, Level level) {
         super(type, level, 1.1D, 1.3D, SEATS, ServerConfig.INSTANCE.royalSpeed.get(),

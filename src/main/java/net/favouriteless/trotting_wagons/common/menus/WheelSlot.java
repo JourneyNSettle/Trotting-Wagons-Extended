@@ -1,19 +1,20 @@
 package net.favouriteless.trotting_wagons.common.menus;
 
 import net.favouriteless.trotting_wagons.TrottingWagons;
+import net.favouriteless.trotting_wagons.common.entities.base.AbstractWagon;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.items.IItemHandler;
-import net.neoforged.neoforge.items.SlotItemHandler;
 
-public class WheelSlot extends SlotItemHandler {
+public class WheelSlot extends DriverSlot {
 
-    public WheelSlot(IItemHandler handler, int index, int x, int y) {
-        super(handler, index, x, y);
+    public WheelSlot(AbstractWagon wagon, Player viewer, IItemHandler handler, int index, int x, int y) {
+        super(wagon, viewer, handler, index, x, y);
     }
 
     @Override
     public boolean mayPlace(ItemStack stack) {
-        return stack.is(TrottingWagons.WAGON_WHEELS);
+        return stack.is(TrottingWagons.WAGON_WHEELS) && allowed();
     }
 
     @Override

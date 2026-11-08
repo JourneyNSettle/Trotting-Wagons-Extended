@@ -1,5 +1,8 @@
 package net.favouriteless.trotting_wagons.common.entities.wagons;
 
+import com.kltyton.bonehitboxlib.api.bone.collision.ObbCollisionMode;
+import com.kltyton.bonehitboxlib.api.geckolib.entity.GeoBoneHitboxEntity;
+import com.kltyton.bonehitboxlib.api.registration.registrar.ObbBoneRegistrar;
 import net.favouriteless.trotting_wagons.ServerConfig;
 import net.favouriteless.trotting_wagons.TrottingWagons;
 import net.favouriteless.trotting_wagons.common.entities.WagonBuild;
@@ -32,7 +35,7 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.items.ItemStackHandler;
 
 /** Open cart. Cargo, one large animal, or the two universal seats. The ladder is only a mesh. */
-public class BigCartWagon extends AbstractInventoryWagon {
+public class BigCartWagon extends AbstractInventoryWagon implements GeoBoneHitboxEntity {
 
     public static final int CARGO = 42;
     private static final int FRONT = 1;
@@ -88,11 +91,18 @@ public class BigCartWagon extends AbstractInventoryWagon {
 
     /** Floor top is y=15. positionRider drops 0.7, so a standing animal is stored 0.7 higher. */
     public static final WagonSeat[] SEATS = new WagonSeat[] {
-            new WagonSeat(new Vec3(0, 1.575D, 1.703125D), WagonSeat.Kind.DRIVER),
+            new WagonSeat(new Vec3(0, 1.7D, 1.703125D), WagonSeat.Kind.DRIVER),
             new WagonSeat(new Vec3(0, 1.6375D, 0.2D), WagonSeat.Kind.UNIVERSAL),
             new WagonSeat(new Vec3(0, 1.6375D, -1.3D), WagonSeat.Kind.UNIVERSAL),
             new WagonSeat(new Vec3(0, 1.6375D, -0.3D), WagonSeat.Kind.ANIMALBIG)
     };
+
+    /** Body shell. The cubes are not drawn; BoneHitboxLib uses them as the solid box. */
+    @Override
+    public void bonehitboxlib$registerObbBones(ObbBoneRegistrar registrar) {
+        registrar.register(GeoBoneHitboxEntity.BONEHITBOXLIB_GEO_SOURCE, "hitbox")
+                .collision(ObbCollisionMode.HARD);
+    }
 
     public BigCartWagon(EntityType<BigCartWagon> type, Level level) {
         super(type, level, 1.5D, 1.5D, SEATS, ServerConfig.INSTANCE.bigCartSpeed.get(),

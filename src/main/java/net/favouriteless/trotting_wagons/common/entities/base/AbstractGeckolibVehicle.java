@@ -299,7 +299,7 @@ public abstract class AbstractGeckolibVehicle extends Entity implements GeoEntit
 
     @Override
     public float getPickRadius() {
-        return Math.max(super.getPickRadius(), boardingPickRadius());
+        return boardingPickRadius() * 0.8F;
     }
 
     /** The ground plate blocks terrain. It does not stop a player or an animal. */
