@@ -1,19 +1,20 @@
 package net.favouriteless.trotting_wagons.common.menus;
 
+import net.favouriteless.trotting_wagons.common.entities.base.AbstractWagon;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BannerItem;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.items.IItemHandler;
-import net.neoforged.neoforge.items.SlotItemHandler;
 
-public class BannerSlot extends SlotItemHandler {
+public class BannerSlot extends DriverSlot {
 
-    public BannerSlot(IItemHandler handler, int index, int x, int y) {
-        super(handler, index, x, y);
+    public BannerSlot(AbstractWagon wagon, Player viewer, IItemHandler handler, int index, int x, int y) {
+        super(wagon, viewer, handler, index, x, y);
     }
 
     @Override
     public boolean mayPlace(ItemStack stack) {
-        return stack.getItem() instanceof BannerItem;
+        return stack.getItem() instanceof BannerItem && allowed();
     }
 
     @Override

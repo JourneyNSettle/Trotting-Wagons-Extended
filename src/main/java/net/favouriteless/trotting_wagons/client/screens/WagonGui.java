@@ -83,32 +83,18 @@ final class WagonGui {
         graphics.drawString(font, state, center - font.width(state) / 2, y + 10, 4210752, false);
     }
 
-    /** Title row: owner centered, distance on the right. The owner shifts left only to clear the distance. */
+    /** Title row. The owner is still stored and is not drawn until it is asked for again. */
     static void drawHeader(GuiGraphics graphics, Font font, AbstractWagon wagon, int y, int imageWidth) {
         drawHeader(graphics, font, wagon, y, imageWidth, 0);
     }
 
-    /** {@code ownerLeft} is the first pixel the owner may use. Zero keeps the owner centered on the window. */
+    /** {@code ownerLeft} is kept so the row can come back without moving the callers. */
     static void drawHeader(GuiGraphics graphics, Font font, AbstractWagon wagon, int y, int imageWidth, int ownerLeft) {
         if(wagon == null)
             return;
         Component distance = Component.translatable("gui.trotting_wagons.distance", String.format(Locale.ROOT, "%.1f", wagon.getDistance() / 1000.0F));
         int distanceX = imageWidth - 8 - font.width(distance);
         graphics.drawString(font, distance, distanceX, y, 4210752, false);
-        String name = wagon.getOwnerName();
-        if(name.isEmpty())
-            return;
-        Component owner = Component.translatable("gui.trotting_wagons.owner", name);
-        int width = font.width(owner);
-        int limit = distanceX - 6;
-        int ownerX = (imageWidth - width) / 2;
-        if(ownerLeft > 0)
-            ownerX = ownerLeft + Math.max(0, limit - ownerLeft - width) / 2;
-        if(ownerX + width > limit)
-            ownerX = limit - width;
-        if(ownerLeft > 0 && ownerX < ownerLeft)
-            ownerX = ownerLeft;
-        graphics.drawString(font, owner, ownerX, y, 4210752, false);
     }
 
     static void drawEmptySlotIcons(GuiGraphics graphics, int left, int top, AbstractContainerMenu menu) {

@@ -88,15 +88,6 @@ public class AnimalScreen extends AbstractContainerScreen<AnimalMenu> {
         Component distance = Component.translatable("gui.trotting_wagons.distance", String.format(java.util.Locale.ROOT, "%.1f", wagon.getDistance() / 1000.0F));
         int distanceX = imageWidth - 8 - font.width(distance);
         graphics.drawString(font, distance, distanceX, titleLabelY, 4210752, false);
-        String name = wagon.getOwnerName();
-        if(!name.isEmpty()) {
-            Component owner = Component.translatable("gui.trotting_wagons.owner", name);
-            int ownerX = (imageWidth - font.width(owner)) / 2;
-            int limit = distanceX - 6;
-            if(ownerX + font.width(owner) > limit)
-                ownerX = limit - font.width(owner);
-            graphics.drawString(font, owner, ownerX, titleLabelY, 4210752, false);
-        }
         drawCentered(graphics, Component.translatable(harnessKey(wagon.hitchSlots())), AnimalMenu.HARNESS_X + 8, 96);
         int wheelCenter = AnimalMenu.WHEEL_X + 17;
         drawCentered(graphics, Component.translatable("gui.trotting_wagons.wheels"), wheelCenter, 134);

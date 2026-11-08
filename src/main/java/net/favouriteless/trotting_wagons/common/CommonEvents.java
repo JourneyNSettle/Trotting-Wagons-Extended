@@ -66,8 +66,13 @@ public class CommonEvents {
         if(event.getLevel().isClientSide)
             return;
         AbstractWagon wagon = AbstractWagon.findHitch(mob);
-        if(wagon != null)
-            wagon.unhitch(mob);
+        if(wagon == null)
+            return;
+        if(event.getEntityMounting() instanceof Player rider && !wagon.driverAllows(rider)) {
+            event.setCanceled(true);
+            return;
+        }
+        wagon.unhitch(mob);
     }
 
     @SubscribeEvent
@@ -100,6 +105,11 @@ public class CommonEvents {
             AbstractWagon wagon = AbstractWagon.findHitch(mob);
             if(wagon == null)
                 return;
+            if(!wagon.driverAllows(player)) {
+                event.setCancellationResult(InteractionResult.FAIL);
+                event.setCanceled(true);
+                return;
+            }
             if(!level.isClientSide)
                 wagon.unhitch(mob);
             event.setCancellationResult(InteractionResult.sidedSuccess(level.isClientSide));

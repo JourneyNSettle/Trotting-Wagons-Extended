@@ -69,6 +69,7 @@ import java.util.function.UnaryOperator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Random;
 import java.util.Set;
@@ -650,6 +651,8 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         else if(player.getVehicle() != this) {
             if(WagonParts.use(this, player, hand))
                 return InteractionResult.sidedSuccess(isClientSide);
+            if(!driverAllows(player) && WagonParts.canInsert(this, player.getItemInHand(hand)))
+                return InteractionResult.FAIL;
             if(!isClientSide) {
                 player.setYRot(getYRot());
                 player.setXRot(getXRot());
@@ -661,10 +664,10 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         return InteractionResult.PASS;
     }
 
-    /** Matches the modest pick radius, so a click on the body is accepted and a far click is not. */
-    private boolean withinReach(Player player) {
+    /** The ground plate plus 80% of the old body reach. */
+    protected boolean withinReach(Player player) {
         double reach = player.entityInteractionRange();
-        AABB target = getBoundingBox().inflate(boardingPickRadius());
+        AABB target = getBoundingBox().inflate(boardingPickRadius() * 0.8F);
         return target.distanceToSqr(player.getEyePosition()) <= reach * reach;
     }
 
@@ -817,6 +820,18 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
 
         if(level().isClientSide || isRemoved())
             return true;
+
+        if(source.getEntity() instanceof Player player) {
+            WagonParts.Kind struck = struckPart(player);
+            if(struck == WagonParts.Kind.WHEEL) {
+                damageWheel(player, amount);
+                return true;
+            }
+            if(struck != null)
+                return false;
+            if(!lookingAtYellow(player))
+                return false;
+        }
 
         level().playSound(null, blockPosition(), SoundEvents.WOOD_BREAK, SoundSource.MASTER);
         double w = getBbWidth();
@@ -1188,6 +1203,58 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
      */
     public static void setWheelLoss(UnaryOperator<ItemStack> loss) {
         wheelLoss = loss == null ? REMOVE_WHEEL : loss;
+    }
+
+    /**
+     * The fitted part in front of the body, or null when the look meets the body first.
+     * A harness, lantern, pumpkin, or flag in front blocks the blow. A wheel takes it.
+     */
+    private WagonParts.Kind struckPart(Player player) {
+        WagonParts.Part part = WagonParts.pick(this, player);
+        Vec3 point = WagonParts.closestPoint(this, player);
+        if(part == null || point == null)
+            return null;
+        double reach = player.entityInteractionRange();
+        Vec3 eye = player.getEyePosition();
+        Vec3 end = eye.add(player.getViewVector(1.0F).scale(reach));
+        Optional<Vec3> body = getBoundingBoxForCulling().clip(eye, end);
+        double partDistance = point.distanceToSqr(eye);
+        double bodyDistance = body.map(hit -> hit.distanceToSqr(eye)).orElse(Double.MAX_VALUE);
+        return partDistance <= bodyDistance ? part.kind() : null;
+    }
+
+    /** Client attack already required a yellow face. This drops a forged hit on empty air. */
+    private boolean lookingAtYellow(Player player) {
+        if(player.level().isClientSide)
+            return net.favouriteless.trotting_wagons.client.YellowRay.hits(this, player);
+        double reach = player.entityInteractionRange();
+        Vec3 eye = player.getEyePosition();
+        Vec3 end = eye.add(player.getViewVector(1.0F).scale(reach));
+        Optional<Vec3> body = getBoundingBoxForCulling().clip(eye, end);
+        return body.isPresent() && body.get().distanceToSqr(eye) <= reach * reach;
+    }
+
+    private void damageWheel(Player player, float amount) {
+        WagonParts.Part part = WagonParts.pick(this, player);
+        if(part == null || part.kind() != WagonParts.Kind.WHEEL)
+            return;
+        int index = part.index();
+        if(index < 0 || index >= wheels.size())
+            return;
+        ItemStack stack = wheels.get(index);
+        if(stack.isEmpty())
+            return;
+        ensureWheelDurability(stack);
+        int wear = Math.max(1, Math.round(amount * 0.5F));
+        int damage = stack.getDamageValue() + wear;
+        if(damage >= stack.getMaxDamage()) {
+            wheelHandler.setStackInSlot(index, lostWheel(stack));
+            level().playSound(null, blockPosition(), SoundEvents.ITEM_BREAK, SoundSource.PLAYERS, 0.8F, 1.0F);
+        } else {
+            stack.setDamageValue(damage);
+            wheelHandler.setStackInSlot(index, stack);
+            level().playSound(null, blockPosition(), SoundEvents.WOOD_HIT, SoundSource.PLAYERS, 0.6F, 1.0F);
+        }
     }
 
     private void wearWheels() {
@@ -1649,6 +1716,8 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         Mob mob = (Mob)animal;
         if(fromSeat < 0 && fromSide == null)
             return false;
+        if(fromSide != null && !draft && !driverAllows(player))
+            return false;
 
         if(draft) {
             if(to < 0 || to >= hitchSlots())
@@ -1707,7 +1776,7 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
     }
 
     public boolean ejectDraft(Player player, Side side) {
-        if(player.getVehicle() != this || getHorse(side) == null)
+        if(!driverAllows(player) || player.getVehicle() != this || getHorse(side) == null)
             return false;
         setHorse(null, side);
         return true;
@@ -2172,6 +2241,12 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
             return driver instanceof Player player ? player : null;
         }
         return null;
+    }
+
+    /** An empty driver seat leaves fittings open. A seated driver is the only one who may change them. */
+    public boolean driverAllows(Player player) {
+        LivingEntity driver = getControllingPassenger();
+        return driver == null || driver == player;
     }
 
     @Override

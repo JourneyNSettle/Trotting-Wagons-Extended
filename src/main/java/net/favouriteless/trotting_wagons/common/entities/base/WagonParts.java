@@ -80,6 +80,17 @@ public final class WagonParts {
     }
 
     public static Part pick(AbstractWagon wagon, Player player) {
+        Hit hit = closest(wagon, player);
+        return hit == null ? null : hit.part;
+    }
+
+    /** Closest point on a fitted part, or null when a block is in front of it. */
+    public static Vec3 closestPoint(AbstractWagon wagon, Player player) {
+        Hit hit = closest(wagon, player);
+        return hit == null ? null : hit.point;
+    }
+
+    private static Hit closest(AbstractWagon wagon, Player player) {
         double reach = player.entityInteractionRange();
         Vec3 eye = player.getEyePosition();
         Vec3 end = eye.add(player.getViewVector(1.0F).scale(reach));
@@ -103,15 +114,17 @@ public final class WagonParts {
         }
         if(bestHit != null && blockIsCloser(player, eye, bestHit, reach))
             return null;
-        return best;
+        return best == null ? null : new Hit(best, bestHit);
     }
+
+    private record Hit(Part part, Vec3 point) {}
 
     public static boolean present(AbstractWagon wagon, Part part) {
         return switch(part.kind()) {
             case WHEEL -> (wagon.getWheelMask() & (1 << part.index())) != 0;
             case PUMPKIN -> wagon instanceof DebugWagon debug && debug.getPumpkinCount() > part.index();
             case BANNER -> wagon instanceof DebugWagon debug && !debug.getBannerStack().isEmpty();
-            case HARNESS -> harnessOf(wagon) != null && !harnessOf(wagon).getStackInSlot(0).isEmpty();
+            case HARNESS -> wagon.hitchSlots() > 0;
             case LANTERN -> wagon instanceof DebugWagon debug ? debug.hasLantern()
                     : wagon instanceof PassengerWagon passenger ? passenger.hasLantern(part.index())
                     : wagon instanceof WareWagon ware ? ware.hasLantern()
@@ -122,7 +135,7 @@ public final class WagonParts {
 
     public static boolean use(AbstractWagon wagon, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
-        if(!canInsert(wagon, stack))
+        if(!wagon.driverAllows(player) || !canInsert(wagon, stack))
             return false;
         if(!wagon.level().isClientSide)
             insert(wagon, player, stack, aimPoint(wagon, player));
@@ -131,6 +144,8 @@ public final class WagonParts {
 
     /** Shift-right-click. Removes the part under the cursor. */
     public static boolean take(AbstractWagon wagon, Player player) {
+        if(!wagon.driverAllows(player))
+            return false;
         Part part = pick(wagon, player);
         if(part == null)
             return false;
@@ -149,6 +164,8 @@ public final class WagonParts {
     }
 
     public static List<AABB> clickBoxes(AbstractWagon wagon, Part part) {
+        if(part.kind() == Kind.HARNESS)
+            return harnessBoxes(wagon);
         if(part.kind() != Kind.WHEEL || wagon.getWheelKind(part.index()) != AbstractWagon.WheelKind.WIDE)
             return part.local();
         boolean outward = part.index() % 2 == 0; // 0 and 2 are the +X wheels; the wide rim sticks out on that side.
@@ -180,7 +197,7 @@ public final class WagonParts {
         return new AABB(minX, minY, minZ, maxX, maxY, maxZ);
     }
 
-    private static boolean canInsert(AbstractWagon wagon, ItemStack stack) {
+    static boolean canInsert(AbstractWagon wagon, ItemStack stack) {
         if(stack.isEmpty())
             return false;
         if(stack.is(TrottingWagons.WAGON_WHEELS)) {
@@ -575,6 +592,46 @@ public final class WagonParts {
         double ox = x - px;
         double oz = z - pz;
         return new Vec3(px + ox * cos + oz * sin, y, pz - ox * sin + oz * cos);
+    }
+
+    /** Tongue when two animals are harnessed, shafts when one is. Pitched with the wood. */
+    private static List<AABB> harnessBoxes(AbstractWagon wagon) {
+        AbstractWagon.WheelSag sag = wagon.wheelSag();
+        float pitch = wagon.tongueAngle(wagon.getXRot() + sag.pitch(), sag.roll(), sag.drop());
+        if(wagon.hitchSlots() > 1)
+            return List.of(pitched(-2, 8, -90, 4, 8, 62, pitch));
+        return List.of(
+                pitched(-11, 8, -90, 5, 6, 62, pitch),
+                pitched(6, 8, -90, 5, 6, 62, pitch),
+                pitched(-7, 10, -84, 14, 6, 8, pitch));
+    }
+
+    private static AABB pitched(double x, double y, double z, double sx, double sy, double sz, float radians) {
+        double pivotY = 8.75D;
+        double pivotZ = -20.88461D;
+        double cos = Math.cos(radians);
+        double sin = Math.sin(radians);
+        double minX = Double.POSITIVE_INFINITY;
+        double minY = Double.POSITIVE_INFINITY;
+        double minZ = Double.POSITIVE_INFINITY;
+        double maxX = Double.NEGATIVE_INFINITY;
+        double maxY = Double.NEGATIVE_INFINITY;
+        double maxZ = Double.NEGATIVE_INFINITY;
+        for(int i = 0; i < 8; i++) {
+            double px = (i & 1) == 0 ? x : x + sx;
+            double py = (i & 2) == 0 ? y : y + sy;
+            double pz = (i & 4) == 0 ? z : z + sz;
+            double dy = py - pivotY;
+            double dz = pz - pivotZ;
+            Vec3 point = local(px, pivotY + dy * cos - dz * sin, pivotZ + dy * sin + dz * cos);
+            minX = Math.min(minX, point.x);
+            minY = Math.min(minY, point.y);
+            minZ = Math.min(minZ, point.z);
+            maxX = Math.max(maxX, point.x);
+            maxY = Math.max(maxY, point.y);
+            maxZ = Math.max(maxZ, point.z);
+        }
+        return new AABB(minX, minY, minZ, maxX, maxY, maxZ);
     }
 
     private static Vec3 local(double x, double y, double z) {

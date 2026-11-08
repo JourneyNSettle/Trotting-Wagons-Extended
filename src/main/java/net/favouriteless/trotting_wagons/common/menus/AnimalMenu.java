@@ -43,7 +43,7 @@ public class AnimalMenu extends AbstractContainerMenu {
             wagon.refreshRepairSlots();
 
         for(int i = 0; i < AbstractWagon.WHEEL_COUNT; i++)
-            addSlot(new WheelSlot(wagon.getWheels(), i, WHEEL_X + (i % 2) * 18, WHEEL_Y + (i / 2) * 18));
+            addSlot(new WheelSlot(wagon, inventory.player, wagon.getWheels(), i, WHEEL_X + (i % 2) * 18, WHEEL_Y + (i / 2) * 18));
 
         for(int x = 0; x < 9; x++)
             addSlot(new Slot(inventory, x, INV_X + x * 18, INV_Y + 58));
@@ -54,7 +54,7 @@ public class AnimalMenu extends AbstractContainerMenu {
         }
 
         this.harnessSlot = slots.size();
-        addSlot(new HarnessSlot(wagon, wagon.getHarnessItems(), 0, HARNESS_X, HARNESS_Y));
+        addSlot(new HarnessSlot(wagon, inventory.player, wagon.getHarnessItems(), 0, HARNESS_X, HARNESS_Y));
         this.repairStart = slots.size();
         for(int i = 0; i < AbstractWagon.REPAIR_SLOTS; i++)
             addSlot(new RepairSlot(wagon, wagon.getRepair(), i, REPAIR_X + (i % 2) * 18, REPAIR_Y + (i / 2) * 18));

@@ -3,6 +3,7 @@ package net.favouriteless.trotting_wagons.common.menus;
 import net.favouriteless.trotting_wagons.TrottingWagons;
 import net.favouriteless.trotting_wagons.common.entities.base.AbstractInventoryWagon;
 import net.favouriteless.trotting_wagons.common.entities.base.AbstractWagon;
+import net.favouriteless.trotting_wagons.common.entities.wagons.DebugWagon;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -37,13 +38,19 @@ public abstract class AbstractWagonMenu extends AbstractContainerMenu {
 
         for(int y = 0; y < cargoSlots / perRow; y++) {
             for(int x = 0; x < perRow; x++) {
-                addSlot(new SlotItemHandler(wagon.getItems(), x + y*perRow, xSlots + x*18, cargoY + y*18));
+                int index = x + y * perRow;
+                int slotX = xSlots + x * 18;
+                int slotY = cargoY + y * 18;
+                if(wagon instanceof DebugWagon)
+                    addSlot(new PumpkinSlot(wagon, inventory.player, wagon.getItems(), index, slotX, slotY));
+                else
+                    addSlot(new SlotItemHandler(wagon.getItems(), index, slotX, slotY));
             }
         }
 
         this.wheelStart = slots.size();
         for(int i = 0; i < AbstractWagon.WHEEL_COUNT; i++)
-            addSlot(new WheelSlot(wagon.getWheels(), i, wheelLeft + (i % 2) * 18, WagonLayout.wheelY(wheelTop, i)));
+            addSlot(new WheelSlot(wagon, inventory.player, wagon.getWheels(), i, wheelLeft + (i % 2) * 18, WagonLayout.wheelY(wheelTop, i)));
 
         for(int x = 0; x < 9; x++) {
             addSlot(new Slot(inventory, x, xInv + x*18, yInv + 58));

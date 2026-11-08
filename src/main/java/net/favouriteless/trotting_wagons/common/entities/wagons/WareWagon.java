@@ -1,5 +1,8 @@
 package net.favouriteless.trotting_wagons.common.entities.wagons;
 
+import com.kltyton.bonehitboxlib.api.bone.collision.ObbCollisionMode;
+import com.kltyton.bonehitboxlib.api.geckolib.entity.GeoBoneHitboxEntity;
+import com.kltyton.bonehitboxlib.api.registration.registrar.ObbBoneRegistrar;
 import net.favouriteless.trotting_wagons.ServerConfig;
 import net.favouriteless.trotting_wagons.TrottingWagons;
 import net.favouriteless.trotting_wagons.common.entities.WagonBuild;
@@ -35,7 +38,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.items.ItemStackHandler;
 
-public class WareWagon extends AbstractWagon implements MenuProvider {
+public class WareWagon extends AbstractWagon implements MenuProvider, GeoBoneHitboxEntity {
 
     public static final int CHESTS = 4;
     /** Saves through cargo version 3 stored three chest items. */
@@ -140,6 +143,16 @@ public class WareWagon extends AbstractWagon implements MenuProvider {
             syncLantern();
         }
     };
+
+    /** The shell is always solid. A placed chest adds its own bone. */
+    @Override
+    public void bonehitboxlib$registerObbBones(ObbBoneRegistrar registrar) {
+        registrar.register(GeoBoneHitboxEntity.BONEHITBOXLIB_GEO_SOURCE, "hitbox")
+                .collision(ObbCollisionMode.HARD);
+        for(int i = 1; i <= CHESTS; i++)
+            registrar.register(GeoBoneHitboxEntity.BONEHITBOXLIB_GEO_SOURCE, "chest" + i)
+                    .collision(ObbCollisionMode.HARD);
+    }
 
     public WareWagon(EntityType<WareWagon> type, Level level) {
         super(type, level, 19.5D / 16D, 19D / 16D, SEATS, ServerConfig.INSTANCE.wareSpeedEmpty.get(),

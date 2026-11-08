@@ -45,7 +45,7 @@ public class YellowBoxLayer<T extends GeoAnimatable> extends GeoRenderLayer<T> {
     }
 
     private static boolean isCollisionBone(String name) {
-        return name.equals("hitbox") || name.startsWith("Log_");
+        return name.equals("hitbox") || name.startsWith("Log_") || name.startsWith("Barrel_") || name.startsWith("chest");
     }
 
     /** A held-item preview is not in the level. Its render must not take a real wagon's list. */

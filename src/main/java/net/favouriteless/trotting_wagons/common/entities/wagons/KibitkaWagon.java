@@ -1,5 +1,8 @@
 package net.favouriteless.trotting_wagons.common.entities.wagons;
 
+import com.kltyton.bonehitboxlib.api.bone.collision.ObbCollisionMode;
+import com.kltyton.bonehitboxlib.api.geckolib.entity.GeoBoneHitboxEntity;
+import com.kltyton.bonehitboxlib.api.registration.registrar.ObbBoneRegistrar;
 import net.favouriteless.trotting_wagons.ServerConfig;
 import net.favouriteless.trotting_wagons.TrottingWagons;
 import net.favouriteless.trotting_wagons.common.KibitkaSpawnMemory;
@@ -52,7 +55,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
-public class KibitkaWagon extends AbstractInventoryWagon {
+public class KibitkaWagon extends AbstractInventoryWagon implements GeoBoneHitboxEntity {
 
     public static final int CARGO = 45;
     /** Two seconds. The pose moves one step per tick, and a new switch waits until it arrives. */
@@ -124,6 +127,13 @@ public class KibitkaWagon extends AbstractInventoryWagon {
     private final Set<UUID> spawnPlayers = new HashSet<>();
     private BlockPos spawnPos;
     private ResourceKey<Level> spawnDimension;
+
+    /** Body shell. The cubes are not drawn; BoneHitboxLib uses them as the solid box. */
+    @Override
+    public void bonehitboxlib$registerObbBones(ObbBoneRegistrar registrar) {
+        registrar.register(GeoBoneHitboxEntity.BONEHITBOXLIB_GEO_SOURCE, "hitbox")
+                .collision(ObbCollisionMode.HARD);
+    }
 
     public KibitkaWagon(EntityType<KibitkaWagon> type, Level level) {
         super(type, level, 19.25D / 16D, 17D / 16D, SEATS, ServerConfig.INSTANCE.kibitkaSpeed.get(),

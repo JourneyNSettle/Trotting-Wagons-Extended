@@ -35,7 +35,7 @@ import net.neoforged.neoforge.items.ItemStackHandler;
 
 public class LogWagon extends AbstractWagon implements MenuProvider, GeoBoneHitboxEntity {
 
-    public static final int CAPACITY = 7040;
+    public static final int CAPACITY = LogCargo.CAPACITY;
     public static final int TYPE_SLOTS = 90;
     public static final int LOG_STEP = 128;
     public static final int LOG_BONES = 11;
@@ -46,7 +46,7 @@ public class LogWagon extends AbstractWagon implements MenuProvider, GeoBoneHitb
     private static final EntityDataAccessor<Integer> DATA_HARNESS = SynchedEntityData.defineId(LogWagon.class, EntityDataSerializers.INT);
 
     public static final WagonSeat[] SEATS = new WagonSeat[] {
-            new WagonSeat(seat(0, 14, -32.25D), WagonSeat.Kind.DRIVER)
+            new WagonSeat(seat(0, 17.08333D, -30.83333D), WagonSeat.Kind.DRIVER)
     };
 
     private final NonNullList<ItemStack> cargoStacks = NonNullList.withSize(TYPE_SLOTS, ItemStack.EMPTY);
@@ -61,7 +61,7 @@ public class LogWagon extends AbstractWagon implements MenuProvider, GeoBoneHitb
 
         @Override
         public int getSlotLimit(int slot) {
-            return CAPACITY;
+            return LogCargo.limit();
         }
 
         @Override
@@ -144,11 +144,15 @@ public class LogWagon extends AbstractWagon implements MenuProvider, GeoBoneHitb
         if(slot < 0 || slot >= TYPE_SLOTS)
             return 0;
         int inSlot = cargoStacks.get(slot).getCount();
-        return Math.max(0, CAPACITY - (cargoCount() - inSlot));
+        return Math.max(0, LogCargo.limit() - (cargoCount() - inSlot));
+    }
+
+    public static int cargoCapacity() {
+        return LogCargo.limit();
     }
 
     public int placeholderSlot() {
-        if(cargoCount() >= CAPACITY)
+        if(cargoCount() >= LogCargo.limit())
             return -1;
         for(int i = 0; i < TYPE_SLOTS; i++) {
             if(cargoStacks.get(i).isEmpty())
@@ -229,7 +233,7 @@ public class LogWagon extends AbstractWagon implements MenuProvider, GeoBoneHitb
             if(ItemStack.isSameItemSameComponents(existing, stack))
                 return i;
         }
-        if(cargoCount() >= CAPACITY)
+        if(cargoCount() >= LogCargo.limit())
             return -1;
         return empty;
     }
@@ -404,7 +408,8 @@ public class LogWagon extends AbstractWagon implements MenuProvider, GeoBoneHitb
     }
 
     private static Vec3 seat(double x, double y, double z) {
-        return new Vec3(x / 16D, y / 16D, -z / 16D).add(0, 0.7D, 0);
+        // positionRider subtracts 0.7. Sitting hips are 0.75 above the entity, so y is the hip height.
+        return new Vec3(x / 16D, y / 16D - 0.05D, -z / 16D);
     }
 
 }

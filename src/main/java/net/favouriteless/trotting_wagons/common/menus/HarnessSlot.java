@@ -5,26 +5,25 @@ import net.favouriteless.trotting_wagons.common.init.TWItems;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.items.IItemHandler;
-import net.neoforged.neoforge.items.SlotItemHandler;
 
 /** Tongue or shafts. Stays put while any animal is hitched. */
-public class HarnessSlot extends SlotItemHandler {
+public class HarnessSlot extends DriverSlot {
 
     private final AbstractWagon wagon;
 
-    public HarnessSlot(AbstractWagon wagon, IItemHandler handler, int index, int x, int y) {
-        super(handler, index, x, y);
+    public HarnessSlot(AbstractWagon wagon, Player viewer, IItemHandler handler, int index, int x, int y) {
+        super(wagon, viewer, handler, index, x, y);
         this.wagon = wagon;
     }
 
     @Override
     public boolean mayPlace(ItemStack stack) {
-        return !wagon.hasDraftAnimal() && TWItems.isHarness(stack);
+        return !wagon.hasDraftAnimal() && TWItems.isHarness(stack) && allowed();
     }
 
     @Override
     public boolean mayPickup(Player player) {
-        return !wagon.hasDraftAnimal();
+        return !wagon.hasDraftAnimal() && super.mayPickup(player);
     }
 
     @Override

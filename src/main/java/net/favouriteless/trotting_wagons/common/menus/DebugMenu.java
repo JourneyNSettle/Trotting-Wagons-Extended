@@ -49,11 +49,11 @@ public class DebugMenu extends AbstractWagonMenu {
             wagon.refreshRepairSlots();
         DebugWagon debugWagon = (DebugWagon)wagon;
         this.bannerSlot = slots.size();
-        addSlot(new BannerSlot(debugWagon.getBannerItems(), 0, BANNER_X, ACCESSORY_Y));
+        addSlot(new BannerSlot(debugWagon, inventory.player, debugWagon.getBannerItems(), 0, BANNER_X, ACCESSORY_Y));
         this.lanternSlot = slots.size();
-        addSlot(new LanternSlot(debugWagon.getLanternItems(), 0, LANTERN_X, ACCESSORY_Y));
+        addSlot(new LanternSlot(debugWagon, inventory.player, debugWagon.getLanternItems(), 0, LANTERN_X, ACCESSORY_Y));
         this.harnessSlot = slots.size();
-        addSlot(new HarnessSlot(debugWagon, debugWagon.getHarnessItems(), 0, HARNESS_X, HARNESS_Y));
+        addSlot(new HarnessSlot(debugWagon, inventory.player, debugWagon.getHarnessItems(), 0, HARNESS_X, HARNESS_Y));
         for(int i = 0; i < AbstractWagon.REPAIR_SLOTS; i++)
             addSlot(new RepairSlot(debugWagon, debugWagon.getRepair(), i, REPAIR_X + (i % 2) * 18, REPAIR_Y + (i / 2) * 18));
     }

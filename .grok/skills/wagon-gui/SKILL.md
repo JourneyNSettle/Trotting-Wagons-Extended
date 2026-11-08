@@ -15,7 +15,7 @@ The user paints the PNG by hand. Copy it into `assets/trotting_wagons/textures/g
 
 The image is at most 320×250. Top to bottom, unless the user marks a wagon otherwise:
 
-1. One text row, left to right: wagon name, owner, distance in kilometres. Draw these in code.
+1. One text row, left to right: wagon name and distance in kilometres. The owner is still stored on the wagon and is not drawn until the user asks for that line again.
 2. That wagon's own slots and buttons.
 3. The durability bar, drawn in code.
 4. On the right, the repair header («Починка») lines up with the top edge of the passenger seats. The open repair slots sit centered under that header: one slot in the middle, two in a row, three as a row plus one centered below, four as a square.
@@ -38,13 +38,13 @@ Two items, no recipe unless the user asks:
 | `tongue` | Оглобли / Shafts | `TongueSingle` | 1, centered |
 | `shafts` | Дышло / Tongue | `Tongue` | 2, left and right |
 
-An empty slot hides both bones and leaves 0 draft slots. Its ghost icon is the дышло item (`shafts`, English Tongue). The harness cannot be taken out or swapped while any animal is hitched. Right-click the wagon with the item to install it. Shift-right-click the part to take it back. The harness still stays while an animal is hitched. Both bones still take the same `tongueAngle`.
+An empty slot hides both bones and leaves 0 draft slots. Its ghost icon is the дышло item (`shafts`, English Tongue). The harness cannot be taken out or swapped while any animal is hitched. While a player sits in the driver seat, only that player may fit or remove wheels, the harness, and custom items (lanterns, banners, pumpkins), or unhitch a draft animal. An empty driver seat leaves those actions open. Right-click the wagon with the item to install it. Shift-right-click the part to take it back. The harness still stays while an animal is hitched. Both bones still take the same `tongueAngle`.
 
 Wire this slot only on a wagon whose GUI already paints it. An empty slot on an old screen would clear that wagon's existing hitch.
 
 ## Painted exceptions
 
-Log wagon, `log_wagon.png`, is 320×190 and that is the one-row size. Name, owner, and kilometres sit to the right of the driver, as on the ware wagon. Cargo is 15 columns from (25, 14) and is not painted: draw each visible well. Extra rows insert at y=54 and push the painted lower half down. The durability bar stays 4px under the last cargo row and 8px above the driver. Harness (26, 98), wheels (17, 146), repair header on the driver top, and the player inventory stay in that painted half.
+Log wagon, `log_wagon.png`, is 320×190 and that is the one-row size. Name and kilometres sit to the right of the driver, as on the ware wagon. The owner line is hidden. Cargo is 15 columns from (25, 14) and is not painted: draw each visible well. Extra rows insert at y=54 and push the painted lower half down. The durability bar stays 4px under the last cargo row and 8px above the driver. Harness (26, 98), wheels (17, 146), repair header on the driver top, and the player inventory stay in that painted half.
 
 Armored wagon, `armored_wagon.png`, is 320×174. The wells match the passenger wagon without lanterns. The title row is on top. Seven player seats start at (69, 38). There is no custom-item column.
 

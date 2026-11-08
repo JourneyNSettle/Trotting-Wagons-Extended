@@ -1,6 +1,5 @@
 package net.favouriteless.trotting_wagons.common.entities;
 
-import net.favouriteless.trotting_wagons.common.entities.base.AbstractGeckolibVehicle;
 import net.favouriteless.trotting_wagons.common.init.TWEntityTypes;
 import net.favouriteless.trotting_wagons.common.init.TWItems;
 import net.minecraft.nbt.CompoundTag;
@@ -85,7 +84,16 @@ public class Chassis extends Entity implements GeoEntity {
     @Override
     public void tick() {
         super.tick();
-        setBoundingBox(AbstractGeckolibVehicle.halfFootprint(makeBoundingBox(), false));
+        setBoundingBox(makeBoundingBox());
+    }
+
+    /** A position packet builds the box before the new yaw is applied. Build it after. */
+    @Override
+    public void lerpTo(double x, double y, double z, float yRot, float xRot, int steps) {
+        setPosRaw(x, y, z);
+        setYRot(yRot);
+        setXRot(xRot);
+        setBoundingBox(makeBoundingBox());
     }
 
     @Override
