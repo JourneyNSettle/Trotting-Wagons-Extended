@@ -2,7 +2,7 @@
 
 Horse-drawn wagons for Minecraft 1.21.1. The mod continues [Favouriteless/Trotting-Wagons](https://github.com/Favouriteless/Trotting-Wagons). 
 
-The test jar is on the [0.2 release](https://github.com/JourneyNSettle/Trotting-Wagons-Extended/releases/tag/v2.0).
+The test jar is on the [2.0 release](https://github.com/JourneyNSettle/Trotting-Wagons-Extended/releases/tag/v2.0).
 
 ## Install
 
