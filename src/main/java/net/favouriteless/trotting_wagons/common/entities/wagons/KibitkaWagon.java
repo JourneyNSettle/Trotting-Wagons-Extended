@@ -468,9 +468,44 @@ public class KibitkaWagon extends AbstractInventoryWagon implements GeoBoneHitbo
         return WagonItem.setupComponents(new ItemStack(TWItems.KIBITKA_WAGON.get()), getColor());
     }
 
+    /** Same shell `makeBoundingBox` uses. The type width is wider than this body. */
+    private static final double BODY_HALF_X = 1.625D;
+    private static final double BODY_REAR = 2.469D;
+
     @Override
     protected boolean dismountsBehind(LivingEntity passenger, int seat) {
         return seat > 0;
+    }
+
+    @Override
+    protected double dismountRear() {
+        return BODY_REAR;
+    }
+
+    @Override
+    public Vec3 getDismountLocationForPassenger(LivingEntity passenger) {
+        if(claimsRearDismount(passenger))
+            return super.getDismountLocationForPassenger(passenger);
+        return besideDriver(passenger);
+    }
+
+    /** Beside the driver seat, outside the body, standing on the ground rather than in the block under it. */
+    private Vec3 besideDriver(LivingEntity passenger) {
+        double z = SEATS[0].position().z;
+        double base = BODY_HALF_X + passenger.getBbWidth() * 0.5D + 0.05D;
+        Vec3 first = null;
+        for(int step = 0; step < 4; step++) {
+            double out = base + step * 0.5D;
+            for(int sign = 1; sign >= -1; sign -= 2) {
+                Vec3 flat = position().add(rotateY(new Vec3(out * sign, 0, z), getYRot()));
+                Vec3 pos = new Vec3(flat.x, dismountFeet(flat.x, flat.z), flat.z);
+                if(first == null)
+                    first = pos;
+                if(dismountFree(passenger, pos))
+                    return pos;
+            }
+        }
+        return first;
     }
 
     @Override
