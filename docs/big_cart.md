@@ -1,39 +1,39 @@
-# Большая повозка
+# Big Cart
 
-Сущность `big_cart`, предмет `big_cart`. Рецепта нет. Краска не берётся: одна текстура `textures/entity/big_cart/none.png`, скопированная из `blockbench/BigCart/BigCart_Texture.png`. Геометрия `geo/entity/big_cart.geo.json`, идентификатор `geometry.BigCab`. Кость `cart` качается клипом `move.forwards`, как у отладочной повозки. Лестница `Ladder` всегда на месте и не открывается.
+Entity `big_cart`, item `big_cart`. No recipe. Dye is refused: one texture, `textures/entity/big_cart/none.png`, copied from `blockbench/BigCart/BigCart_Texture.png`. Geometry `geo/entity/big_cart.geo.json`, identifier `geometry.BigCab`. Bone `cart` rocks with the clip `move.forwards`, the same way as the debug wagon. The `Ladder` is always in place and does not open.
 
-## Размеры
+## Size
 
-Хитбокс следует за рысканием и не включает колёса, дышло и лестницу. Бока ±22/16, перед 31.25/16 (перед подушки возницы), зад 39.5/16 (зад пола). Высота 2.5, чтобы фонарь входил в коробку. На диагонали мировая коробка шире. `sized` типа — 4.5 на 2.5.
+The type is `sized(4.5, 2.5)`. The body is `orientedBody(2.062, 0, 2.413, 2.469, 1.953)`, and the white box is the shared ground plate. See [common.md](common.md). `bareDrop()` is 8.75/16. One remaining wheel adds 1° to the shared 3.5° pitch and roll, plus 2/16 of drop, and a lone rear wheel adds another 1/16.
 
-Упряжь: пусто — 0 слотов, оглобли — одно животное по центру на Z 78/16, дышло — два на `horseX` ±0.6 и том же Z. Длина дышла 64/16, высота 8.75/16, угол 13°.
+Harness: empty is 0 slots. Shafts is one animal, centered at Z 78/16. Tongue is two animals at X ±0.6 and the same Z. Tongue length 64/16, height 8.75/16. The constructor stores angle 13. The drawn angle is `tongueAngle`.
 
-Здоровье, скорость и поворот читаются из `big_cart_health` (60), `big_cart_speed_coefficient` (1.0) и `big_cart_turn_rate` (2.0).
+Health, speed, and turn are read from `big_cart_health` (60), `big_cart_speed_coefficient` (1.0), and `big_cart_turn_rate` (2.0).
 
-## Места
+## Seats
 
-`positionRider` вычитает 0.7. Возница сидит на кости `DriverSeat`: подушка сверху на 26, центр по Z модели −27.25, запись `(0, 1.575, 1.703125)`.
+`positionRider` subtracts 0.7. The driver is stored as `(0, 1.7, 1.703125)`.
 
-Пол сверху на 15. В записи к Y прибавлен 0.7, чтобы после вычитания в `positionRider` ступни животного остались на полу. Игрок на полу опускается ещё на 10/16: поза верховой езды поднимает стопы примерно на эту высоту. Возница остаётся на подушке, без этого опускания. Житель и странствующий торговец садятся как пассажиры, не как животные, и место возницы им не отдаётся.
+The floor top is at 15. The stored Y adds 0.7 so that, after `positionRider` subtracts it, an animal's feet stay on the floor. A player on the floor is lowered another 10/16: the riding pose lifts the feet by about that much. The driver stays on the cushion, without that extra drop. A villager and a wandering trader sit as passengers, not as animals, and the driver seat is not offered to them.
 
-| Индекс | Позиция | Вид |
+| Index | Position | Kind |
 | --- | --- | --- |
-| 0 | (0, 1.575, 1.703125) | `DRIVER` |
-| 1 | (0, 1.6375, 0.2) | `UNIVERSAL`, на полблока впереди крупного |
-| 2 | (0, 1.6375, −1.3) | `UNIVERSAL`, на блок позади крупного |
+| 0 | (0, 1.7, 1.703125) | `DRIVER` |
+| 1 | (0, 1.6375, 0.2) | `UNIVERSAL`, half a block in front of the large seat |
+| 2 | (0, 1.6375, −1.3) | `UNIVERSAL`, one block behind the large seat |
 | 3 | (0, 1.6375, −0.3) | `ANIMALBIG` |
 
-Кнопки слева направо подписаны 1, 2, 3, 4: возница, переднее универсальное, крупное, заднее универсальное. Крупное место принимает только крупного пассажира и закрывает оба универсальных. Игрок или небольшое животное на универсальном закрывает крупное место. Предметы в грузе закрывают все три. Кто-то на любом из них закрывает груз. Если среди них есть животное, надпись «Грузовое место занято животными»; если только игроки — «Грузовое место занято пассажирами».
+The buttons are labeled 1, 2, 3, 4 from left to right: driver, front universal, large, rear universal. The large seat accepts only a large passenger and closes both universal seats. A player or a small animal on a universal seat closes the large seat. Items in the cargo close all three. Anyone on any of them closes the cargo. If one of them is an animal, the label is `gui.trotting_wagons.big_cart.animals` ("Animals are using the cargo space"). If only players are seated, it is `gui.trotting_wagons.big_cart.players` ("Passengers are using the cargo space").
 
-## Интерфейс
+## Screen
 
-`textures/gui/big_cart.png`, 320×236. Слоты груза на текстуре не нарисованы: 14×3 с (18, 22). Пока место занято животным, слоты уезжают и по центру этой сетки пишется «Грузовое место занято животными». Полоска прочности на (13, 82), ширина 294. Места с (108, 100), шаг 26. Тягачи на той же высоте, рамка `big_slot.png`. Упряжь (26, 144). Колёса (17, 192). Инвентарь игрока с (80, 152). Починка справа, заголовок на верхнем крае мест и по центру фонаря. Фонарь уже нарисован на (278, 192). Подписи «Особые предметы» над ним. Кнопки замка нет.
+`textures/gui/big_cart.png`, 320×236. Cargo slots are not painted on the texture: 14×3 from (18, 22). While an animal occupies a seat, the slots move off and the center of that grid says "Animals are using the cargo space". The health bar is at (13, 82), width 294. Seats start at (108, 100), step 26. Draft animals are at the same height, frame `big_slot.png`. Harness (26, 144). Wheels (17, 192). The player inventory starts at (80, 152). Repair is on the right, with its header on the top edge of the seats and centered on the lantern. The lantern is already painted at (278, 192). The "Custom Items" label sits above it. There is no lock button.
 
-Фонарь — `minecraft:lantern`, одна штука, кость `Lamp`. Пустой слот прячет кость. Занятый раз в 10 тиков ставит свет 15 в клетку центра стекла. Снятие и разрушение убирают этот блок. Разрушение роняет фонарь и упряжь.
+The lantern is one `minecraft:lantern`, bone `Lamp`. An empty slot hides the bone. A filled slot places light level 15 in the glass-center cell every 10 ticks. Removal and destruction clear that block. Destruction drops the lantern and the harness.
 
-Кости колёс те же, что у отладочной: `LeftFrontWheel`, `RightFrontWheel`, `LeftRearWheel`, `RightRearWheel`, широкие с `2`, укреплённые с `3`. Зоны клика в пикселях модели:
+Wheel bones match the debug wagon: `LeftFrontWheel`, `RightFrontWheel`, `LeftRearWheel`, `RightRearWheel`, wide wheels with `2`, reinforced wheels with `3`. Click zones in model pixels:
 
-| Угол | X | Y | Z |
+| Corner | X | Y | Z |
 | --- | --- | --- | --- |
 | 0 | 24.25 | 9.5 | −21 |
 | 1 | −23.75 | 9.5 | −21 |

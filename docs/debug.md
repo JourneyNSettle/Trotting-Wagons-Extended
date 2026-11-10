@@ -1,58 +1,58 @@
-# Отладочная повозка
+# Debug Wagon
 
-Предмет и сущность `trotting_wagons:debug_wagon`. Класс `DebugWagon` расширяет `AbstractInventoryWagon`. Имена: Debug Wagon / Дебаг-вагон. Рецепта нет, предмет берётся из творческой вкладки. Текстура всегда `textures/entity/debug_wagon/none.png`. Краска пишет цвет, картинку не меняет.
+Item and entity `trotting_wagons:debug_wagon`. Class `DebugWagon` extends `AbstractInventoryWagon`. Names: Debug Wagon. No recipe. Finished wagons, including this one, are not in the creative tab. The texture is always `textures/entity/debug_wagon/none.png`. Dye writes the color and does not change the picture.
 
-Геометрия: `assets/trotting_wagons/geo/entity/debug_wagon.geo.json`. Корневой экспорт `DebugCab.geo.json`, если он снова окажется в корне, сборка не читает.
+Geometry: `assets/trotting_wagons/geo/entity/debug_wagon.geo.json`. If a root export `DebugCab.geo.json` lands in the root again, the build does not read it.
 
-## Параметры
+## Parameters
 
-| Параметр | Значение |
+| Parameter | Value |
 | --- | --- |
-| Хитбокс | кузов без колёс и дышла: бока ±23/16, перед +32.25/16, зад −40.5/16, высота 4.0. Прямоугольник едет за рысканием, но ванильная коробка по сторонам света на повороте всё ещё шире кузова. Дополнительно кость `cart` зарегистрирована в BoneHitboxLib как жёсткий ориентированный объём. При F3+B видны оба контура. Белый ящик не останавливает игрока: ходьба упирается в жёлтую коробку кузова. В блоки повозка по-прежнему упирается ванильным объёмом. Колёса, дышло, лестница, сиденья и фонарь в него не входят. Без установленного BoneHitboxLib 0.3.0 мод не запускается. `sized(3.5, 4.0)` задаёт ширину типа |
-| Здоровье | `debug_wagon_health`, по умолчанию 67 |
-| Коэффициент скорости | `debug_wagon_speed_coefficient`, по умолчанию 0.9 |
-| Поворот | `debug_wagon_turn_rate`, по умолчанию 2.0 |
-| Ускорение в конфиге | `debug_wagon_acceleration`, по умолчанию 3.0, вождение не читает |
+| Hitbox | type `sized(3.5, 4.0)`. The body is `orientedBody(1.984, 0, 4.564, 2.644, 1.953)`. The white box is the shared ground plate and does not stop the player. Bone `cart` is registered in BoneHitboxLib as a hard oriented volume, and that yellow box does. The mod does not start without BoneHitboxLib 0.3.0. `bareDrop()` is 6.75/16. See [common.md](common.md) |
+| Health | `debug_wagon_health`, default 67 |
+| Speed coefficient | `debug_wagon_speed_coefficient`, default 0.9 |
+| Turn | `debug_wagon_turn_rate`, default 2.0 |
+| Acceleration in config | `debug_wagon_acceleration`, default 3.0. Driving leaves it unread |
 | `wheelWidth`, `wheelLength` | 1.5, 1.5 |
-| Упряжь | слот `Harness`: пусто 0, `shafts` (оглобли, кость `shafts`) 1, `tongue` (дышло, кость `Tongue`) 2 |
-| Точка упряжи | одно животное: X = 1/16, Z = 76.88461/16. Два: X = ±0.6, тот же Z |
-| Поля конструктора | `horseX` 0.3125 и `horseY` 4.805; якорь поиска дышла использует `horseY` |
+| Harness | slot `Harness`: empty 0, `shafts` (Shafts, bone `shafts`) 1, `tongue` (Tongue, bone `Tongue`) 2 |
+| Hitch point | one animal: X = 1/16, Z = 76.88461/16. Two: X = ±0.6, the same Z |
+| Constructor fields | `horseX` 0.3125 and `horseY` 4.805. The tongue search anchor uses `horseY` |
 | `shaftAngle` | 13 |
-| Дышло | длина 59.12/16, высота 8.5/16, запасная цель запряжённого дышла 1.2 |
-| Просадка | диагональ −8°, оба задних −14° |
-| Груз | 4 слота, только `minecraft:pumpkin`, лимит 1 |
+| Tongue | length 59.12/16, height 8.5/16, fallback target for a hitched tongue 1.2 |
+| Sag | both rear wheels use the default −14°. A diagonal is `DiagonalSag`. The stored `diagonalPitch()` of −8° is the unused fallback |
+| Cargo | 4 slots, only `minecraft:pumpkin`, limit 1 |
 
-Три сетки колёс на каждом углу. Обычные кости: `LeftFrontWheel`, `RightFrontWheel`, `LeftRearWheel`, `RightRearWheel`. Широкие с суффиксом `2` на осях `FrontWheels_Wide` и `RearWheels_Wide`. Усиленные с суффиксом `3` на `FrontWheels_Iron` и `RearWheels_Iron`, точка опоры Y 8.5 против 9.5 у обычных. Пустой угол прячет все три сетки. Куб обычной оси остаётся. Родительские оси крутятся кодом, поэтому видимые колёса крутятся вместе с ними.
+Each corner has three wheel meshes. Regular bones: `LeftFrontWheel`, `RightFrontWheel`, `LeftRearWheel`, `RightRearWheel`. Wide wheels use suffix `2` on the axles `FrontWheels_Wide` and `RearWheels_Wide`. Reinforced wheels use suffix `3` on `FrontWheels_Iron` and `RearWheels_Iron`. The sag and click hubs are Y 9.5 for all three kinds. An empty corner hides all three meshes. The regular axle cube stays. The parent axles spin in code, so the visible wheels spin with them.
 
-`holdsTravel` истинен, пока прогресс лестницы больше 0.001. В этом состоянии максимум скорости 0. Передача не сбрасывается.
+`holdsTravel` is true while the ladder progress is above 0.001. In that state the speed maximum is 0. The gear is not reset.
 
-## Места
+## Seats
 
-Формула `pivot(x, y, z)` = `(x/16, y/16, −z/16)`. У двух задних мест к этому ещё прибавляется 0.7 по Y. Большого места нет, поэтому лошадь, мул, верблюд и корова сюда не садятся.
+The formula `pivot(x, y, z)` is `(x/16, y/16, −z/16)`. The two rear seats add another 0.7 on Y. There is no large seat, so a horse, mule, camel, or cow does not sit here.
 
-| Индекс | Модельная точка | Вид |
+| Index | Model point | Kind |
 | --- | --- | --- |
-| 0 | (0, 27.5, −28.5), без дополнительных +0.7 | `DRIVER` |
-| 1 | (−14.5, 26, −10.25), без дополнительных +0.7 | `PLAYER` |
-| 2 | (−11, 15.65124, 9.34415) плюс 0.7 Y | `ANIMAL` |
-| 3 | (8, 16.65124, −13.65585) плюс 0.7 Y | `UNIVERSAL` |
+| 0 | (0, 27.5, −28.5), no extra +0.7 | `DRIVER` |
+| 1 | (−14.5, 26, −10.25), no extra +0.7 | `PLAYER` |
+| 2 | (−11, 15.65124, 9.34415) plus 0.7 Y | `ANIMAL` |
+| 3 | (8, 16.65124, −13.65585) plus 0.7 Y | `UNIVERSAL` |
 
-## Тыквы, флаг, фонарь, лестница
+## Pumpkins, banner, lantern, ladder
 
-Тыквы — инвентарь `AbstractInventoryWagon` на 4 слота. `createHandler` принимает только тыкву и лимит 1. Число тыкв синхронизируется, кости `pumpkin1`–`pumpkin4` прячутся, если индекс не меньше числа.
+Pumpkins are the `AbstractInventoryWagon` inventory of 4 slots. `createHandler` accepts only a pumpkin, limit 1. The pumpkin count is synced. Bones `pumpkin1`–`pumpkin4` hide when the index is not below the count.
 
-Флаг — отдельный слот на 1, любой `BannerItem`. Пустой стак прячет кости `banner` и `stand`.
+The banner is a separate slot of 1, any `BannerItem`. An empty stack hides bones `banner` and `stand`.
 
-Фонарь — слот на 1, только `minecraft:lantern`. Кость `Lamp` видна, когда слот занят. На сервере каждые 10 тиков обновляется блок света. Позиция лампы в модели: pivot (−28, 21, 6).
+The lantern is a slot of 1, only `minecraft:lantern`. Bone `Lamp` is visible while the slot is filled. On the server the light block is refreshed every 10 ticks. Lamp position in the model: pivot (−28, 21, 6).
 
-Лестница: кнопка в меню крутит `DATA_LADDER_OPEN`. Сервер за 40 тиков доводит прогресс от 0 до 1 или обратно. Кость `Ladder` крутится на `прогресс * 130°` вокруг Z. Положительный угол откидывает лестницу наружу. Клиент сглаживает прогресс между тиками.
+Ladder: the menu button toggles `DATA_LADDER_OPEN`. Over 40 ticks the server brings the progress from 0 to 1 or back. Bone `Ladder` rotates by `progress * 130°` around Z. A positive angle folds the ladder outward. The client smooths the progress between ticks.
 
-ПКМ предметом ставит тыкву, флаг или фонарь в свободный слот даже если курсор попал в занятую деталь. Shift+ПКМ снимает деталь под курсором. Творческий режим кладёт копию и не тратит стак.
+Right-clicking with an item places a pumpkin, banner, or lantern into a free slot even when the cursor hits an occupied part. Shift-right-click removes the part under the cursor. Creative mode places a copy and does not spend the stack.
 
-## Интерфейс
+## Screen
 
-`DebugMenu` на текстуре `textures/gui/debug_wagon.png`, 320×197. Размер файла руками не меняется.
+`DebugMenu` on texture `textures/gui/debug_wagon.png`, 320×197. The file size is not changed by hand.
 
-Сверху название, владелец и километры. Тыквы `(125, 22)`. Полоска прочности x=13, y=46, ширина 294. Места пассажиров — кадр 26×26 с y=61, x=108, 134, 160, 186. Слева 0, 1 или 2 больших слота тягачей на той же высоте: один по центру x=21, два с x=8 и x=34, картинка `textures/gui/icons/big_slot.png`. Под ними строка «Нет упряжки», «Дышло» или «Оглобли», затем слот упряжки `(26, 105)`. Колёса 2×2 с `(17, 153)`, подпись в две строки над ними. Справа сразу под полосой «Починка», затем слоты починки с `(269, 80)`. Под ними заголовок особых предметов и слоты флага `(269, 153)` и фонаря `(287, 153)`. Инвентарь игрока с `(80, 113)`. Кнопка лестницы под счётчиком пути. Отдельной кнопки замка на этой текстуре нет. Серые иконки пустых слотов: колесо, тыква, белый флаг, фонарь и иконка текущей починки. Пустой слот упряжки подсказывает «Дышло или оглобли».
+At the top are the name and the kilometers. The owner is stored and is not drawn. Pumpkins `(125, 22)`. Health bar x=13, y=46, width 294. Passenger seats are a 26×26 frame at y=61, x=108, 134, 160, 186. On the left, 0, 1, or 2 large draft slots at the same height: one centered at x=21, two at x=8 and x=34, picture `textures/gui/icons/big_slot.png`. Under them is the line "No harness", "Tongue", or "Shafts", then the harness slot `(26, 105)`. Wheels 2×2 from `(17, 153)`, with a two-line label above them. On the right, immediately under the bar, is Repair, then repair slots from `(269, 80)`. Under those are the Custom Items header and the banner slot `(269, 153)` and lantern slot `(287, 153)`. The player inventory starts at `(80, 113)`. The ladder button is under the distance counter. This texture has no separate lock button. Gray icons of empty slots: wheel, pumpkin, white banner, lantern, and the icon of the current repair. An empty harness slot's tooltip is "Tongue or Shafts".
 
-Предметы `trotting_wagons:shafts` (Оглобли) и `trotting_wagons:tongue` (Дышло) лежат в творческой вкладке и крафтятся. Оглобли: шесть длинных палок, седло и нитка. Дышло: три длинные палки, два седла и две нитки. Оглобли показывают кость `shafts` и один слот тягача. Дышло показывает кость `Tongue` и два слота. Пустой слот прячет обе кости, а его серая иконка — предмет «Дышло». ПКМ по повозке с предметом в руке ставит его в пустой слот. Shift+ПКМ по дышлу снимает предмет. Снять или заменить упряжь при запряжённом животном нельзя. Уже стоявшая отладочная повозка без предмета в этом слоте отпускает тягача на ближайшем тике, если тот загружен.
+The items `trotting_wagons:shafts` (Shafts) and `trotting_wagons:tongue` (Tongue) are in the creative tab and can be crafted. Shafts: six long sticks, a saddle, and string. Tongue: three long sticks, two saddles, and two string. Shafts show bone `shafts` and one draft slot. The Tongue shows bone `Tongue` and two slots. An empty slot hides both bones, and its gray icon is the Tongue item. Right-clicking the wagon with the item in hand places it into the empty slot. Shift-right-click on the tongue removes the item. The harness cannot be removed or replaced while an animal is hitched. A debug wagon already in the world, with no item in this slot, releases its draft animal on the next tick if that animal is loaded.

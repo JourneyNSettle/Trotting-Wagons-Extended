@@ -1,204 +1,206 @@
-# Общие правила
+# Shared rules
 
-Класс-основа — `AbstractWagon`. Грузовой инвентарь обычных стаков — `AbstractInventoryWagon`. Места задаёт массив `WagonSeat` конкретной повозки, а не кости модели. Кость `Tongue` только рисуется: точки упряжи считает код.
+The base class is `AbstractWagon`. An inventory of ordinary stacks is `AbstractInventoryWagon`. Seats come from that wagon's `WagonSeat` array, not from model bones. Bone `Tongue` is drawn only: the hitch points are computed in code.
 
-Хитбокс задаёт `EntityType.Builder.sized(ширина, высота)`: след квадратный, ширина на ширину, высота отдельно. Квадрат не крутится вместе с повозкой. `wheelWidth` и `wheelLength` — вынос лучей наклона по земле и якорь просадки, это не размер модели колеса.
+`EntityType.Builder.sized(width, height)` is only the registered size. After the tick, `makeBoundingBox()` returns the yaw-aligned body, `orientedBody(halfX, bottom, top, rear, front)`: local X is ±halfX, Y runs from bottom to top, and Z runs from −rear to +front. The tongue and the shafts stay outside that body. `refreshBounds()` keeps the body for culling and installs the entity box as `halfFootprint`: half the length, half the width, and only the bottom 0.25 blocks. `canBeCollidedWith()` is false, so the white box does not stop a player or an animal. The yellow bone boxes do. On a diagonal the white plate is the axis-aligned hull of that rotated body, then halved. `wheelWidth` and `wheelLength` are the reach of the ground tilt rays and the sag anchor. They are not the size of the wheel model.
 
-Новая повозка появляется с четырьмя обычными колёсами `trotting_wagons:wheel`. Прочность при создании равна максимуму из конфига.
+Wheel slots start empty. `previewRegularWheels()` paints four regular wheels on the inventory icon only, and that dummy is never spawned. Health at creation equals the maximum from the config.
 
-## Управление и меню
+## Controls and the menu
 
-Клавиша запрягания `key.trotting_wagons.hitch`, по умолчанию `R`, категория клавиш `Trotting Wagons`. Она шлёт `HitchAnimalPayload`, пока игрок сидит на мобе. Поиск повозки: живой тягач из тега `draft_animals` или `allowed_entities`, свободная упряжь, горизонтально не дальше `HITCH_RANGE` 1.5 блока от якоря дышла. Сначала левый слот, потом правый.
+The hitch key is `key.trotting_wagons.hitch`, default `R`, key category `Trotting Wagons`. It sends `HitchAnimalPayload` while the player is riding a mob. The wagon search wants a living draft animal from the tag `draft_animals` or from `allowed_entities`, a free harness, and a horizontal distance no farther than `HITCH_RANGE`, 1.5 blocks from the tongue anchor. The left slot is tried first, then the right.
 
-Открыть инвентарь игрока, сидя в повозке с фиксированными местами (`hasFixedSeats`), отменяет экран инвентаря и шлёт `OpenWagonMenuPayload`. Сервер открывает меню, если сущность реализует `MenuProvider`. ПКМ по повозке меню не открывает. Меню остаётся открытым, пока игрок жив, повозка жива и игрок всё ещё её пассажир.
+Opening the player inventory while seated in a wagon with fixed seats (`hasFixedSeats`) cancels the inventory screen and sends `OpenWagonMenuPayload`. The server opens the menu when the entity implements `MenuProvider`. Right-clicking the wagon does not open the menu. The menu stays open while the player is alive, the wagon is alive, and the player is still its passenger.
 
-ПКМ без приседания:
+`driverAllows` is true when the driver seat is empty, or when the player sitting there is the one acting. While a driver is seated, only that player can fit or remove wheels, the harness, lanterns, banners, and pumpkins, or unhitch. Repair, cargo, and hitching a new animal stay open. A non-driver who is holding a part the wagon would accept does not board: the click fails.
 
-- луч по зонам деталей (`WagonParts`) ставит деталь, если предмет подходит и есть свободный слот;
-- иначе игрок садится на ближайшее подходящее свободное место и наследует рыскание и тангаж повозки.
+Right-click without sneaking:
 
-ПКМ с приседанием, по порядку предмета в руке:
+- a ray through the part zones (`WagonParts`) places the part when the item fits and a slot is free;
+- otherwise the player sits in the nearest suitable free seat and inherits the wagon's yaw and pitch.
 
-- кнут `trotting_wagons:horse_whip` переключает задний ход;
-- краситель из карты `TrottingWagons.DYE_ITEMS` красит повозку и не тратится;
-- иначе, если игрок держит на поводке прирученного тягача, упряжь надета и в ней есть свободное место, животное запрягается. Берётся ближайшее к повозке. Поводок возвращается в инвентарь. Слот заполняется слева направо;
-- иначе деталь под курсором снимается: колесо, фонарь, тыква, флаг, упряжь. Пустая рука для этого не нужна. Если луч ни во что из этого не попал, игрок не садится.
+Right-click while sneaking, in the order of the held item:
 
-Кнут в руке водителя: ПКМ поднимает передачу на одну, до 4 (`HorseWhipItem.use`, звук `TWSoundEvents.WHIP`). ЛКМ в основной руке, пока игрок — `getControllingPassenger`, отменяет удар и при силе атаки не ниже 0.9 шлёт `WhipLowerGearPayload`. На передаче 0 понижение ничего не делает. ПКМ кнутом по уже запряжённому животному этой же повозки не сажает на него игрока и поднимает передачу.
+- the whip `trotting_wagons:horse_whip` toggles reverse;
+- a dye from the map `TrottingWagons.DYE_ITEMS` dyes the wagon and is not consumed;
+- otherwise, if the player is leading a tamed draft animal, the harness is fitted, and a place in it is free, the animal is hitched. The animal closest to the wagon is taken. The lead returns to the inventory. Slots fill from left to right;
+- otherwise the part under the cursor is removed: a wheel, lantern, pumpkin, banner, or harness. An empty hand is not required. If the ray hits none of those, the player does not sit.
 
-Водит только игрок на месте `DRIVER` (`getControllingPassenger`). Передача сбрасывается в 0, если нет такого водителя или нет полного комплекта тягачей. Полоска скорости рисуется только этому водителю: спрайт `hud/jump_bar_background` шириной 182, заполнение `speedFraction` текущей скорости к максимуму 4-й передачи.
+With the whip in the driver's hand, right-click raises the gear by one, up to 4 (`HorseWhipItem.use`, sound `TWSoundEvents.WHIP`). A left-click in the main hand, while the player is `getControllingPassenger`, cancels the attack and, when the attack strength is at least 0.9, sends `WhipLowerGearPayload`. On gear 0, lowering does nothing. Right-clicking the whip on an animal already hitched to this same wagon does not mount the player on it, and it raises the gear.
 
-Камера возницы повторяет Small Ships. В тик, когда местный игрок становится водителем, вид переключается на третье лицо сзади. Когда он перестаёт им быть, вид возвращается в первое лицо. В третьем лице колесо мыши меняет дистанцию: вверх ближе, вниз дальше, хотбар при этом не листается. Дистанция от 1 до 10 блоков, старт 6. Прокрутка ближе, чем на 1 блок, включает первое лицо. Прокрутка дальше из первого лица возвращает третье лицо сзади на ту же дистанцию. Пока возница в первом лице, колесо тоже не листает хотбар. У Small Ships потолок 20, здесь он вдвое меньше. Стены по-прежнему подрезают камеру. Пассажир, который не водитель, камеру не меняет. Пока открыт экран, колесо остаётся экрану.
+Only a player in the `DRIVER` seat drives (`getControllingPassenger`). The gear resets to 0 when there is no such driver, or when the draft team is incomplete. The speed bar is drawn only for that driver: sprite `hud/jump_bar_background`, width 182, filled by `speedFraction` of the current speed against the gear-4 maximum.
 
-## Упряжь
+The driver camera follows Small Ships. On the tick the local player becomes the driver, the view switches to third person from behind. When they stop being the driver, the view returns to first person. In third person the mouse wheel changes the distance: up is closer, down is farther, and the hotbar does not scroll. The distance runs from 1 to 10 blocks and starts at 6. Scrolling closer than 1 block switches to first person. Scrolling outward from first person returns third person behind at that same distance. While the driver is in first person, the wheel still does not scroll the hotbar. Small Ships caps the distance at 20. Here the cap is half of that. Walls still clip the camera. A passenger who is not the driver does not change the camera. While a screen is open, the wheel stays with the screen.
 
-`hitchSlots()` по умолчанию 2. У повозок со слотом упряжки число слотов берётся из предмета: пусто — 0 и обе кости спрятаны, оглобли — 1 и кость `shafts`, дышло — 2 и кость `Tongue`. Это отладочная, пассажирская, грузовая, кибитка, повозка с бочками, повозка для животных, повозка для леса, укреплённая, карета и конестога. Пока животное запряжено, предмет из слота не вынимается. Предмет ставится ПКМ по повозке и снимается Shift+ПКМ по дышлу.
+## Harness
 
-`hasPullers` требует левого тягача и, при двух слотах, ещё и правого. Слот хранит моба, UUID и синхронизированный id (`leftHorse`, `rightHorse`). Запряжённому ставится `setNoAi(true)`. В этот момент лошадь перестаёт щипать траву и вставать на дыбы, верблюд встаёт, если лежал. Пока упряжь держится, `canEatGrass` у лошади возвращает ложь, поэтому новая поза щипания не начинается. Живой тягач, ушедший от своей точки больше чем на 0.5 блока по горизонтали, телепортируется обратно. Если до возврата он уже дальше 2 блоков от точки в любую сторону, упряжь снимается и животное остаётся там, где оказалось. Незагруженный тягач не снимается.
+`hitchSlots()` defaults to 2. On wagons with a harness slot, the count comes from the item: empty is 0 and both bones are hidden, Shafts is 1 and bone `shafts`, Tongue is 2 and bone `Tongue`. That covers the debug, passenger, ware, kibitka, barrel, animal, log, armored, royal, and Conestoga wagons. While an animal is hitched, the item cannot be taken out of the slot. The item is placed by right-clicking the wagon and removed by shift-right-clicking the tongue.
 
-Список тягачей — тег `trotting_wagons:draft_animals` или точное совпадение id в `allowed_entities`. В теге этого мода только `minecraft:horse`. Другой мод дописывает свои id в тот же тег своим датапаком, и без него эти id не загружаются. Конфиг по умолчанию тоже содержит `minecraft:horse` и остаётся списком добавок. Животное ещё должно быть приручено: лошадь, осёл, мул и верблюд через `AbstractHorse.isTamed()`, волк и кот через `TamableAnimal.isTame()`. Корова и другой моб без приручения не запрягаются. Другой мод может добавить отказ через `AbstractWagon.addDraftCheck`. Детёныш (`isBaby`) не запрягается; уже запряжённый детёныш снимается при проверке. Приручение и сундук осла или мула код упряжи не смотрит. Игрок и вторая повозка тянуть не могут.
+`hasPullers` requires the left draft animal and, with two slots, the right one as well. A slot stores the mob, its UUID, and the synced id (`leftHorse`, `rightHorse`). A hitched mob receives `setNoAi(true)`. At that moment a horse stops grazing and rearing, and a camel stands up if it was sitting. While the harness holds, `canEatGrass` on a horse returns false, so a new grazing pose does not start. A living draft animal more than 0.5 blocks horizontally from its point is pulled back (`HORIZONTAL_TETHER`). If it is farther than 5 blocks from the anchor (`HITCH_BREAK_DISTANCE_SQR`, 5×5), the harness releases and the animal stays where it is. An unloaded draft animal is not released.
 
-Запрячь с поводка: Shift+ПКМ по повозке, пока игрок держит прирученного тягача на поводке, упряжь надета и слот свободен. Дистанция поводка — обычные 10 блоков, отдельной проверки якоря дышла нет. Клавиша `R` по-прежнему запрягает животное, на котором сидит игрок, в пределах 1.5 блока от якоря.
+The draft list is the tag `trotting_wagons:draft_animals`, or an exact id match in `allowed_entities`. This mod's tag contains only `minecraft:horse`. Another mod appends its own ids to the same tag with its datapack, and without that datapack those ids do not load. The default config also contains `minecraft:horse` and stays a list of additions. The animal must also be tamed: a horse, donkey, mule, and camel through `AbstractHorse.isTamed()`, a wolf and a cat through `TamableAnimal.isTame()`. A cow, or another mob with no taming, cannot be hitched. Another mod can add a refusal through `AbstractWagon.addDraftCheck`. A baby (`isBaby`) cannot be hitched. A baby that is already hitched is released on the check. The harness code does not inspect taming beyond those calls, and it does not look at a donkey or mule chest. A player and a second wagon cannot pull.
 
-Распрячь можно вручную: приседание и ПКМ по запряжённому животному в мире (перезарядка посадки 60 тиков), кнопка упряжи в меню, перетаскивание с кнопки упряжи на место. Приседание и ПКМ по животному, которое сидит в повозке, его не высаживает. Высадка из места остаётся кнопкой в меню. Посадка на запряжённое животное тоже снимает упряжь. Автопосадка в места запряжённое животное не забирает, в том числе в ту же повозку.
+Hitching from a lead: shift-right-click the wagon while the player is leading a tamed draft animal, the harness is fitted, and a slot is free. The lead distance is the ordinary 10 blocks. There is no separate check against the tongue anchor. The `R` key still hitches the animal the player is riding, within 1.5 blocks of the anchor.
 
-Точка животного: левый слот `+horseX`, правый `-horseX`, вперёд `horseY`, плюс `draftForward`. Левый — это левая рука возницы, когда повозка смотрит в локальный +Z. Старое сохранение без `hitchSides` 1 меняет `leftHorse` и `rightHorse` местами, поэтому уже запряженные животные остаются на тех же оглоблях. У одной упряжи (кибитка, отладочная) обмен не делается. Верблюд стоит на той же точке, что лошадь: прежний `draftForward` −1 прижимал его хитбокс к повозке, и поворот конестоги замирал примерно через 30°. На шаге упряжи сама повозка в столкновение животного не входит. Угол дышла `shaftAngle` задаётся в конструкторе. Пока повозка накренена или просела, XZ упряжи идёт по дышлу, ноги остаются на ближайшей земле.
+Unhitching by hand: sneak and right-click the hitched animal in the world (boarding cooldown 60 ticks), the harness button in the menu, or a drag from the harness button onto a seat. Sneak and right-click on an animal that is sitting in the wagon does not unload it. Unloading a seat stays on the menu button. Mounting a hitched animal also releases the harness. Auto-boarding does not take a hitched animal, including into the same wagon.
 
-Если в двух слотах стоят животные разных типов, водителю, который запряг второго, выдаётся достижение `trotting_wagons:sinner` (критерий `hitch_different`, триггер в JSON — `minecraft:impossible`). Одинаковые типы достижение не дают. Достижение висит под `minecraft:husbandry/root`.
+The animal point is left slot `+horseX`, right slot `-horseX`, forward `horseY`, plus `draftForward`. Left is the driver's left hand when the wagon faces local +Z. An old save without `hitchSides` 1 swaps `leftHorse` and `rightHorse`, so animals that were already hitched stay on the same shafts. A single hitch (kibitka, debug) is not swapped. A camel stands on the same point as a horse: the old `draftForward` of −1 pressed its hitbox into the wagon, and a Conestoga turn stalled at about 30°. On the hitch step the wagon itself is excluded from the animal's collision. The constructor stores `shaftAngle`, and `getShaftAngle()` returns it. The drawn angle does not read that field. While the wagon is rolled or sagged, hitch XZ follows the tongue and the feet stay on the nearest ground.
 
-Якорь поиска упряжи — `(0, 0, horseY)` от центра сущности. Длина и высота визуального дышла — `tongueLength` и `tongueHeight`. Если животные запряжены, верх куба `bow` (y=17) целится в место всадника более высокого животного. Иначе цель `hitchedTongueTarget` (по умолчанию 0.85). Без колёс угол дышла обнуляется.
+If the two slots hold animals of different types, the driver who hitched the second receives the advancement `trotting_wagons:sinner` (criterion `hitch_different`; the JSON trigger is `minecraft:impossible`). Matching types do not grant it. The advancement sits under `minecraft:husbandry/root`.
 
-## Скорость
+The harness search anchor is `(0, 0, horseY)` from the entity center. The visual tongue length and height are `tongueLength` and `tongueHeight`. `WagonModel` calls `tongueAngle(bodyPitch, roll, drop)` and applies that radian angle as `rotX` on both `Tongue` and `shafts`. With no wheels the angle is 0. Unhitched, the target height is 0. A forward body pitch lengthens the reach by `3 * wheelLength`, and a backward pitch by `1.25 * wheelLength`. Hitched, the top of the `bow` cube (model y=17) aims at the rider attachment of the taller animal. When no living animal supplies a height, the fallback is `hitchedTongueTarget()` (default 0.85; the debug wagon uses 1.2).
 
-Пять передач, `SPEED_LEVELS` = 5, уровни 0–4. Цель скорости — максимум, умноженный на `передача / 4`. Передача 0 стоит. С 4 на 0 само не переходит.
+## Speed
 
-Максимум в блоках за тик:
+Five gears, `SPEED_LEVELS` = 5, levels 0–4. The speed target is the maximum multiplied by `gear / 4`. Gear 0 is stopped. Gear 4 does not fall back to 0 on its own.
 
-1. у каждого живого тягача берётся атрибут `movement_speed` без модификатора Block Runner `block_speed`;
-2. самое медленное значение умножается на `BLOCKS_PER_SPEED_ATTRIBUTE` 43.17 — это блоки в секунду;
-3. умножается на коэффициент повозки и делится на 20;
-4. если установлено хотя бы одно широкое колесо, один раз умножается на 0.8 (`WIDE_WHEEL_FACTOR`); четыре широких остаются на 0.8;
-5. умножается на самый медленный наземный множитель среди установленных колёс;
-6. умножается на коэффициент упряжи из таблицы ниже. Дышло (`Tongue`, два животных) всегда 1. Оглобли (`shafts`, одно животное) зависят от повозки;
-7. умножается на `1 - bog`. `bog` растёт на `1/240` за тик, пока повозка едет или передача выше нуля и под любым колесом мягкая земля. Стоящая на нулевой передаче не начинает просадку. Уже начатая доходит до 1 и держит скорость на нуле. С твёрдого блока или с четырьмя широкими колёсами `bog` так же за двенадцать секунд спадает к нулю.
+The maximum, in blocks per tick:
 
-Числа повозок — значения конфига по умолчанию. У повозки для леса, повозки с бочками и грузовой коэффициент назначается заново, когда меняется груз, и при загрузке сохранения. Тик движения читает уже записанное число. У остальных он читается в конструкторе.
+1. Each living draft animal contributes its `movement_speed` attribute without the Block Runner modifier `block_speed`.
+2. The slowest value is multiplied by `BLOCKS_PER_SPEED_ATTRIBUTE` 43.17. That figure is blocks per second.
+3. It is multiplied by the wagon coefficient and divided by 20.
+4. If at least one wide wheel is fitted, it is multiplied once by 0.8 (`WIDE_WHEEL_FACTOR`). Four wide wheels stay at 0.8.
+5. It is multiplied by the slowest ground multiplier among the fitted wheels.
+6. It is multiplied by the harness coefficient from the table below. The Tongue (`Tongue`, two animals) is always 1. Shafts (`shafts`, one animal) depend on the wagon.
+7. It is multiplied by `1 - bog`. `bog` grows by `1/240` per tick while the wagon is moving, or the gear is above zero, and soft ground is under any wheel. A wagon standing in gear 0 does not start to bog. A bog that has already started reaches 1 and holds the speed at zero. From a solid block, or with four wide wheels, `bog` falls back to zero over the same twelve seconds.
 
-| Повозка | Коэффициент | Оглобли | Дышло |
+The wagon numbers are the default config values. On the log, barrel, and ware wagons the coefficient is assigned again when the cargo changes, and when a save loads. The movement tick reads the number already stored. On the others it is read in the constructor.
+
+| Wagon | Coefficient | Shafts | Tongue |
 | --- | --- | --- | --- |
-| Конестога | 0.8 | 0.7 | 1 |
-| Карета | 1.0 | 0.9 | 1 |
-| Укреплённая | 0.5 | 0.5 | 1 |
-| Отладочная | 0.9 | 0.8 | 1 |
-| Для животных | 0.9 | 0.8 | 1 |
-| Для леса | 1.0 / 0.9 / 0.8 | 0.6 | 1 |
-| С бочками | 1.0 / 0.9 / 0.8 | 0.6 | 1 |
-| Пассажирская | 0.9 | 0.7 | 1 |
-| Грузовая | 0.9 − 0.1 за сундук, не ниже 0 | 0.6 | 1 |
-| Кибитка | 0.9 | 1.0 | 1 |
-| Большая | 1.0 | 1.0 | 1 |
+| Conestoga | 0.8 | 0.7 | 1 |
+| Royal | 1.0 | 0.9 | 1 |
+| Armored | 0.5 | 0.5 | 1 |
+| Debug | 0.9 | 0.8 | 1 |
+| Animal | 0.9 | 0.8 | 1 |
+| Log | 1.0 / 0.9 / 0.8 | 0.6 | 1 |
+| Barrel | 1.0 / 0.9 / 0.8 | 0.6 | 1 |
+| Passenger | 0.9 | 0.7 | 1 |
+| Ware | 0.9 − 0.1 per chest, floored at 0 | 0.6 | 1 |
+| Kibitka | 0.9 | 1.0 | 1 |
+| Big cart | 1.0 | 1.0 | 1 |
 
-У повозки для леса три ступени: нет предметов, 1–1000, 1001 и больше. У повозки с бочками: нет бочек, 1–6, 7–12. У грузовой пустая — 0.9, каждый установленный сундук снимает 0.1.
+The log wagon has three steps: no items, 1–1000, and 1001 or more. The barrel wagon: no barrels, 1–6, and 7–12. An empty ware wagon is 0.9, and each placed chest removes 0.1.
 
-| Колесо | Множитель |
+| Wheel | Multiplier |
 | --- | --- |
-| Обычное | 1 |
-| Широкое | 0.8 один раз на повозку, если стоит хотя бы одно. Четыре широких остаются на 0.8 |
-| Укреплённое | 1 |
+| Regular | 1 |
+| Wide | 0.8 once per wagon when at least one is fitted. Four wide wheels stay at 0.8 |
+| Reinforced | 1 |
 
-Нет полного комплекта тягачей, нет всех четырёх колёс или `holdsTravel` — максимум 0, `currentSpeed` обнуляется. Гравитация `GRAVITY` 0.04 остаётся. Передача при пропавшем колесе не сбрасывается.
+Without a full draft team, without all four wheels, while a fitted wheel is at zero durability (`hasSpentWheel`), or while `holdsTravel` is set, the maximum is 0 and `currentSpeed` is cleared. The default wheel-loss handler removes a wheel at zero durability, so that flag matters when another mod keeps the spent wheel. Gravity `GRAVITY` 0.04 remains. A missing wheel does not reset the gear.
 
-Ускорение за тик — `коэффициент / 400`. В блоках в секунду за секунду это и есть коэффициент. Ключи `*_acceleration` в конфиге вождение не читает. Задний ход — та же передача с целью −0.25 от передней.
+Acceleration per tick is `coefficient / 400`. In blocks per second per second, that is the coefficient. The config keys `*_acceleration` are left unread by driving. Reverse is the same gear with a target of −0.25 of the forward target.
 
-Поворот: импульс руля умножается на долю скорости и на `turnRate`. Если `|currentSpeed| < 1.0E-4`, доля берётся 0.5, поэтому стоящая запряжённая повозка поворачивается на месте с половинной скоростью поворота. Без тягача руль не работает. Рулю не нужны все колёса и не нужны оба тягача на двухместной упряжи. Здоровье и скорость поворота читаются в конструкторе. Коэффициент тоже, кроме повозки для леса, повозки с бочками и грузовой: у них он переписывается при изменении груза.
+Turning: the steering impulse is multiplied by the speed fraction and by `turnRate`. If `|currentSpeed| < 1.0E-4`, the fraction is taken as 0.5, so a standing hitched wagon turns in place at half the turn speed. Without a draft animal the steering does nothing. Steering does not need every wheel, and on a two-animal harness it does not need both animals. Health and turn speed are read in the constructor. The coefficient is read there too, except on the log, barrel, and ware wagons: theirs is rewritten when the cargo changes.
 
-Шаг движения режется столкновением самой повозки и каждого тягача: берётся самый короткий горизонтальный сдвиг. Вертикаль шага у каждого своя, затем добавляется гравитация. Пройденный горизонтальный путь копится на сервере.
+The movement step is cut by the collision of the wagon itself and of each draft animal: the shortest horizontal shift is kept. Each one keeps its own vertical step, then gravity is added. The horizontal distance traveled accumulates on the server.
 
 ## Block Runner
 
-Зависимость необязательная: id мода `blockrunner`, `mandatory=false`, в компиляцию не входит. `BlockRunnerSpeed` через отражение снимает `block_speed` с атрибута животного и читает `fuzs.blockrunner.world.level.block.data.BlockSpeed.getSpeedFactor` у блока под центром установленного колеса (`getY() - 1.0E-5`). Нет мода или нет записи блока — множитель 1.
+The dependency is optional: mod id `blockrunner`, `mandatory=false`, and it is not on the compile classpath. `BlockRunnerSpeed` uses reflection to strip `block_speed` from the animal's attribute and reads `fuzs.blockrunner.world.level.block.data.BlockSpeed.getSpeedFactor` for the block under the center of a fitted wheel (`getY() - 1.0E-5`). With no mod, or no entry for the block, the multiplier is 1.
 
-## Колёса
+## Wheels
 
-Четыре слота, лимит 1, тег `trotting_wagons:wagon_wheels`:
+Four slots, limit 1, tag `trotting_wagons:wagon_wheels`:
 
 - `trotting_wagons:wheel`
 - `trotting_wagons:wide_wheel`
 - `trotting_wagons:reinforced_wheel`
 
-Рецепт обычного колеса: по кругу любые доски и палки, в центре железный слиток. Широкое (`Широкое колесо`): любые доски, палка, любые доски / обычное колесо, железный слиток, обычное колесо / любые доски, палка, любые доски. Укреплённое (`Укреплённое колесо`): железный слиток, железные прутья, железный слиток / железные прутья, железный слиток, железные прутья / железный слиток, железные прутья, железный слиток. Крафт повозки тратит три обычных колеса; четвёртое добавляет сама сущность при появлении.
+The regular wheel recipe is any planks and sticks around the rim, with the tag `trotting_wagons:iron_ingots` in the center. That tag contains `minecraft:iron_ingot`. The Wide Wheel is any planks, a stick, any planks / a regular wheel, the `iron_ingots` tag, a regular wheel / any planks, a stick, any planks. The Reinforced Wheel uses the `iron_ingots` tag and the `trotting_wagons:iron_bars` tag: ingot, bars, ingot / bars, ingot, bars / ingot, bars, ingot. No finished wagon has a crafting recipe that spends wheels.
 
-Порядок слотов: 0 переднее левое, 1 переднее правое, 2 заднее левое, 3 заднее правое. Левая сторона — локальный +X у зон клика моделей с тремя видами колёс (индексы 0 и 2). Подпись комплекта (`wheelSet`) смотрит предметы в слотах. Четыре одинаковых дают `gui.trotting_wagons.wheels.regular`, `wheels.wide` или `wheels.reinforced` (Regular / Обычные, Wide / Широкие, Reinforced / Укреплённые). Смесь — `wheels.incompatible` (Incompatible / Несовместимые). Пустой слот — `wheels.missing` (Missing / Не хватает). Клиент до синхронизации меню может кратко показать Missing.
+Slot order: 0 front left, 1 front right, 2 rear left, 3 rear right. Left is local +X on the click zones of models with three wheel meshes (indices 0 and 2). The set label (`wheelSet`) looks at the items in the slots. Four matching items give `gui.trotting_wagons.wheels.regular`, `wheels.wide`, or `wheels.reinforced` (Regular, Wide, Reinforced). A mix is `wheels.incompatible` (Incompatible). An empty slot is `wheels.missing` (Missing). Before the menu syncs, the client can briefly show Missing.
 
-Маска установленных колёс — 4 бита entity data, вид колеса — 2 бита на угол (`DATA_WHEEL_KINDS`). Модель читает вид, а не клиентский стак. Езда требует маску `0x0F`.
+The fitted-wheel mask is 4 bits of entity data. The wheel kind is 2 bits per corner (`DATA_WHEEL_KINDS`). The model reads the kind, not the client stack. Driving requires the mask `0x0F`.
 
-Четыре широких колеса не вязнут. Любой другой полный комплект, если под хотя бы одним колесом земля из `#minecraft:dirt` (в том числе дёрн, подзол, грубая земля, мицелий, грязь), песок из `#minecraft:sand`, гравий или снег (слой, блок, рыхлый снег), за двенадцать секунд замедляется до нуля и проседает к `bareDrop`, как без колёс. Земляная тропа `dirt_path` мягкой не считается, по ней едут и узкие колёса. Одно мягкое колесо уже включает просадку. Просадка пишется в `Bog` и в entity data, чтобы клиент опускал кузов вместе с сервером. Неполный комплект колёс эту просадку не включает: там своя поза от недостающих колёс. Множитель 0.8 от любого широкого колеса остаётся и на четырёх широких.
+Four wide wheels do not bog. Any other full set, when at least one wheel stands on a block in `trotting_wagons:soft_ground`, slows to zero over twelve seconds and sags toward `bareDrop()`, the same pose as with no wheels. The tag is `#minecraft:dirt`, `#minecraft:sand`, `#minecraft:snow`, `minecraft:gravel`, and `minecraft:suspicious_gravel`. A dirt path is not in the tag, and narrow wheels drive on it. One soft wheel is enough to start the bog. The bog is written to `Bog` and to entity data so the client lowers the body with the server. An incomplete wheel set does not start this bog: that pose comes from the missing wheels. The 0.8 multiplier from any wide wheel still applies when all four are wide.
 
-Зона клика колеса: полуширина `WHEEL_X` 0.22, радиус `WHEEL_R` 0.75. У широкого колеса внешняя сторона расширяется на `WHEEL_WIDE_OUTER` 0.25. Установка идёт в ближайший пустой угол обычным ПКМ. Снятие — Shift+ПКМ по колесу. Луч детали проигрывает более близкому блоку.
+A wheel click zone has half-width `WHEEL_X` 0.22 and radius `WHEEL_R` 0.75. A wide wheel extends the outer side by `WHEEL_WIDE_OUTER` 0.25. Placement goes into the nearest empty corner on an ordinary right-click. Removal is a shift-right-click on the wheel. The part ray loses to a closer block.
 
-Прочность обычного и широкого колеса 100, укреплённого 300 (компонент `MAX_DAMAGE` на предмете). Старый стак без этого компонента при износе получает 100 (`WHEEL_DURABILITY`). Каждый полный километр общего пути (`distance`, порог `kilometerPart` 1000) снимает 1 прочность с каждого установленного колеса. Ниже 20 оставшейся прочности движущаяся повозка раз в секунду (`tickCount % 20` и флаг `movedRecently`) с шансом 0.01 удаляет такое колесо. На 0 колесо тоже снимается. Звук — `ITEM_BREAK`. Тело повозки от пути прочность не теряет и само не чинится.
+Regular and wide wheel durability is 100. Reinforced durability is 300 (the `MAX_DAMAGE` component on the item). An old stack without that component receives 100 when it wears (`WHEEL_DURABILITY`). Each full kilometer of total distance (`distance`, threshold `kilometerPart` 1000) removes 1 durability from each fitted wheel. Below 20 remaining durability, a moving wagon once a second (`tickCount % 20` and the flag `movedRecently`) has a 0.01 chance to remove that wheel. At 0 the wheel is removed as well. The sound is `ITEM_BREAK`. The wagon body does not lose health from distance, and it does not repair itself from distance.
 
-При уничтожении колёса выпадают всегда, до проверки `doEntityDrops`. Предметы починки не выпадают.
+On destruction the wheels always drop, before the `doEntityDrops` check. Repair items do not drop.
 
-Визуально ось крутится кодом по костям `FrontWheels`, `RearWheels` и, где они есть, `FrontWheels_Wide`, `RearWheels_Wide`, `FrontWheels_Iron`, `RearWheels_Iron`. Клип `move.forwards` качает кузов, если горизонтальная скорость больше 0.01. Файл анимации не обязателен: GeckoLib пишет в лог, модель остаётся.
+Visually the axle is spun in code on the bones `FrontWheels`, `RearWheels`, and, where they exist, `FrontWheels_Wide`, `RearWheels_Wide`, `FrontWheels_Iron`, `RearWheels_Iron`. The clip `move.forwards` rocks the body when the horizontal speed is above 0.01. An animation file is optional: GeckoLib writes to the log and the model stays.
 
-### Просадка без колёс
+### Sag with missing wheels
 
-Отдельно от лучей наклона по земле. Лучи бьют вниз из четырёх углов на длину `wheelWidth * 2`, тангаж — разница передней и задней высоты, предел 45°, крен лучи не дают.
+This is separate from the ground tilt rays. The rays shoot down from the four corners for a length of `wheelWidth * 2`. Pitch is the difference of the front and rear heights, limited to 45°. The rays produce no roll.
 
-Визуальная просадка `wheelSag`:
+Visual sag, `wheelSag`:
 
-| Колёса | Поза |
+| Wheels | Pose |
 | --- | --- |
-| 3 или 4 | без просадки |
-| 0 | опускание `WHEEL_SINK` 0.45, без наклона |
-| нет обоих задних | тангаж `missingRearPitch` |
-| нет обоих передних | тангаж `FRONT_SAG` +10° |
-| нет левой или правой пары | крен ±`WHEEL_SAG` 14° |
-| диагональ | тангаж `diagonalPitch`, крен ±14° |
-| одно | четверть 14° по тангажу и крену |
+| 3 or 4 | no sag |
+| 0 | no tilt, drop `bareDrop()`. The default is 7/16. The constant `WHEEL_SINK` 0.45 is unused |
+| both rear missing | pitch `missingRearPitch()`, default −14 |
+| both front missing | pitch `FRONT_SAG` +10° |
+| the left pair or the right pair missing | roll ±14°, then +3/16 of drop |
+| a diagonal | `DiagonalSag` sets both remaining wheels and the empty rear foot on the ground. The fixed `diagonalPitch()` is only the fallback when that wagon has no spec |
+| one | pitch and roll of `oneWheelSag()`, default 3.5°, then +2/16 of drop |
 
-`WHEEL_SAG` = 14. По умолчанию `missingRearPitch` и `diagonalPitch` равны −14. У отладочной, животной и пассажирской повозок диагональ −8°. У животной и пассажирской просадка на оба задних тоже −8°, см. [passenger.md](passenger.md). Дополнительные сдвиги по высоте: боковой крен +3/16 блока, диагональ из двух колёс −12/16, одно колесо +2/16. Повозка для леса эту таблицу не использует: её поза считается отдельно, см. [log.md](log.md). У повозки с бочками диагональ и одно оставшееся колесо тоже считаются отдельно, остальные случаи общие, см. [barrel.md](barrel.md). Кибитка тоже считает позу отдельно: оставшиеся колёса и низ кузова опираются на землю, а низ столбов открытой палатки держит эту сторону, см. [kibitka.md](kibitka.md).
+`WHEEL_SAG` = 14. Animal and passenger wagons override `missingRearPitch()` to −8. Their `diagonalPitch()` of −8, and the debug wagon's `diagonalPitch()` of −8, are unused while `DiagonalSag` has a spec for that wagon. Every finished wagon except the kibitka has a spec. Extra height shifts from `sagDropCorrection`: a side roll +3/16 of a block, a two-wheel diagonal −12/16, one wheel +2/16. `bareDrop()` overrides: Conestoga, armored, and ware 6/16; debug 6.75/16; passenger 4.5/16; big cart 8.75/16; royal `0.2533850438077787`; animal `0.34623842746449673`. The big cart adds 1° to the one-wheel sag and another 2/16 of drop, plus 1/16 more when the remaining wheel is a rear one. The log wagon uses this table only for a diagonal. Zero wheels drop `bareDrop()`, and every other missing-wheel mask is solved by `LogWagonSag`. See [log.md](log.md). The barrel wagon uses `BarrelWagonSag` for one remaining wheel. Every other mask, including a diagonal, uses the shared pose. See [barrel.md](barrel.md). The kibitka solves every mask in `KibitkaWagonSag`, including zero wheels at `bareDrop()`. See [kibitka.md](kibitka.md).
 
-## Прочность и починка
+## Health and repair
 
-Урон уменьшает здоровье на дробную величину удара, играет `WOOD_BREAK` и частицы еловых досок. Цифра на полоске — округление здоровья. Если оно округляется до максимума, значение прижимается к максимуму: полоска заливается целиком, состояние `ok`, слот починки не открывается. Починка прибавляет `5` за каждый открытый слот и может оставить остаток вроде `99.6` при максимуме `100`; без прижатия цифра уже показывает полный запас, а полоска короче на пиксель и состояние остаётся Scratched. На 0 и ниже вызывается `onDestroyed(false)`: упряжь снимается, пассажиры высаживаются, колёса выпадают, затем при включённом `doEntityDrops` выпадает `0–6` еловых досок и `0–2` железных слитка (`nextInt(7)` и `nextInt(3)`). Повозка, собранная на заготовке, вместо этих обломков роняет около половины каждой строки счёта (`WagonBuild.salvage`). Один предмет — 0 или 1. Два предмета — ровно один. Дальше половина плюс-минус `max(1, количество/8)`, не больше чем на один меньше полного числа: 4 → 1–3, 6 → 2–4, 8 → 3–5, 12 → 5–7, 16 → 6–10, 18 → 7–11, 24 → 9–15, 32 → 12–20, 40 → 15–25, 48 → 18–30, 64 → 24–40. Сначала берутся сданные стаки, нехватку добивает запасной предмет той строки. Повозка для животных это правило не использует: у неё свои диапазоны 2–4 палки, 12–20 досок, 6–10 слитков, 1–2 стога, 0–1 шерсть. Конестога, карета и укреплённая повозка, если собраны не на заготовке, старых досок и железа не роняют. Shift+ПКМ топором повозку больше не ломает и предмет повозки не возвращает.
+A player hit checks the part in front of the body. A closer wheel takes the hit as wheel damage, `max(1, round(amount * 0.5))`. A closer harness, lantern, pumpkin, or banner takes no damage. Otherwise the look must meet the culling body, the same test as the yellow frame, or the hit is dropped. A hit that lands reduces health by the full amount, plays `WOOD_BREAK`, and spawns spruce-plank particles. The number on the bar is the health rounded. When that rounding reaches the maximum, the value is clamped to the maximum: the bar fills completely, the condition is `ok`, and a repair slot stays closed. Repair adds `5` for each open slot and can leave a remainder such as `99.6` against a maximum of `100`. Without the clamp the number already shows a full reserve, while the bar is one pixel short and the condition stays Scratched. At 0 and below, `onDestroyed(false)` runs: the harness is released, passengers dismount, and the wheels drop. Body loot runs only when `doEntityDrops` is on. The default, for a wagon that was not built on the base, is `0–6` oak planks and `0–2` iron ingots (`nextInt(7)` and `nextInt(3)`). A wagon built on the base drops about half of each bill line (`dropAboutHalf`, `WagonBuild.salvage`) on the log, barrel, passenger, ware, kibitka, and big cart. One item drops as 0 or 1. Two items drop as exactly one. Past that, the drop is half plus or minus `max(1, count/8)`, and at most one less than the full count: 4 → 1–3, 6 → 2–4, 8 → 3–5, 12 → 5–7, 16 → 6–10, 18 → 7–11, 24 → 9–15, 32 → 12–20, 40 → 15–25, 48 → 18–30, 64 → 24–40. The stacks that were turned in are taken first. A shortfall is filled by that line's fallback item. The animal wagon uses its own ranges when it was built on the base: 2–4 sticks, 12–20 planks, 6–10 ingots, 1–2 hay bales, and 0–1 wool. The Conestoga, the royal wagon, and the armored wagon drop that half bill only when they were built on the base, and they drop no oak planks and no iron scrap when they were placed as an item. The debug wagon has no override: a base-built one returns the paid stacks in full (`builtPlan.drop`), and an item-placed one drops the oak and iron scrap. Shift-right-click with an axe no longer breaks the wagon, and it does not return the wagon item. Open repair slots are placed by `RepairLayout` under the repair header, `header Y + 22`. A menu constant such as `REPAIR_Y` is only the slot's first coordinate.
 
-Слотов починки четыре, лимит 1. Число открытых зависит от процента здоровья:
+There are four repair slots, limit 1. How many are open depends on the health percent:
 
-| Здоровье | Открыто слотов | Состояние |
+| Health | Open slots | Condition |
 | --- | --- | --- |
 | 100% | 0 | `condition.ok` |
 | 75–99% | 1 | `condition.scratched` |
 | 50–74% | 2 | `condition.damaged` |
 | 25–49% | 3 | `condition.severe` |
-| ниже 25% | 4 | `condition.critical` |
+| below 25% | 4 | `condition.critical` |
 
-Потребность слота бросается один раз и держится, пока слот открыт: доски 30%, железо 30%, шерсть 10%, кожа 10%, нить 10%, слизь 10%. Предметы: `#minecraft:planks`, `minecraft:iron_ingot`, `#minecraft:wool`, `minecraft:leather`, `minecraft:string`, `minecraft:slime_ball`. Когда каждый открытый слот заполнен верным предметом, они тратятся, здоровье растёт на `5 * число_открытых_слотов`, звук `ANVIL_USE` громкости 0.3, и потребности перебрасываются. Закрывшийся из-за лечения слот выбрасывает лежавший в нём предмет в мир. Серая иконка слота — дубовые доски, железный слиток, белая шерсть, кожа, нить или шар слизи. Подсказка досок и шерсти — свои ключи `gui.trotting_wagons.repair.planks` и `repair.wool`, у остальных — имя предмета. Подсказки пустых слотов появляются сразу, без задержки.
+A slot's demand is rolled once and held while the slot is open: planks 30%, iron 30%, wool 10%, leather 10%, string 10%, slime 10%. The items are `#minecraft:planks`, `minecraft:iron_ingot`, `#minecraft:wool`, `minecraft:leather`, `minecraft:string`, and `minecraft:slime_ball`. When every open slot holds the right item, they are consumed, health grows by `5 * open_slot_count`, the sound is `ANVIL_USE` at volume 0.3, and the demands are rolled again. A slot that closes because of the heal drops its item into the world. The gray icon is oak planks, an iron ingot, white wool, leather, string, or a slimeball. Plank and wool tooltips use their own keys, `gui.trotting_wagons.repair.planks` and `repair.wool`. The others use the item name. Empty-slot tooltips appear at once, with no delay.
 
-Shift-клик материалом починки за один жест кладёт по одному предмету в каждый открытый слот, который его принимает. `moveItemStackTo` сам заполняет только один пустой слот, поэтому меню гоняет его в цикле через `RepairShift`. Остаток стака остаётся у игрока: этот жест в груз не переходит. Следующий Shift-клик, когда починка больше ничего не берёт, кладёт остаток в груз, если предмет туда подходит. У повозки для животных, пассажирской и отладочной груз железо не принимает, у броневой грузовых слотов нет, поэтому повторный клик ничего не переносит. У Конестоги и королевской следующий клик кладёт остаток в груз. Колёса и фонари по-прежнему идут только в свои слоты.
+One shift-click with a repair material places one item into every open slot that accepts it. `moveItemStackTo` itself fills only one empty slot, so the menu runs it in a loop through `RepairShift`. The leftover stack stays with the player: this gesture does not continue into the cargo. The next shift-click, once repair accepts nothing more, places the leftover into the cargo when the item fits there. On the animal, passenger, and debug wagons the cargo does not accept iron, and the armored wagon has no cargo slots, so a repeat click moves nothing. On the Conestoga and the royal wagon the next click places the leftover into the cargo. Wheels and lanterns still go only into their own slots.
 
-Ключи `repair_material` и `repair_value` удалены. Старые ключи `*_speed` и `*_acceleration` езду не задают.
+The keys `repair_material` and `repair_value` are removed. The old keys `*_speed` and `*_acceleration` do not set travel.
 
-## Места
+## Seats
 
-Виды `WagonSeat.Kind`:
+`WagonSeat.Kind`:
 
-| Вид | Кто садится |
+| Kind | Who sits |
 | --- | --- |
-| `DRIVER` | только игрок, это водитель. Житель и странствующий торговец сюда не садятся |
-| `PLAYER` | игрок, житель или странствующий торговец |
-| `ANIMAL` | не пассажир из строки выше, крупный пассажир отказ |
-| `UNIVERSAL` | пассажир из строки `PLAYER` или небольшой моб; крупный отказ |
-| `ANIMALBIG` | не пассажир; на повозке для животных ещё и только крупный |
-| `DRAFT` | местом не используется, это кнопки упряжи |
+| `DRIVER` | a player only. This is the driver. A villager and a wandering trader do not sit here |
+| `PLAYER` | a player, a villager, or a wandering trader |
+| `ANIMAL` | anyone who is not a passenger from the row above. A large passenger is refused |
+| `UNIVERSAL` | a passenger from the `PLAYER` row, or a small mob. A large passenger is refused |
+| `ANIMALBIG` | not a passenger. On the animal wagon, the Conestoga, and the big cart, a large passenger only. The default accepts any non-player |
+| `DRAFT` | not used as a seat. These are the harness buttons |
 
-Крупный пассажир: `minecraft:horse`, `minecraft:mule`, `minecraft:camel`, `minecraft:cow` или тег `trotting_wagons:large_wagon_passenger`. В теге по умолчанию те же четыре и `minecraft:polar_bear`. На Конестоге `ANIMALBIG` принимает любого не-игрока. Ограничение «только крупный» есть только у повозки для животных. Осёл, лама, свинья, овца и грибная корова крупными не считаются, пока их нет в теге.
+A large passenger is `minecraft:horse`, `minecraft:mule`, `minecraft:camel`, `minecraft:cow`, or the tag `trotting_wagons:large_wagon_passenger`. The tag defaults to those four plus `minecraft:polar_bear`. The Conestoga, the big cart, and the animal wagon override `acceptsLargeSeat` to `isLargePassenger`. A donkey, llama, pig, sheep, or mooshroom is not large until it is in the tag.
 
-Тег `trotting_wagons:cannot_mount_wagon`: визер, дракон края, гаст, гигант, разоритель. Теги сущностей лежат в `data/trotting_wagons/tags/entity_type/`.
+The tag `trotting_wagons:cannot_mount_wagon` holds the wither, the ender dragon, the ghast, the giant, and the ravager. Entity tags live in `data/trotting_wagons/tags/entity_type/`.
 
-Животные сами садятся в радиусе `ANIMAL_BOARD_RANGE` 1 блок от хитбокса, если есть подходящее место, они не пассажиры и не верховые, не запряжены и не на перезарядке. Приручённый садится, если владелец сидит в этой повозке или стоит не дальше 3 блоков (квадрат дистанции 9). Чужой приручённый отказ. После снятия — `BOARD_COOLDOWN_TICKS` 60.
+Animals board on their own within `ANIMAL_BOARD_RANGE`, 1 block of the hitbox, when a suitable seat exists, they are not already passengers and not being ridden, they are not hitched, and they are not on cooldown. A tamed animal boards when its owner is sitting in this wagon or standing no farther than 3 blocks (distance squared 9). Someone else's tamed animal is refused. After removal, `BOARD_COOLDOWN_TICKS` is 60.
 
-Высадка ищет пустой объём слева, справа, спереди и сзади. Пассажир пассажирской повозки с места не возницы и пассажир кибитки с места не возницы ставятся по центру сзади, сразу за хитбоксом. Возница пассажирской повозки встаёт сбоку от своего сиденья, снаружи борта. Возница кибитки ищет сторону. Животное, снятое с места повозки для животных, ставится по центру сзади, сразу за кормой кузова. Если точка занята блоком, она сдвигается дальше по той же оси.
+Dismount searches for an empty volume to the left, right, front, and back. A passenger-wagon rider who is not the driver, and a kibitka rider who is not the driver, are placed at the rear center, just behind the hitbox. The passenger wagon's driver stands beside their seat, outside the side. The kibitka's driver searches for a side. An animal removed from an animal-wagon seat is placed at the rear center, just behind the stern of the body. If a block occupies the point, it shifts farther along the same axis.
 
-Замок места — Shift и клик любой кнопкой по `ANIMAL`, `ANIMALBIG` или `UNIVERSAL`, даже если место занято мобом. Замок запрещает животных и пропускает игрока на `UNIVERSAL`. Хранится в NBT `seatLocks`. Закрытое место рисует предмет `minecraft:barrier` по центру кнопки. На повозке для животных пустое место, которое перекрыто соседним крупным или мелкими, рисует тот же предмет и подсказку через 1 секунду: `tooltip.large_needs_space` или `tooltip.small_blocked`.
+A seat lock is shift plus a click with either button on `ANIMAL`, `ANIMALBIG`, or `UNIVERSAL`, even when a mob occupies the seat. The lock refuses animals and still lets a player onto `UNIVERSAL`. It is stored in the NBT `seatLocks`. A locked seat draws the item `minecraft:barrier` at the center of the button. On the animal wagon, an empty seat overlapped by a neighboring large seat, or by the small seats, draws the same item and a tooltip at once: `tooltip.large_needs_space` or `tooltip.small_blocked`.
 
-Игрок пересаживается кликом по свободному месту, которое принимает игрока. Клик по мобу в месте высаживает его (`ejectSeat`), если кликающий сам сидит в этой повозке. Перетаскивание животного шлёт `MoveAnimalPayload` без номера исходного места: сервер ищет моба по id.
+A player changes seats by clicking a free seat that accepts a player. A click on a mob in a seat unloads it (`ejectSeat`) when the clicker is sitting in this wagon. Dragging an animal sends `MoveAnimalPayload` with no source-seat number: the server finds the mob by id.
 
-`positionRider` всегда вызывает `offsetToWorld` с посадкой: после поворота и просадки из локальной точки вычитается 0.7 по Y, потому что анимация сидения приподнимает модель. Координаты Конестоги, королевской и броневой записаны уже как точка до этого вычитания. У отладочной, животной и лесной повозок к части мест в формуле прибавляется те же 0.7, и посадка их снимает: пассажир оказывается на модельной высоте кости. У повозки с бочками так записаны все места. У пассажирской, грузовой и кибитки вместо +0.7 в формуле −0.05: после вычитания 0.7 бёдра оказываются на записанной высоте.
+`positionRider` always calls `offsetToWorld` for the seat: after rotation and sag, 0.7 is subtracted on Y, because the sitting animation lifts the model. Conestoga, royal, and armored coordinates are already stored as the point before that subtraction. On the debug, animal, and log wagons the formula adds the same 0.7 to some seats, and seating removes it, so the passenger ends up at the bone's model height. On the barrel wagon every seat is stored that way. On the passenger, ware, and kibitka wagons the formula uses −0.05 instead of +0.7: after the 0.7 subtraction, the hips land on the stored height.
 
-Индексы мест у уже существующих повозок не сдвигаются.
+Seat indices on wagons that already exist do not move.
 
-## Владелец, путь, замок повозки, цвет
+## Owner, distance, wagon lock, color
 
-Предмет повозки при установке пишет владельца (`WagonItem`) и тратит один предмет. Имя владельца синхронизируется строкой. Счётчик пути — `distance / 1000`, одна цифра после точки, ключ `gui.trotting_wagons.distance`. В NBT путь лежит как `double` (`distance`, `distancePart`), в entity data уходит как `float`.
+Placing a wagon item writes the owner (`WagonItem`) and spends one item. The owner name is synced as a string. `WagonGui.drawHeader` draws the distance counter and does not draw the owner. The distance counter is `distance / 1000`, one digit after the decimal point, key `gui.trotting_wagons.distance`. In NBT the distance is a `double` (`distance`, `distancePart`). Entity data receives it as a `float`.
 
-Кнопка замка видна владельцу и переключает NBT `locked`. Посадка, груз, колёса и упряжь этот флаг не читают.
+`WagonLockButton` toggles the NBT `locked` and is meant to show only for the owner, at `(6, imageHeight - 22)`. No current wagon screen adds that button. Boarding, cargo, wheels, and the harness do not read the flag.
 
-Цвет по умолчанию — белый (`getDefaultColor`). Броневая, отладочная, животная, лесная, повозка с бочками, пассажирская, грузовая и кибитка возвращают `null`, текстура `none.png`. Краска пишет id цвета в entity data. У Конестоги и королевской текстура выбирается по имени красителя. У отладочной, животной, лесной, повозки с бочками, пассажирской, грузовой и кибитки текстура всегда `none.png`, даже после покраски. У предмета повозки компонент `BASE_COLOR` по умолчанию белый.
+The default color is white (`getDefaultColor`). The armored, debug, animal, log, barrel, passenger, ware, and kibitka wagons return `null`, texture `none.png`. Dye writes the color id into entity data. On the Conestoga and the royal wagon the texture is chosen by the dye name. On the debug, animal, log, barrel, passenger, ware, and kibitka wagons the texture is always `none.png`, even after dyeing. The wagon item's `BASE_COLOR` component defaults to white.
 
-## Творческая вкладка
+## Creative tab
 
-`itemGroup.trotting_wagons` (EN Trotting Wagons Extended, RU Повозки), иконка — обычное колесо. Готовых повозок во вкладке нет, и JEI их тоже не показывает: список JEI берётся из вкладок, а `WagonJeiPlugin` ещё и снимает эти предметы в рантайме, если JEI стоит. Порядок: `horse_whip`, `tongue`, `shafts`, `wheel`, `wide_wheel`, `reinforced_wheel`, `long_stick`, `chassis`.
+`itemGroup.trotting_wagons` (EN Trotting Wagons Extended, RU Повозки). The icon is the regular wheel. Finished wagons are absent from the tab, and JEI does not show them either: the JEI list comes from the tabs, and `WagonJeiPlugin` also removes these items at runtime when JEI is installed. Order: `horse_whip`, `tongue`, `shafts`, `wheel`, `wide_wheel`, `reinforced_wheel`, `long_stick`, `chassis`.
 
-Верстачного рецепта нет ни у одной готовой повозки. Рецепты есть у кнута, дышла, оглобель, длинной палки, ходовой и трёх колёс.
+No finished wagon has a crafting-table recipe. Recipes exist for the whip, the Tongue, the Shafts, the long stick, the chassis, the three wheels, and the saddle. The saddle is the 1.21.6 shaped recipe: three leather and one iron ingot, pattern `" X "` / `"X#X"`.

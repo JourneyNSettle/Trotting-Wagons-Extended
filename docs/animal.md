@@ -1,47 +1,47 @@
-# Повозка для животных
+# Animal Wagon
 
-Предмет и сущность `trotting_wagons:animal_wagon`. Класс `AnimalWagon` расширяет `AbstractWagon`. Грузового инвентаря нет. Имена: Animal Wagon / Повозка для животных. Рецепта нет. Текстура всегда `textures/entity/animal_wagon/none.png`. Краска цвет записывает, файл текстуры не меняет. `getDefaultColor` возвращает `null`.
+Item and entity `trotting_wagons:animal_wagon`. Class `AnimalWagon` extends `AbstractWagon`. There is no cargo inventory. Names: Animal Wagon. No recipe. The texture is always `textures/entity/animal_wagon/none.png`. Dye writes the color and does not change the texture file. `getDefaultColor` returns `null`.
 
-Геометрия: `assets/trotting_wagons/geo/entity/animal_wagon.geo.json`. Корневой `AnimalWagon.geo.json` сборка не читает.
+Geometry: `assets/trotting_wagons/geo/entity/animal_wagon.geo.json`. The build does not read a root `AnimalWagon.geo.json`.
 
-## Параметры
+## Parameters
 
-| Параметр | Значение |
+| Parameter | Value |
 | --- | --- |
-| Хитбокс | кузов без колёс и дышла: бока ±21.5/16, перед +37.25/16, зад −45.5/16, высота 2.75. Прямоугольник едет за рысканием, но столкновение в игре остаётся коробкой по сторонам света, поэтому на повороте бока мировой коробки шире кузова. `sized(3.5, 2.75)` задаёт ширину типа |
-| Здоровье | `animal_wagon_health`, по умолчанию 60 |
-| Коэффициент скорости | `animal_wagon_speed_coefficient`, по умолчанию 0.9 |
-| Поворот | `animal_wagon_turn_rate`, по умолчанию 2.0 |
-| Ускорение в конфиге | `animal_wagon_acceleration`, по умолчанию 3.0, вождение не читает |
+| Hitbox | type `sized(3.5, 2.75)`. The body is `orientedBody(1.625, 0, 3.409, 2.781, 2.266)`. The white box is the shared ground plate. See [common.md](common.md) |
+| Health | `animal_wagon_health`, default 60 |
+| Speed coefficient | `animal_wagon_speed_coefficient`, default 0.9 |
+| Turn | `animal_wagon_turn_rate`, default 2.0 |
+| Acceleration in config | `animal_wagon_acceleration`, default 3.0. Driving leaves it unread |
 | `wheelWidth`, `wheelLength` | 1.5, 1.5 |
-| Упряжь | слот `Harness`: пусто 0, оглобли 1 по центру, дышло 2 при `horseX` 9.5/16. `horseY` 77.88461/16, `shaftAngle` 13 |
-| Дышло | длина 55/16 |
-| Просадка | оба задних и диагональ −8° |
+| Harness | slot `Harness`: empty 0, Shafts 1 in the center, Tongue 2 at `horseX` 9.5/16. `horseY` 77.88461/16, `shaftAngle` 13 |
+| Tongue | length 55/16 |
+| Sag | both rear wheels use `missingRearPitch()` −8°. A diagonal is `DiagonalSag`. The stored `diagonalPitch()` of −8° is the unused fallback |
 
-Бока держатся у кузова, не у колёс: пол ±16.5 пикселя, передние дуги до ±20.5. Перед — спинка сиденья возницы, зад — торец пола. На диагонали мировая коробка шире, потому что столкновение в игре осевое. Животное при выгрузке ставится на 2.85, сразу за торцом пола.
+`bareDrop()` is `0.34623842746449673`, the rotated cart step. An unloaded animal is placed at 2.85, just past the end of the floor. The rear gate closes only when every animal seat is locked, and it opens again when any of those locks is cleared.
 
-Уже записанный `trotting_wagons-server.toml` старое здоровье не переписывает. Новое значение 60 попадает в мир, где этой секции ещё не было.
+An existing `trotting_wagons-server.toml` does not rewrite the old health. The new value 60 reaches a world that does not have this section yet.
 
-Верблюд стоит на той же точке упряжи, что лошадь, осёл и мул. Прежний сдвиг на блок назад убран.
+A camel stands on the same hitch point as a horse, donkey, or mule. The old one-block shift backward is gone.
 
-Колёса те же три сетки, что у отладочной. Зоны клика по осям модели:
+The wheels use the same three meshes as the debug wagon. Click zones on the model axes:
 
-| Угол | X | Y | Z |
+| Corner | X | Y | Z |
 | --- | --- | --- | --- |
 | 0 | 19.25 | 9.5 | −17 |
 | 1 | −18.75 | 9.5 | −17 |
 | 2 | 19.75 | 9.5 | 29 |
 | 3 | −19.75 | 9.5 | 29 |
 
-Индексы 0 и 2 — локальный +X. Широкое колесо расширяет внешнюю грань зоны на 0.25.
+Indices 0 and 2 are local +X. A wide wheel extends the outer face of the zone by 0.25.
 
-## Места
+## Seats
 
-Девять мест. Формула `seat(x, y, z)` = `(x/16, y/16, −z/16)` плюс 0.7 по Y. Модельный Z отрицательный смотрит вперёд сущности. Возница на кости `DriverSeat`. Животные стоят над полом, Y модели 16.5.
+Nine seats. The formula `seat(x, y, z)` is `(x/16, y/16, −z/16)` plus 0.7 on Y. A negative model Z points toward the entity's front. The driver is on bone `DriverSeat`. Animals stand above the floor, model Y 16.5.
 
-| Индекс | Модель X, Y, Z | Вид |
+| Index | Model X, Y, Z | Kind |
 | --- | --- | --- |
-| 0 | 0, 14, −32.25 | `DRIVER` |
+| 0 | 0, 4, −32.25 | `DRIVER` |
 | 1 | −6, 16.5, −14 | `ANIMAL` |
 | 2 | 6, 16.5, −14 | `ANIMAL` |
 | 3 | 0, 16.5, −4 | `ANIMALBIG` |
@@ -51,20 +51,20 @@
 | 7 | −6, 16.5, 34 | `ANIMAL` |
 | 8 | 6, 16.5, 34 | `ANIMAL` |
 
-`acceptsLargeSeat` пускает на места 3 и 6 только крупного пассажира. Мелкое животное туда посадить нельзя.
+`acceptsLargeSeat` lets only a large passenger onto seats 3 and 6. A small animal cannot be placed there.
 
-Переднее большое место 3 взаимно закрыто с местами 1, 2, 4 и 5. Заднее большое место 6 взаимно закрыто с местами 4, 5, 7 и 8. Два больших места друг друга не закрывают. Животное, которое сейчас перетаскивают, само себе место не занимает. Пустая закрытая ячейка рисует предмет `minecraft:barrier`. Подсказка через 1 секунду: для большого — «Освободите соседние места для размещения крупного животного», для мелких — «Места заняты крупным животным».
+The front large seat 3 is mutually closed with seats 1, 2, 4, and 5. The rear large seat 6 is mutually closed with seats 4, 5, 7, and 8. The two large seats do not close each other. An animal that is currently being dragged does not occupy a seat for itself. An empty closed cell draws the item `minecraft:barrier`. The tooltip appears at once (`TooltipDelay.MILLIS` is 0). A large seat says `gui.trotting_wagons.tooltip.large_needs_space` ("Free the neighboring seats to place a large animal"). A small seat says `gui.trotting_wagons.tooltip.small_blocked` ("Seats are taken by a large animal").
 
-Запряжённое животное само на освободившееся большое место не пересаживается. Снять упряжь можно приседанием и ПКМ в мире, кнопкой упряжи или перетаскиванием на место.
+A hitched animal does not move itself onto a large seat that has opened up. The harness can be removed by sneaking and right-clicking in the world, by the harness button, or by dragging onto a seat.
 
-Животное, снятое с места кнопкой меню, оказывается по центру сзади, сразу за кормой кузова: 2.85 от центра плюс половина ширины животного. Приседание и ПКМ по сидящему животному его не высаживает. Возница слезает обычным поиском стороны.
+An animal removed from a seat by the menu button appears at the rear center, just behind the stern of the body: 2.85 from the center plus half the animal's width. Sneaking and right-clicking a sitting animal does not unload it. The driver dismounts through the ordinary side search.
 
-## Интерфейс
+## Screen
 
-Текстура `textures/gui/animal_wagon.png`, 320×200. Менять размер файла нельзя: он рисован вручную.
+Texture `textures/gui/animal_wagon.png`, 320×200. The file size must stay as painted.
 
-`AnimalMenu`: колёса `(17, 156)`, инвентарь игрока с `(80, 116)`, слот упряжки `(26, 108)`, починка `(269, 50)`. Полоска прочности `(13, 16)`, ширина 294. Сразу под ней справа заголовок «Починка». Одна тягловая кнопка по центру `(21, 51)`, две — `(8, 51)` и `(34, 51)`. Отдельной кнопки замка на этой текстуре нет. Пустой слот упряжки показывает серое «Дышло». Пока животное запряжено, предмет не снимается. Уже стоявшая повозка без предмета в слоте отпускает загруженных тягачей.
+`AnimalMenu`: wheels `(17, 156)`, player inventory from `(80, 116)`, harness slot `(26, 108)`, repair `(269, 50)`. Health bar `(13, 16)`, width 294. Immediately under it, on the right, is the Repair header. One draft button is centered at `(21, 51)`. Two sit at `(8, 51)` and `(34, 51)`. This texture has no separate lock button. An empty harness slot shows a gray Tongue. While an animal is hitched, the item stays in the slot. A wagon already in the world, with no item in the slot, releases its loaded draft animals.
 
-Кнопки мест 26×26. Верхний ряд — левый борт повозки. Возница 0 на `(82, 51)`. Пары мелких: перед 1 и 2 при x=108, середина 4 и 5 при x=160, зад 7 и 8 при x=212. Большие места врезаны по оси: переднее 3 на `(134, 51)`, заднее 6 на `(186, 51)`.
+Seat buttons are 26×26. The top row is the wagon's left side. Driver 0 is at `(82, 51)`. Small pairs: front 1 and 2 at x=108, middle 4 and 5 at x=160, rear 7 and 8 at x=212. The large seats are inset on the axis: front 3 at `(134, 51)`, rear 6 at `(186, 51)`.
 
-Имя владельца стоит в строке названия, по центру ширины 320, и сдвигается влево только чтобы не наехать на счётчик пути.
+The title row draws the wagon name and the distance counter. The owner is stored and is not drawn.

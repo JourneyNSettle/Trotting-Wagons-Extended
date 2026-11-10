@@ -1,57 +1,57 @@
-# Грузовая повозка
+# Ware Wagon
 
-Предмет и сущность `trotting_wagons:ware_wagon`. Класс `WareWagon` расширяет `AbstractWagon` и сам реализует `MenuProvider`. Имена: Ware Wagon / Грузовая повозка. Рецепта нет, предмет лежит в творческой вкладке без принудительного белого красителя, сразу после пассажирской.
+Item and entity `trotting_wagons:ware_wagon`. Class `WareWagon` extends `AbstractWagon` and implements `MenuProvider` itself. Names: Ware Wagon. No recipe. Finished wagons are not in the creative tab. The item is created with `BASE_COLOR` white, and `getDefaultColor()` returns `null`.
 
-Модель `assets/trotting_wagons/geo/entity/ware_wagon.geo.json`, идентификатор `geometry.WareCab`. Текстура `textures/entity/ware_wagon/none.png`, 256×256. Корневые `WareWagon.geo.json` и `WareWagon_Texture.png` перенесены и удалены. Анимация `animations/entity/ware_wagon.animation.json` — клип `move.forwards` на кости `cart`: наклон −2,5° и крен ±1°. Кость `Chests` перенесена с `Wagon` на `cart`, поэтому три сундука качаются вместе с кузовом. `SideDoor` всегда видна, отдельного клика нет. `Ladder` всегда видна. Игрок снаружи задней грани, ниже крыши и напротив кости лезет как по лестнице: шаг в повозку или прыжок поднимают, присед держит на месте, без нажатия медленно съезжает. Когда ноги доходят до крыши, его ставит на крышу хитбокса, на 0.6 блока внутрь от задней грани. На крыше лестница больше не держит: с этой стороны можно отойти и спрыгнуть. Столб лестницы снова цепляет, если провалиться в него сзади. Творческий полёт лестницу не включает. Модель предмета `models/item/ware_wagon.json`: родитель `minecraft:builtin/entity`, масштаб 0.1, в GUI сдвиг `[0, -2.5, 0]` и поворот `[20, 45, 0]`.
+Model `assets/trotting_wagons/geo/entity/ware_wagon.geo.json`, identifier `geometry.WareCab`. Texture `textures/entity/ware_wagon/none.png`, 256×256. The root `WareWagon.geo.json` and `WareWagon_Texture.png` were moved and deleted. Animation `animations/entity/ware_wagon.animation.json` is the clip `move.forwards` on bone `cart`: pitch −2.5° and roll ±1°. Bone `Chests` was moved from `Wagon` onto `cart`, so the three chests rock with the body. `SideDoor` is always visible and has no click of its own. `Ladder` is always visible. A player outside the rear face, below the roof, and in front of the bone climbs it like a ladder: a step into the wagon or a jump raises them, sneak holds them in place, and with no key held they slide down slowly. When their feet reach the roof, they are placed on the hitbox roof, 0.6 blocks in from the rear face. On the roof the ladder no longer holds: from that side they can step away and jump off. The ladder column catches them again if they fall into it from behind. Creative flight does not start the ladder. The item model `models/item/ware_wagon.json` has parent `minecraft:builtin/entity`, scale 0.1, a GUI translation of `[0, -2.5, 0]`, and a rotation of `[20, 45, 0]`.
 
-Оси — кости `FrontAxis` и `RearAxis`. Они крутятся тем же углом, что группы колёс, и видны всегда. Имена колёс общие: обычные, суффикс `2` у широких, суффикс `3` у железных. Слотов сундука четыре, кости `chest1`–`chest4` показываются по числу установленных сундуков.
+The axles are bones `FrontAxis` and `RearAxis`. They spin by the same angle as the wheel groups and stay visible. Wheel names are shared: regular, suffix `2` for wide, suffix `3` for iron. There are four chest slots. Bones `chest1`–`chest4` are shown by the number of placed chests.
 
-Текстура всегда `none.png`. `getDefaultColor` возвращает `null`.
+The texture is always `none.png`. `getDefaultColor` returns `null`.
 
-## Конфиг
+## Config
 
-Секция Ware Wagon Options. Ускорение вождение не читает.
+Section Ware Wagon Options. Driving leaves the acceleration unread.
 
 | | |
 | --- | --- |
-| Здоровье | `ware_wagon_health`, по умолчанию 100 |
-| Коэффициент без сундуков | `ware_wagon_speed_empty`, по умолчанию 0.9, читается каждый тик |
-| Снижение за сундук | `ware_wagon_speed_per_chest`, по умолчанию 0.1 |
-| Поворот | `ware_wagon_turn_rate`, по умолчанию 2.0 |
-| Ускорение в конфиге | `ware_wagon_acceleration`, по умолчанию 3.0, вождение не читает |
+| Health | `ware_wagon_health`, default 100 |
+| Coefficient with no chests | `ware_wagon_speed_empty`, default 0.9, read when the chest mask changes |
+| Reduction per chest | `ware_wagon_speed_per_chest`, default 0.1 |
+| Turn | `ware_wagon_turn_rate`, default 2.0 |
+| Acceleration in config | `ware_wagon_acceleration`, default 3.0. Driving leaves it unread |
 
-Коэффициент — пустое значение минус шаг на каждый поставленный сундук, не ниже 0. При шаге 0.1 это 0.9, 0.8, 0.7 и 0.6. Считаются сундуки, не вещи в них и не груз на основной вкладке.
+The coefficient is the empty value minus the step for each placed chest, floored at 0. At a step of 0.1 and four chests that is 0.9, 0.8, 0.7, 0.6, and 0.5. What is counted is chests, not the items in them and not the cargo on the main tab.
 
-## Кузов
+## Body
 
-Хитбокс `sized(3.5, 2.75)`. Квадрат в плане не крутится вместе с повозкой. Половина 1.75 почти у колёс (колёса до 1.63), высота закрывает верхний сундук (2.69). Нос и корма кузова доходят до 2.08 и торчат из квадрата примерно на 0.3: иначе борта снова шире колёс. Дышло из него выходит. Лучи земли: полуширина `19.5/16`, полубаза `19/16`. Передняя ось на Z модели −17, задняя на 21, полубаза — середина между ними. Клики колёс: `(19.25, 9.5, −17)`, `(−18.75, 9.5, −17)`, `(19.75, 9.5, 21)`, `(−19.75, 9.5, 21)`.
+The type is `sized(3.5, 2.75)`. The body is `orientedBody(1.625, 0, 2.981, 2.062, 2.078)`, and the white box is the shared ground plate. See [common.md](common.md). `bareDrop()` is 6/16. Ground rays: half-width `19.5/16`, half-wheelbase `19/16`. The front axle is at model Z −17, the rear at 21, and the half-wheelbase is the midpoint between them. Wheel clicks: `(19.25, 9.5, −17)`, `(−18.75, 9.5, −17)`, `(19.75, 9.5, 21)`, `(−19.75, 9.5, 21)`.
 
-Дышло как у пассажирской: боковой отступ `9.5/16`, вынос `77.88461/16`, угол 13, длина `57/16`, высота `8.5/16`. Два тягловых, список `allowed_entities`. Просадка общая, своих углов нет.
+The tongue matches the passenger wagon: side offset `9.5/16`, reach `77.88461/16`, angle 13, length `57/16`, height `8.5/16`. Two draft animals, list `allowed_entities`. The sag is the shared one. This wagon has no angles of its own.
 
-Одно место, возница. Бёдра на верхней грани подушки: X 0, Y 24, Z −27.75. Формула `y/16 − 0.05`, чтобы после вычитания 0.7 бёдра сели на эту высоту. Пассажирских мест нет. На экране кнопка возницы и две кнопки упряжи. Животные остаются в упряжи, внутрь повозки не садятся.
+One seat, the driver. The hips sit on the top face of the cushion: X 0, Y 24, Z −27.75. The formula is `y/16 − 0.05`, so that after subtracting 0.7 the hips land at that height. There are no passenger seats. The screen has the driver button and as many harness buttons as `hitchSlots()`: none, one, or two. Animals stay in the harness and do not sit inside the wagon.
 
-## Сундуки и груз
+## Chests and cargo
 
-Три слота, только `minecraft:chest`. Ловушка, эндер-сундук и бочка не подходят. У повозки и у каждого сундука по 27 ячеек, сетка 9×3. Всё лежит одним списком `Cargo` без capability для воронок: слоты 0–2 сундуки, 3–29 груз, дальше три блока по 27. Список без `CargoVersion` был 3 + 36 + 3×27: первые 27 ячеек груза остаются, последние 9 выпадают, содержимое сундуков переносится целиком. `CargoVersion` 2 был 3 + 30 + 3×30: первые 27 ячеек груза и первые 27 каждого сундука остаются, лишние три груза и по три ячейки каждого сундука выпадают. Новая запись ставит `CargoVersion` 3.
+Four slots. A slot accepts the tag `trotting_wagons:chests`, which contains `minecraft:chest`. A trapped chest, an ender chest, and a barrel do not fit. The wagon and each chest have 27 cells, a 9×3 grid. Everything lies in one `Cargo` list, with no hopper capability: slots 0–3 are the chests, 4–30 are the cargo, then four blocks of 27. That is 139 slots, and a new save writes `CargoVersion` 4. Version 3 was 3 chests, 27 cargo, and three blocks of 27. Those move across, and the fourth chest stays empty. Version 2 was 3 chests, 30 cargo, and three blocks of 30. The last 3 cargo stacks and the last 3 of each chest drop. A list with no version was 3 chests, 36 cargo, and three blocks of 27. The first 27 cargo cells stay, the last 9 drop, and each chest's 27 stacks move whole.
 
-Маска `DATA_CHESTS`. Пять кнопок вкладок: груз и четыре сундука. Кнопка включается по своему биту. Кости по числу: один сундук показывает `chest1`, четыре — все. Какой слот занят, на сетку не влияет. Сохранение версии 3 (три сундука) при загрузке получает пустой четвёртый.
+Mask `DATA_CHESTS`. Five tab buttons: the cargo and four chests. A button turns on from its own bit. Bones follow the count: one chest shows `chest1`, four show all of them. Which slot is occupied does not change the grid.
 
-ПКМ сундуком по повозке кладёт его в первый пустой слот и не сажает, даже если все три заняты. Присед не кладёт. Колесо и фонарь в руке идут своей веткой. Творческий режим предмет не тратит. Сундук в левой руке при пустой правой не кладётся.
+Right-clicking the wagon with a chest puts it into the first empty slot and does not seat the player, even when all four are full. Sneaking does not place it. A wheel or a lantern in hand takes its own branch. Creative mode does not spend the item. A chest in the off hand, with an empty main hand, is not placed.
 
-Снятие сундука выбрасывает его 27 стопок у повозки. Сам сундук уходит игроку. Если открыта вкладка снятого сундука, экран возвращается на груз. Разрушение выбрасывает груз, сундуки, их содержимое, фонарь и ремонт до колёс, в том числе когда `doEntityDrops` выключен.
+Removing a chest drops its 27 stacks beside the wagon. The chest itself goes to the player. If the removed chest's tab is open, the screen returns to the cargo. Destruction drops the cargo, the chests, their contents, the lantern, and the repair before the wheels, including when `doEntityDrops` is off.
 
-## Фонарь
+## Lantern
 
-Один слот, только `minecraft:lantern`. Кость `Lamp` видна, пока слот занят. Свет 15 в центре стекла после поворота кости `Lamp` на 90°, модель `(14.53, 42.2, −22.68)`, раз в 10 тиков. Пустой фонарь ловит луч, ПКМ ставит его, Shift+ПКМ снимает. Полный слот посадке не мешает.
+One slot, only `minecraft:lantern`. Bone `Lamp` is visible while the slot is filled. Light level 15 is placed at the glass center after bone `Lamp` is rotated by 90°, model `(14.53, 42.2, −22.68)`, every 10 ticks. An empty lantern catches the ray. Right-click places it. Shift-right-click removes it. A full slot does not get in the way of boarding.
 
-## Экран
+## Screen
 
-`WareMenu` / `WareScreen`, текстура `textures/gui/ware_wagon.png`, окно 320×250. Размер файла не менять. Сверху нет строки названия: имя, счётчик и владелец стоят под полосой прочности, справа от возницы, как у повозки с бочками. Имя и километры в одной строке с (101, 116), владелец строкой ниже. Пять кнопок 26×26 с (97, 7), шаг 32: груз и четыре сундука. У груза иконка уже нарисована. На кнопках сундуков рисуется предмет сундука. Выбранная обводится жёлтым. Кнопка пустого сундука не нажимается.
+`WareMenu` / `WareScreen`, texture `textures/gui/ware_wagon.png`, window 320×250. Do not change the file size. There is no title row at the top: the name and the kilometers sit under the health bar, to the right of the driver, as on the barrel wagon. They share a line from (101, 116). The owner is stored and is not drawn. Five 26×26 buttons from (96, 7), step 32: the cargo and four chests. The cargo icon is already painted. The chest buttons draw the chest item. The selected one is outlined in yellow. A button for an empty chest cannot be pressed.
 
-Сетка 9×3 с X 93, Y 39, шаг 18. Четыре слота сундука — квадрат 2×2 с (49, 48). Вкладка груза и вкладка каждого сундука показывают одни и те же 27 ячеек. Скрытая страница уезжает за экран и не принимает клик. Возница (69, 114). Тягловые кнопки на той же высоте: одна (21, 114), две (8, 114) и (34, 114). Слот упряжки (26, 158). Колёса (17, 206). Фонарь (278, 206). Починка (269, 130). Инвентарь игрока с (80, 166).
+The grid is 9×3 from X 93, Y 39, step 18. The four chest slots are a 2×2 square from (49, 48). The cargo tab and each chest tab show the same 27 cells. A hidden page moves off the screen and does not take a click. The driver is at (69, 114). Draft buttons are at the same height: one at (21, 114), two at (8, 114) and (34, 114). Harness slot (26, 158). Wheels (17, 206). Lantern (278, 206). Repair (269, 130). The player inventory starts at (80, 166).
 
-Слева три слота сундуков 16×16 столбиком: (48, 55), (48, 73), (48, 91). Пустой слот показывает призрак сундука. Возница на (147, 132), кнопка 24×24 на нарисованной ячейке, своей рамки нет. Полоска прочности на (13, 114), ширина 294: пустая полоса под слотами сундуков и сеткой, над рядом упряжи. Две кнопки упряжи 24×24 на нарисованных ячейках (14, 132) и (40, 132), своей рамки нет. Колёса 2×2 на (17, 183). Замок нарисован на (20, 231), 26×26, кликабелен только у владельца и своей рамки не рисует. Инвентарь игрока с (80, 183), хотбар на Y 241. Фонарь на (279, 223). Починка 2×2 на (270, 184). Подпись прочности на (центр слотов, 132), состояние на 10 пикселей ниже: это 8 пикселей под полоской, как у кибитки. Рамки починки только пока слот активен. Сетка, слоты сундуков, упряжь, возница, колёса, замок, инвентарь и фонарь уже в текстуре, повторно `drawSlot` их не рисует.
+The health bar is at (13, 96), width 294. An empty chest slot shows a chest ghost. Repair frames are drawn only while the slot is active. The grid, the chest slots, the harness, the driver, the wheels, the inventory, and the lantern are already in the texture. `drawSlot` does not draw them again. No wagon screen currently adds the lock button.
 
-Вкладка хранится в меню. Кнопка ставит её на клиенте и шлёт `select_ware_tab`, чтобы шифт наполнял открытую страницу. Чужое меню пакет не трогает.
+The tab is stored in the menu. The button sets it on the client and sends `select_ware_tab`, so a shift fills the open page. The packet does not touch someone else's menu.
 
-Шифт из повозки кладёт в инвентарь игрока. Из инвентаря игрока колесо и фонарь заполняют только свои слоты. Сундук и материал ремонта сначала заполняют свой диапазон; когда он полон, следующий шифт кладёт их в открытую вкладку. Прочий предмет сразу идёт в открытую вкладку.
+A shift from the wagon places items into the player inventory. From the player inventory, a wheel and a lantern fill only their own slots. A chest and a repair material fill their own range first. When that range is full, the next shift places them into the open tab. Any other item goes straight into the open tab.
