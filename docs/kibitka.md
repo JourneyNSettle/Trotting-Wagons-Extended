@@ -51,7 +51,7 @@ In the same row, on the right, are two 26×26 buttons. "Bed" draws a red bed in 
 
 ## Seats, lantern, cargo
 
-Two seats, with the same formula as the passenger wagon: `(x/16, y/16 − 0.05, −z/16)`. Y is the top of the cushion. The driver is `(0, 18, −30.25)` on `DriverSeat`. The passenger is on `Chair` at `(−8.39723, 22, −11.50666)`. `Bed` is not a seat: it is the bed. A saved index 2 is past the array length on load and is unused. The player sits in a free suitable seat. Shift from the passenger seat places the player at the rear center of the hitbox. The driver searches for a side.
+Two seats, with the same formula as the passenger wagon: `(x/16, y/16 − 0.05, −z/16)`. Y is the top of the cushion. The driver is `(0, 18, −30.25)` on `DriverSeat`. The passenger is on `Chair` at `(−8.39723, 22, −11.50666)`. `Bed` is not a seat: it is the bed. A saved index 2 is past the array length on load and is unused. The player sits in a free suitable seat. Shift from the passenger seat places the player at the rear center, just behind the body. The driver stands beside the driver seat, outside the body, on the ground.
 
 One lantern slot, only `minecraft:lantern`. A soul lantern does not fit. An empty slot hides bone `Lamp`. Light level 15 is at `(0, 39.6, −36)`. Right-clicking the wagon with a lantern places it and does not seat the player. Shift-right-click on the glass removes the lantern. Sneaking does not place it. Creative mode does not spend the item. A lantern in the off hand, with an empty main hand, is not placed. A click with an empty hand that misses the glass seats the player. The NBT is a nested compound `Lantern`, so it does not collide with the cargo's root `Items`.
 

@@ -375,6 +375,14 @@ public abstract class AbstractWagon extends AbstractGeckolibVehicle {
         return ground;
     }
 
+    /** Top of the ground under a dismount spot. Falls back to the wagon's own feet. */
+    protected double dismountFeet(double x, double z) {
+        double ground = groundUnder(x, z);
+        if(Double.isNaN(ground) || ground < getY() - 1.0D || ground > getY() + 1.5D)
+            return getY();
+        return ground;
+    }
+
     private double groundUnder(double x, double z) {
         double top = getY() + 2.5D;
         double bottom = getY() - 2.5D;
