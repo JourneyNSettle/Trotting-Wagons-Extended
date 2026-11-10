@@ -1,37 +1,37 @@
-# Броневая повозка
+# Armored Wagon
 
-Предмет и сущность `trotting_wagons:armored_wagon`. Класс `ArmoredWagon` расширяет `AbstractWagon` и сам реализует `MenuProvider`. Своего грузового инвентаря нет. В `en_us` имя Armored Wagon. В `ru_ru` ключа нет, поэтому в русской локали остаётся английское имя.
+Item and entity `trotting_wagons:armored_wagon`. Class `ArmoredWagon` extends `AbstractWagon` and implements `MenuProvider` itself. It has no cargo inventory of its own. The `en_us` name is Armored Wagon. `ru_ru` has no key, so the Russian locale keeps the English name.
 
-## Параметры
+## Parameters
 
-| Параметр | Значение |
+| Parameter | Value |
 | --- | --- |
-| Хитбокс | `sized(3.0, 2.9)` |
-| Здоровье | `armored_wagon_health`, по умолчанию 120 |
-| Коэффициент скорости | `armored_wagon_speed_coefficient`, по умолчанию 0.5 |
-| Поворот | `armored_wagon_turn_rate`, по умолчанию 2.0 |
-| Ускорение в конфиге | `armored_wagon_acceleration`, по умолчанию 4.0, вождение не читает |
+| Hitbox | type `sized(3.0, 2.9)`. The body is `orientedBody(2.279, 0, 3.479, 2.094, 2.391)`. The white box is the shared ground plate. `bareDrop()` is 6/16. See [common.md](common.md) |
+| Health | `armored_wagon_health`, default 120 |
+| Speed coefficient | `armored_wagon_speed_coefficient`, default 0.5 |
+| Turn | `armored_wagon_turn_rate`, default 2.0 |
+| Acceleration in config | `armored_wagon_acceleration`, default 4.0. Driving leaves it unread |
 | `wheelWidth`, `wheelLength` | 1, 1 |
-| Упряжь | слот упряжки. Пусто — 0, оглобли — 1 по центру на Z 3.6, дышло — 2 со слотами `horseX` ±0.6 и Z 4.6. `shaftAngle` 13 |
-| Дышло | длина 61.12/16, высота по умолчанию 7.5/16 |
-| Просадка | оба задних и диагональ −14° |
-| Груз | нет |
-| Цвет | предмет создаётся с `BASE_COLOR` белым, поэтому поставленная повозка берёт `white.png`. `getDefaultColor` возвращает `null`. Новые острова широких и укреплённых колёс с `none.png` скопированы на все цветные листы: раньше там был пустой пиксель |
+| Harness | harness slot. Empty is 0. Shafts is 1, centered at Z 3.6. Tongue is 2, with slots at `horseX` ±0.6 and Z 4.6. `shaftAngle` 13 |
+| Tongue | length 61.12/16, default height 7.5/16 |
+| Sag | both rear wheels, and the diagonal, −14° |
+| Cargo | none |
+| Color | the item is created with `BASE_COLOR` white, so a placed wagon takes `white.png`. `getDefaultColor` returns `null`. The new islands for wide and reinforced wheels were copied from `none.png` onto every colored sheet: those pixels used to be empty |
 
-Кости обычных колёс: `bone3`, `bone4`, `bone`, `bone2` — переднее левое, переднее правое, заднее левое, заднее правое. Широкие и укреплённые остались `LeftFrontWheel2`, `RightFrontWheel2`, `LeftRearWheel2`, `RightRearWheel2` и те же имена с суффиксом `3`. Зоны клика:
+Regular wheel bones: `bone3`, `bone4`, `bone`, `bone2`, in order front left, front right, rear left, rear right. Wide and reinforced wheels stay `LeftFrontWheel2`, `RightFrontWheel2`, `LeftRearWheel2`, `RightRearWheel2`, and the same names with suffix `3`. Click zones:
 
-| Угол | X | Y | Z |
+| Corner | X | Y | Z |
 | --- | --- | --- | --- |
 | 0 | 16 | 8.5 | −17 |
 | 1 | −16 | 8.5 | −17 |
 | 2 | 16 | 8.5 | 17 |
 | 3 | −16 | 8.5 | 17 |
 
-## Места
+## Seats
 
-Все семь мест только для игроков.
+All seven seats are for players only.
 
-| Индекс | Позиция | Вид |
+| Index | Position | Kind |
 | --- | --- | --- |
 | 0 | (0, 1.2, 2.1) | `DRIVER` |
 | 1 | (−0.5, 1.18, 1.1) | `PLAYER` |
@@ -41,21 +41,21 @@
 | 5 | (−0.5, 1.18, −1.1) | `PLAYER` |
 | 6 | (0.5, 1.18, −1.1) | `PLAYER` |
 
-## Интерфейс и рецепт
+## Screen and recipe
 
-Текстура `textures/gui/armored_wagon.png`, 320×174. Рамка кодом больше не рисуется.
+Texture `textures/gui/armored_wagon.png`, 320×174. The code no longer draws a frame.
 
-Сверху вниз:
+Top to bottom:
 
-1. строка y=6: название слева, владелец после названия, счётчик справа;
-2. полоска прочности `(13, 20)`, ширина 294;
-3. семь мест игрока, кнопки 26×26 с `(69, 38)` шагом 26. Слева от них кнопки тягачей: одна по центру x=21, две на x=8 и x=34. Рамка тягача — `big_slot.png`, места уже нарисованы;
-4. подпись упряжи над слотом `(26, 82)`. Пустой слот показывает дышло;
-5. справа заголовок `gui.trotting_wagons.repair` на верхней кромке мест, y=38. Открытые слоты починки центрируются под ним и рисуются, только пока открыты;
-6. колёса 2×2 с `(17, 130)`, две строки подписи над ними. Инвентарь игрока с `(80, 90)`, хотбар на y=148.
+1. The row at y=6: the name on the left and the distance counter on the right. The owner is stored and is not drawn.
+2. Health bar `(13, 20)`, width 294.
+3. Seven player seats, 26×26 buttons from `(69, 38)`, step 26. Draft buttons sit to their left: one centered at x=21, two at x=8 and x=34. The draft frame is `big_slot.png`. The seats are already painted.
+4. Harness label above the slot `(26, 82)`. An empty slot shows the Tongue.
+5. On the right, the header `gui.trotting_wagons.repair` sits on the top edge of the seats, y=38. Open repair slots are centered under it and are drawn only while they are open.
+6. Wheels 2×2 from `(17, 130)`, with two label lines above them. The player inventory starts at `(80, 90)`. The hotbar is at y=148.
 
-Упряжь ставится ПКМ предметом по повозке и снимается Shift+ПКМ по дышлу, пока никто не запряжён. Уже стоящая повозка без предмета упряжи на следующем тике отпускает загруженных тягачей. При разрушении корпус роняет около половины счёта: 24–40 досок, 5–7 длинных палок, 1 железный блок, 12–20 слитков, 3–5 ниток. Старых еловых досок и пары слитков нет.
+The harness is placed by right-clicking the wagon with the item and removed by shift-right-clicking the tongue while nobody is hitched. An armored wagon already in the world, with no harness item, releases its loaded draft animals on the next tick. An armored wagon built on the base drops about half of the bill: 24–40 planks, 5–7 long sticks, 1 iron block, 12–20 ingots, 3–5 string. One placed as an item drops no body loot.
 
-Грузовых слотов нет. Shift-клик материалом починки за один жест заполняет каждый открытый слот, который его принимает, и оставляет остаток у игрока. Повторный клик ничего не переносит. Колёса идут только в слоты колёс, оглобли и дышло — в слот упряжи. Из ячеек повозки, включая починку, предмет уходит игроку. Пока животное запряжено, упряжь Shift-кликом не вынимается.
+There are no cargo slots. One shift-click with a repair material fills every open slot that accepts it and leaves the leftover with the player. A repeat click moves nothing. Wheels go only into the wheel slots. Shafts and the Tongue go into the harness slot. From a wagon cell, including repair, the item goes to the player. While an animal is hitched, shift-click does not take the harness out.
 
-Верстачного рецепта нет. На заготовке: 64 доски, 12 длинных палок, 2 блока железа, 32 железных слитка, 8 ниток.
+There is no crafting-table recipe. On the wagon base: 64 planks, 12 long sticks, 2 iron blocks, 32 iron ingots, 8 string.

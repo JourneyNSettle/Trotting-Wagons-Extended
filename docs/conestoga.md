@@ -1,65 +1,65 @@
-# Конестога
+# Conestoga Wagon
 
-Предмет и сущность `trotting_wagons:conestoga_wagon`. Класс `ConestogaWagon` расширяет `AbstractInventoryWagon`. В `en_us` имя Conestoga Wagon. В `ru_ru` ключа нет, поэтому в русской локали остаётся английское имя.
+Item and entity `trotting_wagons:conestoga_wagon`. Class `ConestogaWagon` extends `AbstractInventoryWagon`. The `en_us` name is Conestoga Wagon. `ru_ru` has no key, so the Russian locale keeps the English name.
 
-## Параметры
+## Parameters
 
-| Параметр | Значение |
+| Parameter | Value |
 | --- | --- |
-| Хитбокс | `sized(3.0, 2.9)` — след 3×3, высота 2.9 |
-| Здоровье | `conestoga_wagon_health`, по умолчанию 60 |
-| Коэффициент скорости | `conestoga_wagon_speed_coefficient`, по умолчанию 0.8 |
-| Поворот | `conestoga_wagon_turn_rate`, по умолчанию 2.0 |
-| Ускорение в конфиге | `conestoga_wagon_acceleration`, по умолчанию 2.0, вождение не читает |
+| Hitbox | type `sized(3.0, 2.9)`. The body is `orientedBody(1.382, 0, 2.815, 2.382, 2.445)`. The white box is the shared ground plate. See [common.md](common.md) |
+| Health | `conestoga_wagon_health`, default 60 |
+| Speed coefficient | `conestoga_wagon_speed_coefficient`, default 0.8 |
+| Turn | `conestoga_wagon_turn_rate`, default 2.0 |
+| Acceleration in config | `conestoga_wagon_acceleration`, default 2.0. Driving leaves it unread |
 | `wheelWidth`, `wheelLength` | 1, 1 |
-| Упряжь | слот упряжки. Пусто — 0, оглобли — 1 по центру на Z 3.6, дышло — 2 со слотами `horseX` ±0.6 и тем же Z. `shaftAngle` 13 |
-| Дышло | длина по умолчанию 57.12/16, высота 7.5/16, запасная цель 0.85 |
-| Просадка | оба задних и диагональ −14° |
-| Груз | два сундука по 42 слота. Второй открывается, только если в салоне никого нет, и сам не пускает пассажиров, пока в нём что-то лежит |
-| Цвет | по умолчанию белый, текстура `textures/entity/conestoga_wagon/<цвет>.png`. Новые непрозрачные пиксели `white.png` около (244–332, 198–251) дорисованы на цветных листах только в прозрачных клетках |
+| Harness | harness slot. Empty is 0. Shafts is 1, centered at Z 3.6. Tongue is 2, with slots at `horseX` ±0.6 and the same Z. `shaftAngle` 13 |
+| Tongue | default length 57.12/16, height 7.5/16, fallback target 0.85 |
+| Sag | both rear wheels, and the diagonal, −14° |
+| Cargo | two chests of 42 slots each. The second opens only while the cabin is empty, and it refuses passengers while it holds anything |
+| Color | default white, texture `textures/entity/conestoga_wagon/<color>.png`. New opaque pixels of `white.png` around (244–332, 198–251) were painted onto the colored sheets only in transparent cells |
 
-Кости колёс, слева направо и спереди назад: `wheelleft`, `wheelright`, `bone`, `bone2`. Одна сетка на все три вида колёс. Зоны клика в пикселях модели, Y вверх, Z вперёд модели (в сущности перед — минус эта Z):
+Each corner has three bones, regular, wide, and reinforced: `wheelleft` / `LeftFrontWheel2` / `wheelleft2`, `wheelright` / `RightFrontWheel2` / `wheelright2`, `bone` / `LeftRearWheel2` / `LeftRearWheel3`, `bone2` / `RightRearWheel2` / `RightRearWheel3`. Only the fitted kind is shown. Click zones are in model pixels, Y up, model Z forward (on the entity, forward is the negative of that Z):
 
-| Угол | X | Y | Z |
+| Corner | X | Y | Z |
 | --- | --- | --- | --- |
 | 0 | 16 | 7.15385 | −16 |
 | 1 | −16 | 7.15385 | −16 |
 | 2 | 16 | 8.5 | 17 |
 | 3 | −16 | 8.5 | 17 |
 
-## Места
+## Seats
 
-Координаты в блоках от центра сущности, +Z — вперёд повозки. При посадке точка ещё опускается на 0.7 под сидящую позу.
+Coordinates are in blocks from the entity center. +Z is the wagon's forward. On boarding, the point is lowered another 0.7 under the sitting pose.
 
-| Индекс | Позиция | Вид |
+| Index | Position | Kind |
 | --- | --- | --- |
 | 0 | (0, 1.25, 2.1) | `DRIVER` |
 | 1 | (−0.4375, 1.18, 1.1) | `UNIVERSAL` |
 | 2 | (0.4375, 1.18, 1.1) | `UNIVERSAL` |
-| 3 | (0, 1.18, 0.19) | `ANIMALBIG`, только крупный пассажир |
+| 3 | (0, 1.18, 0.19) | `ANIMALBIG`, a large passenger only |
 
-Кнопки слева направо подписаны 1, 2, 3, 4: возница, левое универсальное, крупное животное, правое универсальное. Крупное животное на месте 3 блокирует оба универсальных. Игрок или небольшое животное на месте 1 или 2 блокирует место 3. Второй сундук блокирует все три и сам не открывается, пока кто-то из них занят. Возница к этому выбору не относится.
+The buttons are labeled 1, 2, 3, 4 from left to right: driver, left universal, large animal, right universal. A large animal in seat 3 blocks both universal seats. A player or a small animal in seat 1 or 2 blocks seat 3. The second chest blocks all three, and it stays closed while any of them is occupied. The driver is outside that choice.
 
-Старые сохранения держали шесть мест. Возница и двое по бокам остаются на индексах 0–2. Пассажиры индексов 3–5 на места не возвращаются.
+Old saves kept six seats. `assignSeat` keeps a saved index only when it is still inside the array and the seat accepts that passenger. Indices 4 and 5 are past the length of 4. A player saved on index 3 is refused by `ANIMALBIG`. Those passengers go to the nearest open seat.
 
-## Интерфейс и рецепт
+## Screen and recipe
 
-Текстура `textures/gui/conestoga_wagon.png`, 320×236.
+Texture `textures/gui/conestoga_wagon.png`, 320×236.
 
-Сверху вниз:
+Top to bottom:
 
-1. строка y=6: название слева, владелец после названия, счётчик справа;
-2. груз 14×3 с `(18, 22)`. Справа две кнопки 26×26 на `(277, 20)` и `(277, 50)`. Верхняя открыта по умолчанию и рисует значок сундука. Нижняя открывает второй сундук из 42 слотов и гаснет, если в салоне кто-то сидит;
-3. полоска прочности `(13, 82)`, ширина 294;
-4. четыре места, кнопки 26×26 с `(108, 100)` шагом 26: возница, универсальное, крупное животное, универсальное. Слева кнопки тягачей на той же высоте;
-5. подпись упряжи над слотом `(26, 144)`. Пустой слот показывает дышло;
-6. справа заголовок `gui.trotting_wagons.repair` на верхней кромке мест. Открытые слоты починки центрируются под ним;
-7. колёса 2×2 с `(17, 192)`. Инвентарь игрока с `(80, 152)`, хотбар на y=210.
+1. The row at y=6: the name on the left and the distance counter on the right. The owner is stored and is not drawn.
+2. Cargo 14×3 from `(18, 22)`. On the right, two 26×26 buttons at `(277, 20)` and `(277, 50)`. The upper one is open by default and draws a chest icon. The lower one opens the second chest of 42 slots and goes dark if someone is sitting in the cabin.
+3. Health bar `(13, 82)`, width 294.
+4. Four seats, 26×26 buttons from `(108, 100)`, step 26: driver, universal, large animal, universal. Draft buttons sit on the left at the same height.
+5. Harness label above the slot `(26, 144)`. An empty slot shows the Tongue.
+6. On the right, the header `gui.trotting_wagons.repair` sits on the top edge of the seats. Open repair slots are centered under it.
+7. Wheels 2×2 from `(17, 192)`. The player inventory starts at `(80, 152)`. The hotbar is at y=210.
 
-`CargoVersion` 2 хранит оба сундука подряд, 84 слота. Старый груз без версии оставляет первые 42 слота и выбрасывает остальные рядом с повозкой. Упряжь ставится ПКМ и снимается Shift+ПКМ, пока никто не запряжён. Уже стоящая конестога без предмета упряжи отпускает загруженных тягачей.
+`CargoVersion` 2 stores both chests in a row, 84 slots. Old cargo with no version keeps the first 42 slots and drops the rest beside the wagon. The harness is placed by right-click and removed by shift-right-click while nobody is hitched. A Conestoga already in the world, with no harness item, releases its loaded draft animals.
 
-Shift-клик материалом починки за один жест заполняет каждый открытый слот, который его принимает. Остаток остаётся у игрока. Следующий Shift-клик кладёт остаток в открытый сундук. Колёса идут только в слоты колёс, оглобли и дышло — в слот упряжи. Из ячеек повозки, включая починку, предмет уходит игроку. Пока животное запряжено, упряжь Shift-кликом не вынимается.
+One shift-click with a repair material fills every open slot that accepts it. The leftover stays with the player. The next shift-click places the leftover into the open chest. Wheels go only into the wheel slots. Shafts and the Tongue go into the harness slot. From a wagon cell, including repair, the item goes to the player. While an animal is hitched, shift-click does not take the harness out.
 
-Верстачного рецепта нет. На заготовке: 2 сундука, 16 блоков шерсти, 18 длинных палок, 1 поводок, 32 доски, 8 железных слитков.
+There is no crafting-table recipe. On the wagon base: 2 chests, 16 wool blocks, 18 long sticks, 1 lead, 32 planks, 8 iron ingots.
 
-Груз при уничтожении выпадает обычным `Containers.dropContents` после колёс: каждый стак — отдельная сущность предмета. Предметы починки не выпадают. Корпус роняет около половины счёта: 1 сундук, 6–10 шерсти, 7–11 длинных палок, 0–1 поводок, 12–20 досок, 3–5 слитков. Старых `0–6` еловых досок и `0–2` слитков нет, даже если повозка поставлена предметом, а не собрана.
+On destruction, cargo drops through the ordinary `Containers.dropContents` after the wheels: each stack is its own item entity. Repair items do not drop. A Conestoga built on the base drops about half of the bill: 1 chest, 6–10 wool, 7–11 long sticks, 0–1 lead, 12–20 planks, 3–5 ingots. One placed as an item drops no body loot, neither that half bill nor the old oak planks and iron scrap.

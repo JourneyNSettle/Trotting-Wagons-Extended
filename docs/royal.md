@@ -1,66 +1,66 @@
-# Королевская повозка
+# Royal Wagon
 
-Предмет и сущность `trotting_wagons:royal_wagon`. Класс `RoyalWagon` расширяет `AbstractInventoryWagon`. В `en_us` имя Royal Wagon. В `ru_ru` ключа нет, поэтому в русской локали остаётся английское имя.
+Item and entity `trotting_wagons:royal_wagon`. Class `RoyalWagon` extends `AbstractInventoryWagon`. The `en_us` name is Royal Wagon. `ru_ru` has no key, so the Russian locale keeps the English name.
 
-## Параметры
+## Parameters
 
-| Параметр | Значение |
+| Parameter | Value |
 | --- | --- |
-| Хитбокс | `sized(3.0, 2.9)` |
-| Здоровье | `royal_wagon_health`, по умолчанию 80 |
-| Коэффициент скорости | `royal_wagon_speed_coefficient`, по умолчанию 1.0 |
-| Поворот | конструктор читает `conestoga_wagon_turn_rate`, по умолчанию 2.0 |
-| Ускорение в конфиге | `royal_wagon_acceleration`, по умолчанию 3.0, вождение не читает |
+| Hitbox | type `sized(3.0, 2.9)`. The body is `orientedBody(1.438, 0, 3.312, 2.266, 2.424)`. The white box is the shared ground plate. See [common.md](common.md) |
+| Health | `royal_wagon_health`, default 80 |
+| Speed coefficient | `royal_wagon_speed_coefficient`, default 1.0 |
+| Turn | the constructor reads `conestoga_wagon_turn_rate`, default 2.0 |
+| Acceleration in config | `royal_wagon_acceleration`, default 3.0. Driving leaves it unread |
 | `wheelWidth`, `wheelLength` | 1.1, 1.3 |
-| Упряжь | слот упряжки. Пусто — 0, оглобли — 1 по центру на Z 4.3, дышло — 2 со слотами `horseX` ±0.6 и тем же Z. `shaftAngle` 7 |
-| Дышло | длина 64.12/16, высота 10.5/16 |
-| Просадка | оба задних и диагональ −14° |
-| Груз | 40 обычных слотов, сетка 10×4. Старый груз из слотов 40–53 выпадает рядом при загрузке |
-| Цвет | по умолчанию белый, текстура `textures/entity/royal_wagon/<цвет>.png`. Спицы укреплённых колёс лежат на `white.png` около (147–232, 457–507). На цветных листах эти пиксели дорисованы только там, где лист был прозрачным |
+| Harness | harness slot. Empty is 0. Shafts is 1, centered at Z 4.3. Tongue is 2, with slots at `horseX` ±0.6 and the same Z. `shaftAngle` 7 |
+| Tongue | length 64.12/16, height 10.5/16 |
+| Sag | both rear wheels, and the diagonal, −14° |
+| Cargo | 40 ordinary slots, a 10×4 grid. Old cargo in slots 40–53 drops nearby on load |
+| Color | default white, texture `textures/entity/royal_wagon/<color>.png`. Reinforced-wheel spokes lie on `white.png` around (147–232, 457–507). On the colored sheets those pixels were painted only where the sheet was transparent |
 
-Ключ `royal_wagon_turn_rate` в том же конфиге объявлен и по умолчанию тоже 2.0, но `RoyalWagon` передаёт в `super` поле `conestogaTurnRate`. Пока оба значения совпадают, поворот тот же. Если изменить только королевский ключ, эта повозка останется на повороте Конестоги.
+The key `royal_wagon_turn_rate` is declared in the same config and also defaults to 2.0, but `RoyalWagon` passes the `conestogaTurnRate` field into `super`. While both values match, the turn rate is the same. Changing only the royal key leaves this wagon on the Conestoga turn rate.
 
-Обычные колёса: `octagon2` и `octagon` спереди, `octagon4` и `octagon3` сзади. Сторона берётся по положению куба, не по имени. Широкие: `LeftFrontWheel2`, `RightFrontWheel2`, а задняя пара называется `LeftFrontWheel3` и `RightFrontWheel3`. Укреплённые: `octagon5`, `octagon6`, `octagon9`, `octagon10` в группах `FrontIronWheels` и `RearIronWheels`. Зоны клика:
+Regular wheels: `octagon2` and `octagon` in front, `octagon4` and `octagon3` at the rear. The side comes from the cube position, not from the name. Wide wheels: `LeftFrontWheel2`, `RightFrontWheel2`, and the rear pair is named `LeftFrontWheel3` and `RightFrontWheel3`. Reinforced wheels: `octagon5`, `octagon6`, `octagon9`, `octagon10` in the groups `FrontIronWheels` and `RearIronWheels`. Click zones:
 
-| Угол | X | Y | Z |
+| Corner | X | Y | Z |
 | --- | --- | --- | --- |
 | 0 | 17.75 | 10.5 | −21 |
 | 1 | −17.75 | 10.5 | −21 |
 | 2 | 17.75 | 10.5 | 21 |
 | 3 | −17.75 | 10.5 | 21 |
 
-## Места
+## Seats
 
-Только игроки. Координаты в блоках, +Z вперёд.
+Players only. Coordinates are in blocks, +Z forward.
 
-В салоне две скамейки. На каждой сидят двое, на 7/16 блока влево и вправо от середины. Ближняя к вознице скамейка — Z +0.7, дальняя — Z −0.7. Прежний одиночный пассажир дальней скамейки (индекс 1) остаётся на ней и сдвигается на сторону +X.
+The cabin has two benches. Two riders sit on each, 7/16 of a block left and right of the middle. The bench nearer the driver is at Z +0.7. The far bench is at Z −0.7. A save that still has the old single passenger of the far bench (index 1) keeps that passenger on it and shifts them to the +X side.
 
-| Индекс | Позиция | Вид |
+| Index | Position | Kind |
 | --- | --- | --- |
 | 0 | (0, 1.3, 1.8) | `DRIVER` |
-| 1 | (7/16, 1.45, −0.7) | `PLAYER`, дальняя скамейка |
-| 2 | (7/16, 1.45, 0.7) | `PLAYER`, ближняя скамейка |
-| 3 | (−7/16, 1.45, 0.7) | `PLAYER`, ближняя скамейка |
-| 4 | (−7/16, 1.45, −0.7) | `PLAYER`, дальняя скамейка |
+| 1 | (7/16, 1.45, −0.7) | `PLAYER`, far bench |
+| 2 | (7/16, 1.45, 0.7) | `PLAYER`, near bench |
+| 3 | (−7/16, 1.45, 0.7) | `PLAYER`, near bench |
+| 4 | (−7/16, 1.45, −0.7) | `PLAYER`, far bench |
 
-Животные пассажирами не садятся. Крупному пассажиру места нет.
+Animals do not sit as passengers. There is no seat for a large passenger.
 
-## Интерфейс и рецепт
+## Screen and recipe
 
-Текстура `textures/gui/royal_wagon.png`, 320×250.
+Texture `textures/gui/royal_wagon.png`, 320×250.
 
-Сверху вниз:
+Top to bottom:
 
-1. строка y=6: название слева, владелец после названия, счётчик справа;
-2. груз 10×4 с `(71, 21)`;
-3. полоска прочности `(13, 96)`, ширина 294;
-4. пять мест, кнопки 26×26 с `(95, 114)` шагом 26. Слева направо: возница, ближняя скамейка, дальняя скамейка. Слева от них кнопки тягачей на той же высоте: одна на x=21, две на x=8 и x=34. Рамка тягача — `big_slot.png`, места уже нарисованы;
-5. подпись упряжи над слотом `(26, 158)`. Пустой слот показывает дышло;
-6. справа заголовок `gui.trotting_wagons.repair` на верхней кромке мест. Открытые слоты починки центрируются под ним и рисуются, только пока открыты;
-7. колёса 2×2 с `(17, 206)`. Инвентарь игрока с `(80, 166)`, хотбар на y=224.
+1. The row at y=6: the name on the left and the distance counter on the right. The owner is stored and is not drawn.
+2. Cargo 10×4 from `(71, 21)`.
+3. Health bar `(13, 96)`, width 294.
+4. Five seats, 26×26 buttons from `(95, 114)`, step 26. Left to right: driver, near bench, far bench. Draft buttons sit to their left at the same height: one at x=21, two at x=8 and x=34. The draft frame is `big_slot.png`. The seats are already painted.
+5. Harness label above the slot `(26, 158)`. An empty slot shows the Tongue.
+6. On the right, the header `gui.trotting_wagons.repair` sits on the top edge of the seats. Open repair slots are centered under it and are drawn only while they are open.
+7. Wheels 2×2 from `(17, 206)`. The player inventory starts at `(80, 166)`. The hotbar is at y=224.
 
-Упряжь ставится ПКМ предметом по повозке и снимается Shift+ПКМ по дышлу, пока никто не запряжён. Уже стоящая карета без предмета упряжи на следующем тике отпускает загруженных тягачей.
+The harness is placed by right-clicking the wagon with the item and removed by shift-right-clicking the tongue while nobody is hitched. A royal wagon already in the world, with no harness item, releases its loaded draft animals on the next tick.
 
-Shift-клик материалом починки за один жест заполняет каждый открытый слот, который его принимает. Остаток остаётся у игрока. Следующий Shift-клик, когда починка больше ничего не берёт, кладёт остаток в груз. Колёса идут только в слоты колёс, оглобли и дышло — в слот упряжи. Из ячеек повозки, включая починку, предмет уходит игроку. Пока животное запряжено, упряжь Shift-кликом не вынимается.
+One shift-click with a repair material fills every open slot that accepts it. The leftover stays with the player. The next shift-click, once repair accepts nothing more, places the leftover into cargo. Wheels go only into the wheel slots. Shafts and the Tongue go into the harness slot. From a wagon cell, including repair, the item goes to the player. While an animal is hitched, shift-click does not take the harness out.
 
-Верстачного рецепта нет. На заготовке: 16 блоков шерсти, 1 сундук, 8 ниток, 32 доски, 12 железных слитков. При разрушении корпус роняет около половины: 6–10 шерсти, 0–1 сундук, 3–5 ниток, 12–20 досок, 5–7 слитков. Старых еловых досок и пары слитков нет.
+There is no crafting-table recipe. On the wagon base: 16 wool blocks, 1 chest, 8 string, 32 planks, 12 iron ingots. A royal wagon built on the base drops about half: 6–10 wool, 0–1 chest, 3–5 string, 12–20 planks, 5–7 ingots. One placed as an item drops no body loot.
