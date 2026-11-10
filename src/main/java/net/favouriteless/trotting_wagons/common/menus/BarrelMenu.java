@@ -15,33 +15,33 @@ import net.minecraft.world.item.ItemStack;
 public class BarrelMenu extends AbstractContainerMenu {
 
     public static final int IMAGE_WIDTH = 320;
-    public static final int IMAGE_HEIGHT = 250;
-    /** Three columns by four rows, barrel items only. */
-    public static final int BARREL_COLUMNS = 3;
-    public static final int BARREL_X = 20;
-    public static final int BARREL_Y = 15;
+    public static int IMAGE_HEIGHT = 250;
+    /** Three columns by four rows, barrel items only. The compat mod switches this to one row of twelve. */
+    public static int BARREL_COLUMNS = 3;
+    public static int BARREL_X = 20;
+    public static int BARREL_Y = 15;
     /** Twelve columns by four rows. Each barrel opens the four wells in its column group. */
     public static final int CONTENT_COLUMNS = 12;
     public static final int CONTENT_X = 86;
     public static final int CONTENT_Y = 15;
     public static final int HEALTH_X = 13;
-    public static final int HEALTH_Y = 96;
+    public static int HEALTH_Y = 96;
     public static final int HEALTH_W = 294;
-    public static final int DRAFT_Y = 114;
+    public static int DRAFT_Y = 114;
     public static final int DRAFT_SINGLE_X = 21;
     public static final int DRAFT_PAIR_X = 8;
     public static final int DRAFT_STRIDE = 26;
     public static final int SEAT_X = 69;
-    public static final int SEAT_Y = 114;
+    public static int SEAT_Y = 114;
     public static final int TITLE_X = 101;
-    public static final int TITLE_Y = 116;
+    public static int TITLE_Y = 116;
     public static final int DISTANCE_GAP = 27;
     public static final int HARNESS_X = 26;
-    public static final int HARNESS_Y = 158;
+    public static int HARNESS_Y = 158;
     public static final int WHEEL_X = 17;
-    public static final int WHEEL_Y = 206;
+    public static int WHEEL_Y = 206;
     public static final int INV_X = 80;
-    public static final int INV_Y = 166;
+    public static int INV_Y = 166;
     public static final int REPAIR_X = 269;
 
     private final BarrelWagon wagon;
@@ -95,6 +95,21 @@ public class BarrelMenu extends AbstractContainerMenu {
 
     public BarrelMenu(int id, Inventory inventory, FriendlyByteBuf data) {
         this(id, inventory, getWagon(inventory, data));
+    }
+
+    /** One row of twelve barrels. The painted lower half moves up because the content grid is gone. */
+    public static void useFlatBarrelRow() {
+        IMAGE_HEIGHT = 186;
+        BARREL_COLUMNS = 12;
+        BARREL_X = 53;
+        BARREL_Y = 10;
+        HEALTH_Y = 33;
+        DRAFT_Y = 50;
+        SEAT_Y = 50;
+        TITLE_Y = 52;
+        HARNESS_Y = 94;
+        WHEEL_Y = 142;
+        INV_Y = 102;
     }
 
     public static int barrelX(int index) {

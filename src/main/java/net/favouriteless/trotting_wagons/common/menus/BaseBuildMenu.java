@@ -11,7 +11,7 @@ import net.minecraft.world.item.ItemStack;
 public class BaseBuildMenu extends AbstractContainerMenu {
 
     public static final int WIDTH = 166;
-    public static final int HEIGHT = 112;
+    public static final int HEIGHT = 104;
 
     private final BaseWagon wagon;
 

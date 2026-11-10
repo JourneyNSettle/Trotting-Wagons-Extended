@@ -150,8 +150,9 @@ public class TWClientEvents {
         Minecraft minecraft = Minecraft.getInstance();
         if(minecraft.player != null && minecraft.screen == null && minecraft.crosshairPickEntity instanceof Chassis chassis)
             drawBuildHint(event.getGuiGraphics(), minecraft, chassis);
-        if(minecraft.player != null && minecraft.screen == null && minecraft.crosshairPickEntity instanceof BaseWagon base && base.showsPlan())
-            drawBuildPlan(event.getGuiGraphics(), minecraft, base);
+        BaseWagon aimed = aimedBase(minecraft);
+        if(aimed != null)
+            drawBuildPlan(event.getGuiGraphics(), minecraft, aimed);
         if(minecraft.player == null || !(minecraft.player.getVehicle() instanceof AbstractWagon wagon))
             return;
         if(wagon.getControllingPassenger() != minecraft.player)
@@ -166,6 +167,18 @@ public class TWClientEvents {
         if(filled > 0)
             graphics.blitSprite(ResourceLocation.withDefaultNamespace("hud/jump_bar_progress"), width, 5, 0, 0, x, y, filled, 5);
         RenderSystem.disableBlend();
+    }
+
+    /** The bill follows the yellow frame, not only the white plate vanilla already picked. */
+    private static BaseWagon aimedBase(Minecraft minecraft) {
+        if(minecraft.player == null || minecraft.screen != null)
+            return null;
+        if(minecraft.crosshairPickEntity instanceof BaseWagon picked && picked.showsPlan())
+            return picked;
+        YellowRay.Strike strike = YellowRay.nearestWagon(minecraft.player);
+        if(strike == null || !(strike.entity() instanceof BaseWagon wagon) || !wagon.showsPlan())
+            return null;
+        return YellowRay.isFirst(minecraft.player, minecraft.hitResult, strike) ? wagon : null;
     }
 
     private static void drawBuildHint(GuiGraphics graphics, Minecraft minecraft, Chassis chassis) {

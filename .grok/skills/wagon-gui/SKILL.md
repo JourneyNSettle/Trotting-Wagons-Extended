@@ -54,4 +54,6 @@ Conestoga, `conestoga_ui.png` → `conestoga_wagon.png`, is 320×236. Cargo is 1
 
 Big cart, `big_cart_ui.png` → `big_cart.png`, is 320×236. Cargo is not painted: draw 14×3 from (18, 22). While an animal occupies a bed seat, park those slots and draw «Грузовое место занято животными» in their place. Health is (13, 82). Seats from (108, 100): driver, front universal, large animal, rear universal. The universals sit on the center line, half a block ahead of and one block behind the large animal at z −0.3. Harness is (26, 144). Wheels are (17, 192). Player inventory is (80, 152). Repair header is the top of the seats, centered on the lantern. The lantern well is painted at (278, 192). Draft frames are not painted. One texture, no dye. The ladder mesh does not open.
 
+Base build, `build_ui.png` → `build.png`, is 166×104. Ten wagon buttons are 26×26 from (8, 8), step 31, five columns. The cancel well is (132, 70). Those frames are already painted, so do not blit `big_slot`. Each wagon icon is the item at +5,+5. The cancel well keeps the barrier item.
+
 Do not add a wagon lock button. The user has not designed that control yet and will ask for it later.
