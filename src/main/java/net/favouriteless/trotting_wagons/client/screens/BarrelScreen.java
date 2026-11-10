@@ -85,10 +85,10 @@ public class BarrelScreen extends AbstractContainerScreen<BarrelMenu> {
         Component distance = Component.translatable("gui.trotting_wagons.distance",
                 String.format(Locale.ROOT, "%.1f", wagon.getDistance() / 1000.0F));
         graphics.drawString(font, distance, BarrelMenu.TITLE_X + font.width(title) + BarrelMenu.DISTANCE_GAP, BarrelMenu.TITLE_Y, 4210752, false);
-        drawCentered(graphics, Component.translatable(harnessKey(wagon.hitchSlots())), BarrelMenu.HARNESS_X + 8, 146);
+        drawCentered(graphics, Component.translatable(harnessKey(wagon.hitchSlots())), BarrelMenu.HARNESS_X + 8, BarrelMenu.HARNESS_Y - 12);
         int wheelCenter = BarrelMenu.WHEEL_X + 17;
-        drawCentered(graphics, Component.translatable("gui.trotting_wagons.wheels"), wheelCenter, 184);
-        drawCentered(graphics, wagon.wheelSet().label(), wheelCenter, 194);
+        drawCentered(graphics, Component.translatable("gui.trotting_wagons.wheels"), wheelCenter, BarrelMenu.WHEEL_Y - 22);
+        drawCentered(graphics, wagon.wheelSet().label(), wheelCenter, BarrelMenu.WHEEL_Y - 12);
         int slotsCenter = BarrelMenu.REPAIR_X + 17;
         drawCentered(graphics, Component.translatable("gui.trotting_wagons.repair"), slotsCenter, BarrelMenu.SEAT_Y);
         drawCentered(graphics, wagon.conditionName(), slotsCenter, BarrelMenu.SEAT_Y + 10);

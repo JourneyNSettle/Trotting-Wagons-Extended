@@ -31,6 +31,8 @@ import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+
+import java.util.Optional;
 import software.bernie.geckolib.animatable.GeoEntity;
 import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.animation.AnimatableManager.ControllerRegistrar;
@@ -170,8 +172,7 @@ public class BaseWagon extends Entity implements GeoEntity, GeoBoneHitboxEntity,
 
     @Override
     public InteractionResult interact(Player player, InteractionHand hand) {
-        double reach = player.entityInteractionRange();
-        if(getBoundingBox().distanceToSqr(player.getEyePosition()) > reach * reach)
+        if(!lookingAtYellow(player))
             return InteractionResult.PASS;
         if(level().isClientSide)
             return InteractionResult.SUCCESS;
@@ -213,24 +214,51 @@ public class BaseWagon extends Entity implements GeoEntity, GeoBoneHitboxEntity,
         compound.putString("Choice", choice());
     }
 
-    /** Full body for culling and clicks. The entity box is the ground plate. */
+    /**
+     * Full body for culling. The entity box is only the ground plate.
+     * {@code setPos} builds that plate too, so a position packet cannot put the full hull back for a frame.
+     */
     private AABB visualBody;
 
     @Override
     public void tick() {
         super.tick();
-        AABB body = makeBoundingBox();
-        visualBody = body;
-        setBoundingBox(AbstractGeckolibVehicle.halfFootprint(body, true));
+        setBoundingBox(makeBoundingBox());
+    }
+
+    /** A position packet builds the box before the new yaw is applied. Build the plate after. */
+    @Override
+    public void lerpTo(double x, double y, double z, float yRot, float xRot, int steps) {
+        setPosRaw(x, y, z);
+        setYRot(yRot);
+        setXRot(xRot);
+        setBoundingBox(makeBoundingBox());
     }
 
     @Override
     public AABB getBoundingBoxForCulling() {
-        return visualBody != null ? visualBody : super.getBoundingBoxForCulling();
+        return visualBody != null ? visualBody : fullBody();
     }
 
     @Override
     protected AABB makeBoundingBox() {
+        AABB body = fullBody();
+        visualBody = body;
+        return AbstractGeckolibVehicle.halfFootprint(body, true);
+    }
+
+    /** Materials and the build screen follow the yellow frame, not the white plate. */
+    private boolean lookingAtYellow(Player player) {
+        double reach = player.entityInteractionRange();
+        Vec3 eye = player.getEyePosition();
+        if(level().isClientSide)
+            return net.favouriteless.trotting_wagons.client.YellowRay.hits(this, player);
+        Vec3 end = eye.add(player.getViewVector(1.0F).scale(reach));
+        Optional<Vec3> hit = (visualBody != null ? visualBody : fullBody()).clip(eye, end);
+        return hit.isPresent() && hit.get().distanceToSqr(eye) <= reach * reach;
+    }
+
+    private AABB fullBody() {
         float yaw = getYRot();
         double left = Double.POSITIVE_INFINITY;
         double bottom = Double.POSITIVE_INFINITY;
